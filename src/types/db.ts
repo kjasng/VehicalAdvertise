@@ -8,16 +8,42 @@
  * specifying a generic; that keeps the build green at the cost of `any`.
  */
 
+export type UserRole = 'pending' | 'driver' | 'partner' | 'admin' | 'garage'
+
+type ProfilesRow = {
+  id: string
+  role: UserRole
+  full_name: string
+  phone_e164: string | null
+  email: string | null
+}
+
+type ContractsRow = {
+  id: string
+}
+
 export type Database = {
-  // Generated types go here. Kept intentionally empty so `createClient<Database>()`
-  // still compiles before the CLI is wired up.
   public: {
-    Tables: Record<string, never>
+    Tables: {
+      profiles: {
+        Row: ProfilesRow
+        Insert: Partial<ProfilesRow> & { id: string }
+        Update: Partial<ProfilesRow>
+      }
+      contracts: {
+        Row: ContractsRow
+        Insert: ContractsRow
+        Update: Partial<ContractsRow>
+      }
+    }
     Views: Record<string, never>
-    Functions: Record<string, never>
-    Enums: Record<string, never>
+    Functions: {
+      choose_role: {
+        Args: { target: UserRole }
+        Returns: ProfilesRow
+      }
+    }
+    Enums: { user_role: UserRole }
     CompositeTypes: Record<string, never>
   }
 }
-
-export type UserRole = 'driver' | 'partner' | 'admin' | 'garage'

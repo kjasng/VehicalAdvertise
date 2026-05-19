@@ -43,21 +43,28 @@ export async function requireRole(role: UserRole): Promise<UserRole> {
   return current
 }
 
-const ROLE_PREFIX: Record<UserRole, string> = {
+const GATED_PREFIXES: Record<Exclude<UserRole, 'pending'>, string> = {
   driver: '/driver',
   partner: '/partner',
   admin: '/admin',
   garage: '/garage',
 }
 
-export function pathRequiresRole(pathname: string): UserRole | null {
-  for (const role of Object.keys(ROLE_PREFIX) as UserRole[]) {
-    if (pathname.startsWith(ROLE_PREFIX[role])) return role
+const ONBOARDING_ALLOWLIST = ['/', '/login', '/onboarding', '/auth/callback']
+
+export function pathRequiresRole(pathname: string): Exclude<UserRole, 'pending'> | null {
+  for (const role of Object.keys(GATED_PREFIXES) as Array<keyof typeof GATED_PREFIXES>) {
+    if (pathname.startsWith(GATED_PREFIXES[role])) return role
   }
   return null
 }
 
+export function pathAllowedForPending(pathname: string): boolean {
+  return ONBOARDING_ALLOWLIST.some((p) => pathname === p || pathname.startsWith(`${p}/`))
+}
+
 export function homeForRole(role: UserRole | null): string {
   if (!role) return '/login'
-  return ROLE_PREFIX[role]
+  if (role === 'pending') return '/onboarding'
+  return GATED_PREFIXES[role] + '/dashboard'
 }
