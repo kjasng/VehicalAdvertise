@@ -4,17 +4,18 @@ Enforced via lint + review. Non-negotiable rules first; conventions second.
 
 ## Hard rules
 
-1. **Package manager:** pnpm only. `npm` / `yarn` blocked via `preinstall: npx only-allow pnpm`. Commit `pnpm-lock.yaml`; never commit `package-lock.json` / `yarn.lock`. Use `pnpm dlx` (not `npx`) for one-off CLIs.
-2. **UI primitives:** shadcn/ui only (Radix + Tailwind + CVA). Add via `pnpm dlx shadcn@latest add <name>`. Customise by editing the copied component in `src/components/ui/*`, not by wrapping. No alternative libraries (MUI, Chakra, Mantine, Ant Design, etc.).
-3. **Forms:** shadcn `Form` + `react-hook-form` + `zod` resolver. No bespoke form state.
-4. **Toasts:** `sonner`. No alternative toast libraries.
-5. **Icons:** `lucide-react`.
-6. **Service-role key:** `SUPABASE_SERVICE_ROLE_KEY` server-only. `src/lib/supabase/admin.ts` MUST NOT be imported from a `'use client'` file or any code path that ships to the browser. The file imports `'server-only'` to enforce this at bundle time.
-7. **RLS:** Every Supabase table has RLS enabled. Default policy is deny. Add explicit `select` / `insert` / `update` / `delete` policies in `supabase/migrations/000N_rls.sql`. Money / GPS writes go through service-role API routes — never client → Postgres direct.
-8. **State transitions:** Never `UPDATE status` directly. Call `transition_campaign` / `transition_contract` RPCs (defined in `0003_functions.sql`). RLS blocks direct writes.
-9. **File size:** Keep individual code files under 200 LOC. Split into focused modules; extract utilities to `src/lib/*` or `src/server/*`.
-10. **Naming:** kebab-case for `.ts` / `.tsx` (e.g. `role-gate.ts`, `login-form.tsx`). Next.js framework filenames (`page.tsx`, `layout.tsx`, `route.ts`) are mandatory and not subject to this rule. SQL migrations follow Supabase convention `NNNN_name.sql`.
-11. **Secrets:** Never commit `.env*` (only `.env.example`). Never log secrets. PII (CCCD, bank account) lives in private storage with signed URLs only.
+1. **Scope:** P1 is backend-only (API routes, database, auth). UI owned by Codex agent. Backend implements state machines, KYC flow, profile schema, role-choose RPC. UI integration tested in P2.
+2. **Package manager:** pnpm only. `npm` / `yarn` blocked via `preinstall: npx only-allow pnpm`. Commit `pnpm-lock.yaml`; never commit `package-lock.json` / `yarn.lock`. Use `pnpm dlx` (not `npx`) for one-off CLIs.
+3. **UI primitives:** shadcn/ui only (Radix + Tailwind + CVA). Add via `pnpm dlx shadcn@latest add <name>`. Customise by editing the copied component in `src/components/ui/*`, not by wrapping. No alternative libraries (MUI, Chakra, Mantine, Ant Design, etc.).
+4. **Forms:** shadcn `Form` + `react-hook-form` + `zod` resolver. No bespoke form state.
+5. **Toasts:** `sonner`. No alternative toast libraries.
+6. **Icons:** `lucide-react`.
+7. **Service-role key:** `SUPABASE_SERVICE_ROLE_KEY` server-only. `src/lib/supabase/admin.ts` MUST NOT be imported from a `'use client'` file or any code path that ships to the browser. The file imports `'server-only'` to enforce this at bundle time.
+8. **RLS:** Every Supabase table has RLS enabled. Default policy is deny. Add explicit `select` / `insert` / `update` / `delete` policies in `supabase/migrations/000N_rls.sql`. Money / GPS writes go through service-role API routes — never client → Postgres direct.
+9. **State transitions:** Never `UPDATE status` directly. Call `transition_campaign` / `transition_contract` RPCs (defined in `0003_functions.sql`). RLS blocks direct writes.
+10. **File size:** Keep individual code files under 200 LOC. Split into focused modules; extract utilities to `src/lib/*` or `src/server/*`.
+11. **Naming:** kebab-case for `.ts` / `.tsx` (e.g. `role-gate.ts`, `login-form.tsx`). Next.js framework filenames (`page.tsx`, `layout.tsx`, `route.ts`) are mandatory and not subject to this rule. SQL migrations follow Supabase convention `NNNN_name.sql`.
+12. **Secrets:** Never commit `.env*` (only `.env.example`). Never log secrets. PII (CCCD, bank account) lives in private storage with signed URLs only.
 
 ## Conventions
 

@@ -21,7 +21,7 @@ Vietnamese commuter drivers underutilise their daily mileage as an advertising s
 | --------------- | ---------------------------------------------------------------------- |
 | Driver client   | PWA (Next.js web, mobile-first)                                        |
 | Vehicle types   | Cars only (motorbike support → v2)                                     |
-| Auth            | Phone + OTP (Supabase, VN SMS provider TBD)                            |
+| Auth            | Supabase OAuth (Google + GitHub only)                                  |
 | Money rail      | SePay (VietQR) — top-up + payout                                       |
 | KYC             | Manual CCCD upload review (eKYC OCR → v2)                              |
 | E-invoice       | Deferred (trigger at partner volume > 200k VND/month)                  |

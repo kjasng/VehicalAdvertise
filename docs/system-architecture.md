@@ -5,13 +5,14 @@ Authoritative source: `plans/260513-1149-wheels-earner-day1/architecture.md`. Th
 ## 1. Topology
 
 ```
-Next.js 16 monolith (one deploy, route groups per role)
-  /(driver) PWA   /(partner) web   /(admin) web   /(garage) web
-  /api/v1/*       Route Handlers (GPS, photos, webhooks, payouts, transitions)
-  /(public)/      landing, login (phone OTP), QR redirect
-  proxy.ts        Supabase session refresh + role gate
+Next.js 16 monolith (one deploy, segments per role)
+  /driver           PWA   /partner  web   /admin  web   /garage  web
+  /api/v1/*         Route Handlers (GPS, photos, webhooks, payouts, transitions)
+  /(public)/        landing, OAuth login (Google + GitHub), QR redirect
+  proxy.ts          Supabase session refresh + role gate
 
   ↕ Supabase (Postgres + Auth + Storage + Realtime + Edge fns)
+  ↕ MapLibre + OSM tiles (Nominatim geocoding)
   ↕ SePay  (VietQR top-up + payout)
   ↕ Vercel Cron (rollup, prompts, fraud sweep)
 ```
@@ -74,18 +75,19 @@ Driver PWA → `browser-image-compression` (< 2 MB) → Supabase Storage signed 
 
 ## 8. Vietnam stack wiring
 
-- **Phone + OTP:** Supabase auth + eSMS.vn (primary) / VHT-Stringee (failover). 5-min TTL, 3/hour per phone. P0 uses Supabase default sandbox.
+- **Auth:** Supabase OAuth (Google + GitHub). No SMS dependency. Role assignment via `choose_role()` RPC post-signup (maps to `auth.users.raw_user_meta_data.role`).
 - **SePay (VietQR):** Top-up uses partner UUID as memo → webhook → `ledger_entries` credit. Payouts: weekly cron → `payouts` row → SePay payout request → webhook flips status. Idempotency: `sepay_webhook_events.txn_id` unique.
 - **CCCD KYC:** Manual review at P1. v2 candidates: VNPT eKYC / TrustingSocial.
+- **Geocoding & Maps:** MapLibre GL + OpenStreetMap tiles + Nominatim. Used for vehicle location display and garage service-area approximation.
 - **E-invoice:** Deferred. Trigger: nightly cron for partner charges > 200k VND → VNPT/Misa.
 
 ## 9. Folder map
 
 ```
 src/
-├── app/{(driver),(partner),(admin),(garage),(public),api/v1}/
+├── app/{driver,partner,admin,garage,(public),api/v1}/
 ├── components/{ui,driver,partner,admin,garage,shared}/
-├── lib/{supabase,geo,money,photo,qr,sepay,fraud,auth}/
+├── lib/{supabase,geo,money,photo,qr,sepay,fraud}/
 ├── server/{distance,payout,state-machine}/  # server-only, never bundled
 ├── providers/  hooks/  types/  proxy.ts
 ```
