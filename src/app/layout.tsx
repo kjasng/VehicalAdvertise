@@ -16,8 +16,16 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Vehical Advertise',
-  description: 'Vehical Advertise platform',
+  title: 'Wheels Earner',
+  description:
+    'Wheels Earner — vehicle advertising marketplace pairing Vietnamese drivers with partner brands.',
+  manifest: '/manifest.webmanifest',
+}
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#0a0a0a',
 }
 
 export default function RootLayout({
@@ -26,10 +34,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         <QueryProvider>{children}</QueryProvider>
         <Toaster />
