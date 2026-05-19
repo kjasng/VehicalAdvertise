@@ -1,30 +1,22 @@
-import Link from 'next/link'
+import { SidebarNav, type NavItem } from '@/components/shared/role-nav'
 
-const NAV = [
-  { href: '/admin/approvals', label: 'Approvals' },
-  { href: '/admin/payouts', label: 'Payouts' },
-  { href: '/admin/fraud', label: 'Fraud' },
-  { href: '/admin/pricing', label: 'Pricing' },
-  { href: '/admin/audit', label: 'Audit' },
+const NAV: NavItem[] = [
+  { href: '/admin/dashboard', label: 'Dashboard' },
+  { href: '/admin/drivers-kyc', label: 'Drivers KYC' },
+  { href: '/admin/creatives-review', label: 'Creatives review' },
+  { href: '/admin/install-proofs', label: 'Install proofs' },
+  { href: '/admin/photo-verifications', label: 'Photo verifications' },
+  { href: '/admin/invoices/driver', label: 'Driver invoices' },
+  { href: '/admin/invoices/partner', label: 'Partner invoices' },
+  { href: '/admin/invoices/garage', label: 'Garage invoices' },
+  { href: '/admin/users', label: 'Users' },
+  { href: '/admin/reports', label: 'Reports' },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
-      <aside className="hidden w-56 shrink-0 border-r bg-white p-4 md:block dark:bg-zinc-950">
-        <div className="mb-6 text-sm font-semibold">Wheels Earner · Admin</div>
-        <nav className="flex flex-col gap-1 text-sm">
-          {NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="rounded px-2 py-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-900"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-      </aside>
+      <SidebarNav title="Wheels Earner · Admin" items={NAV} />
       <section className="flex-1 p-6">{children}</section>
     </div>
   )
