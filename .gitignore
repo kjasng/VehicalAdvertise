@@ -44,3 +44,10 @@ next-env.d.ts
 # claude
 .claude
 plans
+
+# project artifacts
+release-manifest.json
+
+# supabase local CLI scratch
+supabase/.temp
+supabase/.branches
