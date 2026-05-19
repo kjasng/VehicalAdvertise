@@ -10,7 +10,7 @@ type Props = {
   width?: number
 }
 
-export function GpsTrail({ points, color = '#1d4ed8', width = 4 }: Props) {
+export function GpsTrail({ points, color = '#ff5c00', width = 4 }: Props) {
   const feature = pointsToGeoJsonLine(points)
   return (
     <Source id="gps-trail" type="geojson" data={feature}>

@@ -7,7 +7,7 @@ export default function AdminMapPage() {
     <div className="space-y-4">
       <header>
         <h1 className="text-2xl font-semibold">Map sanity</h1>
-        <p className="text-sm text-zinc-500">
+        <p className="text-muted-foreground text-sm">
           MapLibre + OSM tiles + sample GPS trail. Internal page; not in the navigated chrome.
         </p>
       </header>

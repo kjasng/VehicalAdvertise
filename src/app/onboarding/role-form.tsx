@@ -54,7 +54,7 @@ export function RoleForm() {
           className="h-auto flex-col items-start gap-1 px-4 py-3 text-left"
         >
           <span className="w-full text-base font-medium">{label}</span>
-          <span className="text-xs font-normal text-zinc-500">{copy}</span>
+          <span className="text-muted-foreground text-xs font-normal">{copy}</span>
         </Button>
       ))}
     </div>

@@ -9,7 +9,7 @@ import type { TrailPoint } from '@/lib/map/trail'
 const BaseMap = dynamic(() => import('@/components/map/base-map').then((m) => m.BaseMap), {
   ssr: false,
   loading: () => (
-    <div className="flex h-[60vh] w-full items-center justify-center rounded-lg border bg-zinc-50 text-sm text-zinc-500 dark:bg-zinc-950">
+    <div className="bg-background text-muted-foreground flex h-[60vh] w-full items-center justify-center rounded-lg border text-sm">
       Loading map…
     </div>
   ),
