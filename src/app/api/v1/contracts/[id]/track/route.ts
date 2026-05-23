@@ -8,8 +8,16 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
  * Phase 1 stub: returns []. Phase 5 wires the real query against `gps_logs`
  * (RLS already scopes reads to the caller's role).
  */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+
+  // Reject malformed UUIDs before hitting Postgres so callers see 400 (bad
+  // request) instead of 404 (not found).
+  if (!UUID_RE.test(id)) {
+    return NextResponse.json({ error: 'bad_request' }, { status: 400 })
+  }
 
   const supabase = await createSupabaseServerClient()
   const { data: userData } = await supabase.auth.getUser()
