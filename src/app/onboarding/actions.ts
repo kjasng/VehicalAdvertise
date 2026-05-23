@@ -16,15 +16,17 @@ export async function chooseRoleAction(formData: FormData) {
   }
 
   const supabase = await createSupabaseServerClient()
-  // Cast through unknown: the placeholder Database type doesn't model RPCs
-  // until `supabase gen types` runs against the linked project. Tighten this
-  // by re-running codegen once Supabase is provisioned.
-  const { data, error } = await (
-    supabase.rpc as unknown as (
-      name: string,
-      args: Record<string, unknown>,
-    ) => Promise<{ data: { role: UserRole } | null; error: { message: string } | null }>
-  )('choose_role', { target: target as UserRole })
+
+  // Surface anon callers with a friendly message instead of the RPC's
+  // generic exception text.
+  const { data: userData } = await supabase.auth.getUser()
+  if (!userData?.user) {
+    return { error: 'Not authenticated' }
+  }
+
+  const { data, error } = await supabase.rpc('choose_role', {
+    target: target as UserRole,
+  })
 
   if (error) {
     // Don't leak raw Postgres exception text to the client.
