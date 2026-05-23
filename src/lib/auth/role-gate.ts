@@ -50,7 +50,15 @@ const GATED_PREFIXES: Record<Exclude<UserRole, 'pending'>, string> = {
   garage: '/garage',
 }
 
-const ONBOARDING_ALLOWLIST = ['/', '/login', '/onboarding', '/auth/callback']
+const ONBOARDING_ALLOWLIST = [
+  '/',
+  '/login',
+  '/signup',
+  '/forgot-password',
+  '/reset-password',
+  '/onboarding',
+  '/auth/callback',
+]
 
 export function pathRequiresRole(pathname: string): Exclude<UserRole, 'pending'> | null {
   for (const role of Object.keys(GATED_PREFIXES) as Array<keyof typeof GATED_PREFIXES>) {
