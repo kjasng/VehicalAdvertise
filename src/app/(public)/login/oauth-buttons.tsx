@@ -3,25 +3,19 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 
-import { Button } from '@/components/ui/button'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 
-type Provider = 'google' | 'github'
-
-const PROVIDERS: { id: Provider; label: string }[] = [
-  { id: 'google', label: 'Continue with Google' },
-  { id: 'github', label: 'Continue with GitHub' },
-]
-
+// Single Google button matching the Pencil auth design (h-12, rounded-[10px],
+// inline "G" mark + label). GitHub OAuth is intentionally removed.
 export function OAuthButtons() {
-  const [busy, setBusy] = useState<Provider | null>(null)
+  const [busy, setBusy] = useState(false)
 
-  const start = async (provider: Provider) => {
-    setBusy(provider)
+  const onClick = async () => {
+    setBusy(true)
     try {
       const supabase = createSupabaseBrowserClient()
       const { error } = await supabase.auth.signInWithOAuth({
-        provider,
+        provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
         },
@@ -30,23 +24,19 @@ export function OAuthButtons() {
       // signInWithOAuth navigates the window via 302; we only land here on error.
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Sign-in failed')
-      setBusy(null)
+      setBusy(false)
     }
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      {PROVIDERS.map(({ id, label }) => (
-        <Button
-          key={id}
-          variant="outline"
-          className="w-full"
-          disabled={busy !== null}
-          onClick={() => start(id)}
-        >
-          {busy === id ? 'Redirecting…' : label}
-        </Button>
-      ))}
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={busy}
+      className="flex h-12 w-full items-center justify-center gap-2.5 rounded-[10px] border border-[#e0e0e0] bg-white text-[15px] text-[#1a1a1a] transition hover:bg-[#fafafa] disabled:opacity-60"
+    >
+      <span className="text-[18px] font-bold">G</span>
+      <span>{busy ? 'Redirecting…' : 'Continue with Google'}</span>
+    </button>
   )
 }
