@@ -1,4 +1,4 @@
--- Wheels Earner — self-service role selection during onboarding.
+-- Wheels Earner -- self-service role selection during onboarding.
 -- 'admin' assignment stays admin-only via direct UPDATE under admin RLS.
 
 create or replace function public.choose_role(target user_role)
