@@ -14,9 +14,9 @@ const navItems = [
 
 export function MarketingHeader({ active }: { active: string }) {
   return (
-    <header className="sticky top-0 z-30 border-b border-black/15 bg-white/95 backdrop-blur">
-      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10">
-        <Link href="/" className="font-heading text-3xl text-primary">
+    <header className="bg-white">
+      <div className="mx-auto flex min-h-[82px] max-w-[1440px] items-center justify-between px-6 py-5 lg:px-20">
+        <Link href="/" className="font-heading text-[28px] leading-none text-primary">
           VehicalAdvertise
         </Link>
         <nav className="hidden items-center gap-8 text-sm lg:flex">
@@ -36,8 +36,7 @@ export function MarketingHeader({ active }: { active: string }) {
         <Link
           href="/login"
           className={buttonVariants({
-            size: 'lg',
-            className: 'hidden rounded bg-primary hover:bg-black md:inline-flex',
+            className: 'hidden rounded bg-primary px-6 py-5 text-sm font-semibold md:inline-flex',
           })}
         >
           Get Started

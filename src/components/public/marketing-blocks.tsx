@@ -1,5 +1,14 @@
 import Link from 'next/link'
-import { ArrowRight, BadgeCheck, Camera, Car, MapPin, ReceiptText, Route, Shield } from 'lucide-react'
+import {
+  ArrowRight,
+  BadgeCheck,
+  Camera,
+  Car,
+  MapPin,
+  ReceiptText,
+  Route,
+  Shield,
+} from 'lucide-react'
 
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
