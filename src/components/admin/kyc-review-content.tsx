@@ -33,7 +33,7 @@ export function KycReviewContent({ row, onClose }: KycReviewContentProps) {
     <div className="space-y-6">
       {/* Profile fields */}
       <section className="space-y-2">
-        <p className="text-[11px] font-bold tracking-[1.5px] text-[#666666] uppercase">Profile</p>
+        <p className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">Profile</p>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
           {[
             ['Name', row.name],
@@ -54,7 +54,7 @@ export function KycReviewContent({ row, onClose }: KycReviewContentProps) {
 
       {/* CCCD photos */}
       <section className="space-y-2">
-        <p className="text-[11px] font-bold tracking-[1.5px] text-[#666666] uppercase">
+        <p className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
           CCCD Photos
         </p>
         <div className="grid grid-cols-2 gap-3">
@@ -85,7 +85,7 @@ export function KycReviewContent({ row, onClose }: KycReviewContentProps) {
 
       {/* Selfie */}
       <section className="space-y-2">
-        <p className="text-[11px] font-bold tracking-[1.5px] text-[#666666] uppercase">Selfie</p>
+        <p className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">Selfie</p>
         <Image
           src={row.selfieUrl}
           alt="Selfie"

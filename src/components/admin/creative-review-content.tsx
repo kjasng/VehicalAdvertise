@@ -33,7 +33,7 @@ export function CreativeReviewContent({ row, onClose }: CreativeReviewContentPro
     <div className="space-y-6">
       {/* Preview */}
       <section className="space-y-2">
-        <p className="text-[11px] font-bold tracking-[1.5px] text-[#666666] uppercase">Preview</p>
+        <p className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">Preview</p>
         <Image
           src={row.imageUrl}
           alt={`Creative preview for ${row.campaignName}`}
@@ -46,7 +46,7 @@ export function CreativeReviewContent({ row, onClose }: CreativeReviewContentPro
 
       {/* Specs */}
       <section className="space-y-2">
-        <p className="text-[11px] font-bold tracking-[1.5px] text-[#666666] uppercase">Specs</p>
+        <p className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">Specs</p>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
           {[
             ['Campaign', row.campaignName],

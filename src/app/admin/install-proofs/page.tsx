@@ -48,7 +48,7 @@ export default function InstallProofsPage() {
           title="Install Proofs"
           cta={
             <label className="flex items-center gap-2">
-              <span className="text-[11px] font-bold tracking-[1.5px] text-[#666666] uppercase">
+              <span className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
                 Garage
               </span>
               <select

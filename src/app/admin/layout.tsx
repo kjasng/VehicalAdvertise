@@ -30,7 +30,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
       navItems={ADMIN_NAV}
       pathname={pathname}
       userEmail={user?.email ?? null}
-      brandLabel="VehicalAdvertise · Admin"
+      brandLabel="VehicalAdvertise"
     >
       {children}
     </RoleShell>

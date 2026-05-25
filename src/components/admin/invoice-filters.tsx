@@ -35,7 +35,7 @@ export function InvoiceFilters({ values, onChange }: InvoiceFiltersProps) {
     <div className="flex flex-wrap items-end gap-3">
       {/* Date from */}
       <label className="flex flex-col gap-1">
-        <span className="text-[11px] font-bold tracking-[1.5px] text-[#666666] uppercase">
+        <span className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
           From
         </span>
         <input
@@ -48,7 +48,7 @@ export function InvoiceFilters({ values, onChange }: InvoiceFiltersProps) {
 
       {/* Date to */}
       <label className="flex flex-col gap-1">
-        <span className="text-[11px] font-bold tracking-[1.5px] text-[#666666] uppercase">To</span>
+        <span className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">To</span>
         <input
           type="date"
           value={values.dateTo}
@@ -59,7 +59,7 @@ export function InvoiceFilters({ values, onChange }: InvoiceFiltersProps) {
 
       {/* Status */}
       <label className="flex flex-col gap-1">
-        <span className="text-[11px] font-bold tracking-[1.5px] text-[#666666] uppercase">
+        <span className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
           Status
         </span>
         <select
@@ -77,7 +77,7 @@ export function InvoiceFilters({ values, onChange }: InvoiceFiltersProps) {
 
       {/* Search */}
       <label className="flex min-w-[180px] flex-1 flex-col gap-1">
-        <span className="text-[11px] font-bold tracking-[1.5px] text-[#666666] uppercase">
+        <span className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
           Search
         </span>
         <input

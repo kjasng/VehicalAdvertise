@@ -78,7 +78,7 @@ export function DataTable<T>({
                   scope="col"
                   onClick={sortable ? () => handleSort(key) : undefined}
                   className={cn(
-                    'border-b border-[#cbccc9] px-4 py-3 text-left text-[12px] font-extrabold tracking-[1.5px] text-[#1a1a1a] uppercase select-none',
+                    'border-b border-[#cbccc9] px-4 py-3 text-left text-[12px] font-extrabold tracking-[1.5px] text-[#666666] uppercase select-none',
                     sortable && 'cursor-pointer hover:bg-[#edeeed]',
                     col.className,
                   )}

@@ -21,9 +21,7 @@ export function PageHeader({ kicker, title, cta }: PageHeaderProps) {
         <p className="text-primary text-[13px] font-extrabold tracking-[1.5px] uppercase">
           {kicker}
         </p>
-        <h1 className="font-heading text-[42px] leading-[0.95] text-[#1a1a1a] uppercase">
-          {title}
-        </h1>
+        <h1 className="font-heading text-5xl leading-[0.98] text-[#1a1a1a] uppercase">{title}</h1>
       </div>
       {cta && <div className="shrink-0">{cta}</div>}
     </header>

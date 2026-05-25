@@ -5,7 +5,6 @@
  */
 import { AlertTriangle } from 'lucide-react'
 
-import { DemoBadge } from '@/components/admin/demo-badge'
 import { MOCK_KYC_ROWS, MOCK_LEDGER_ROWS } from '@/components/admin/mock-data'
 import { KpiCard } from '@/components/shared/kpi-card'
 import { PageHeader } from '@/components/shared/page-header'
@@ -35,12 +34,9 @@ export default function AdminDashboardPage() {
 
       {/* KPI grid */}
       <section aria-label="Key metrics">
-        <div className="mb-2 flex items-center gap-2">
-          <p className="text-[11px] font-bold tracking-[1.5px] text-[#666666] uppercase">
-            Key Metrics
-          </p>
-          <DemoBadge />
-        </div>
+        <p className="mb-2 text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
+          Key Metrics
+        </p>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
           {KPI_DATA.map((kpi) => (
             <KpiCard
@@ -49,6 +45,7 @@ export default function AdminDashboardPage() {
               value={kpi.value}
               delta={kpi.delta}
               deltaDirection={kpi.deltaDirection}
+              demo
             />
           ))}
         </div>
@@ -64,7 +61,7 @@ export default function AdminDashboardPage() {
                   {['Time', 'Description', 'Amount (VND)', 'Dir'].map((h) => (
                     <th
                       key={h}
-                      className="pr-4 pb-2 text-left text-[11px] font-extrabold tracking-[1.5px] text-[#666666] uppercase"
+                      className="pr-4 pb-2 text-left text-[11px] font-extrabold tracking-[2.5px] text-[#666666] uppercase"
                     >
                       {h}
                     </th>

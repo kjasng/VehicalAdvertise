@@ -45,7 +45,7 @@ export default function ReportsPage() {
 
       {/* CSV download cards */}
       <section>
-        <p className="mb-3 text-[11px] font-bold tracking-[1.5px] text-[#666666] uppercase">
+        <p className="mb-3 text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
           CSV Exports
         </p>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
