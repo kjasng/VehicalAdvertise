@@ -5,11 +5,14 @@
  *   (lookups during middleware can't rely on RLS-scoped session client).
  * - `requireRole(role)` for use inside server components / route handlers;
  *   throws a Next redirect-friendly Response if mismatched.
+ * - `getEffectiveProfileAndPanel(pathname)` returns the data needed by
+ *   BypassBanner to know whether impersonation is active.
  */
 import 'server-only'
 
 import { redirect } from 'next/navigation'
 
+import { canAdminBypassPath } from '@/lib/auth/admin-bypass'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
@@ -35,12 +38,38 @@ export async function getCurrentUserRole(): Promise<UserRole | null> {
   return getProfileRole(userId)
 }
 
+/**
+ * requireRole — honors admin bypass when the flag is on.
+ * For server components and route handlers that gate a single role.
+ * If the user is an admin bypassing into another panel, we allow access
+ * instead of redirecting.
+ */
 export async function requireRole(role: UserRole): Promise<UserRole> {
   const current = await getCurrentUserRole()
-  if (current !== role) {
-    redirect('/login')
+  if (current === role) return current
+  // Allow admin to view non-admin panels when bypass flag is on.
+  // canAdminBypassPath only returns true when profileRole === 'admin' (non-null),
+  // so the non-null assertion below is safe.
+  if (canAdminBypassPath(current, role as Exclude<UserRole, 'pending'>)) {
+    return current! // profileRole is 'admin' when bypass is true; cannot be null
   }
-  return current
+  redirect('/login')
+}
+
+/**
+ * Returns profile + panel context for the BypassBanner component.
+ * panelRole is derived from the pathname prefix (/driver, /partner, /garage, /admin).
+ * bypassActive is true when an admin is viewing a different role's panel.
+ */
+export async function getEffectiveProfileAndPanel(pathname: string): Promise<{
+  profileRole: UserRole | null
+  panelRole: Exclude<UserRole, 'pending'> | null
+  bypassActive: boolean
+}> {
+  const profileRole = await getCurrentUserRole()
+  const panelRole = pathRequiresRole(pathname)
+  const bypassActive = canAdminBypassPath(profileRole, panelRole)
+  return { profileRole, panelRole, bypassActive }
 }
 
 const GATED_PREFIXES: Record<Exclude<UserRole, 'pending'>, string> = {

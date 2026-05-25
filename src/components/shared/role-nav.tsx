@@ -1,6 +1,15 @@
+/**
+ * role-nav.tsx — legacy nav primitives kept for backwards-compat during
+ * phases 03–06 transition. Replaced by RoleShell/RoleSidebar/RoleBottomNav.
+ * Phase 07 deletes this file.
+ */
 import Link from 'next/link'
 
 import { cn } from '@/lib/utils'
+
+// Re-export new EmptyState under the old PlaceholderCard name so future
+// imports resolve seamlessly before phase 07 cleanup.
+export { EmptyState as EmptyState } from './empty-state'
 
 export type NavItem = { href: string; label: string }
 

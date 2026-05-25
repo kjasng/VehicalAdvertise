@@ -1,17 +1,22 @@
+/**
+ * Admin Map — live ops map page.
+ * Wraps existing MapLibre embed in pencil-style PageHeader + SectionShell.
+ * MapLibre internals are untouched (MapSanity component).
+ */
 import { MapSanity } from './map-sanity'
 
-export const metadata = { title: 'Admin · Map sanity' }
+import { PageHeader } from '@/components/shared/page-header'
+import { SectionShell } from '@/components/shared/section-shell'
+
+export const metadata = { title: 'Admin · Live Ops Map' }
 
 export default function AdminMapPage() {
   return (
-    <div className="space-y-4">
-      <header>
-        <h1 className="text-2xl font-semibold">Map sanity</h1>
-        <p className="text-muted-foreground text-sm">
-          MapLibre + OSM tiles + sample GPS trail. Internal page; not in the navigated chrome.
-        </p>
-      </header>
-      <MapSanity />
+    <div className="space-y-6">
+      <PageHeader kicker="System" title="Live Ops Map" />
+      <SectionShell title="GPS Trail — Hanoi">
+        <MapSanity />
+      </SectionShell>
     </div>
   )
 }

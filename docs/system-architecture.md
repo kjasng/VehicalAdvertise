@@ -44,6 +44,8 @@ RLS is **deny-by-default**. Every table enables RLS in `0002_rls.sql`. Two write
 
 Rule: anything touching money or GPS goes through a service-role API route. Never client → Postgres.
 
+**Admin bypass flag (`ADMIN_PANEL_BYPASS`):** A dev-only env var (explicit opt-in, default false). When set to `"true"`, users whose `profiles.role = 'admin'` may visit `/driver`, `/partner`, and `/garage` routes without being redirected — useful for inspecting role panels during development. The bypass is routing-only: RLS still enforces what data the admin can read/write at the DB level, and all writes continue to carry the admin's real `user_id`. A persistent `BypassBanner` (`src/components/shared/bypass-banner.tsx`) makes impersonation visible on every affected page. Non-admin users are never affected regardless of flag state. **To remove in production: delete the env var from Vercel (or `.env.local`) — no code change required.**
+
 ## 4. State machines
 
 ```
@@ -87,9 +89,14 @@ Driver PWA → `browser-image-compression` (< 2 MB) → Supabase Storage signed 
 src/
 ├── app/{driver,partner,admin,garage,(public),api/v1}/
 ├── components/{ui,driver,partner,admin,garage,shared}/
-├── lib/{supabase,geo,money,photo,qr,sepay,fraud}/
+│   ├── shared/role-*.tsx         shell primitives: role-shell, role-sidebar, role-bottom-nav, role-topbar, role-user-menu
+│   ├── shared/{page-header,kpi-card,section-shell,empty-state,bypass-banner}.tsx
+│   └── admin/                    admin panel components: admin-nav-config, data-table, review-drawer, invoice-filters, review-content, weekly-km-chart, demo-badge
+├── lib/{supabase,geo,money,photo,qr,sepay,fraud,auth}/
 ├── server/{distance,payout,state-machine}/  # server-only, never bundled
 ├── providers/  hooks/  types/  proxy.ts
 ```
+
+**Convention:** `x-pathname` header set by `proxy.ts` in middleware allows server layouts to read current pathname without client hooks — used by RoleShell to determine active sidebar/nav item.
 
 ## 10. Risks tracked in PDR §7
