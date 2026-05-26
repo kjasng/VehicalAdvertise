@@ -6,6 +6,7 @@
  */
 import { InvoiceListItem } from '@/components/driver/invoice-list-item'
 import { MOCK_DRIVER_WEEKLY_INVOICES } from '@/components/driver/mock-data'
+import { DemoBadge } from '@/components/shared/demo-badge'
 import { EmptyState } from '@/components/shared/empty-state'
 import { PageHeader } from '@/components/shared/page-header'
 
@@ -34,9 +35,9 @@ export default function DriverInvoicePage() {
             <span className="font-heading ml-1 text-[14px] text-[#666666]">₫</span>
           </p>
         </div>
-        <span className="ml-auto rounded bg-green-100 px-2 py-0.5 text-[11px] font-bold tracking-[1px] text-green-700 uppercase">
-          Demo
-        </span>
+        <div className="ml-auto">
+          <DemoBadge />
+        </div>
       </div>
 
       {/* Invoice list */}
