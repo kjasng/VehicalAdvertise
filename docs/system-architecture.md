@@ -44,7 +44,7 @@ RLS is **deny-by-default**. Every table enables RLS in `0002_rls.sql`. Two write
 
 Rule: anything touching money or GPS goes through a service-role API route. Never client → Postgres.
 
-**Admin bypass flag (`ADMIN_PANEL_BYPASS`):** A dev-only env var (explicit opt-in, default false). When set to `"true"`, users whose `profiles.role = 'admin'` may visit `/driver`, `/partner`, and `/garage` routes without being redirected — useful for inspecting role panels during development. The bypass is routing-only: RLS still enforces what data the admin can read/write at the DB level, and all writes continue to carry the admin's real `user_id`. A persistent `BypassBanner` (`src/components/shared/bypass-banner.tsx`) makes impersonation visible on every affected page. Non-admin users are never affected regardless of flag state. **To remove in production: delete the env var from Vercel (or `.env.local`) — no code change required.**
+**Admin bypass flag (`ADMIN_PANEL_BYPASS`):** A dev-only env var (explicit opt-in, default false). When set to `"true"`, users whose `profiles.role = 'admin'` may visit `/driver`, `/partner`, and `/garage` routes without being redirected — useful for inspecting role panels during development. The bypass is routing-only and silent: RLS still enforces what data the admin can read/write at the DB level, and all writes continue to carry the admin's real `user_id`. Non-admin users are never affected regardless of flag state. **Critical for production: this flag MUST be unset in deployed environments (env var deleted from Vercel or `.env.local`) — no code change required.**
 
 ## 4. State machines
 
@@ -90,7 +90,10 @@ src/
 ├── app/{driver,partner,admin,garage,(public),api/v1}/
 ├── components/{ui,driver,partner,admin,garage,shared}/
 │   ├── shared/role-*.tsx         shell primitives: role-shell, role-sidebar, role-bottom-nav, role-topbar, role-user-menu
-│   ├── shared/{page-header,kpi-card,section-shell,empty-state,bypass-banner}.tsx
+│   ├── shared/{page-header,kpi-card,section-shell,empty-state}.tsx
+│   ├── driver/                   driver panel components: driver-nav-config, today-card, weekly-km-chart, kyc-wizard, invoice-list-item, profile-vehicle-photo-input, mock-data
+│   ├── partner/                  partner panel components (under development)
+│   ├── garage/                   garage panel components (under development)
 │   └── admin/                    admin panel components: admin-nav-config, data-table, review-drawer, invoice-filters, review-content, weekly-km-chart, demo-badge
 ├── lib/{supabase,geo,money,photo,qr,sepay,fraud,auth}/
 ├── server/{distance,payout,state-machine}/  # server-only, never bundled

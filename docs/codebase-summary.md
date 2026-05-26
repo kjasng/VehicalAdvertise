@@ -1,12 +1,12 @@
 # Codebase Summary
 
-**Overview:** Next.js 16 + TypeScript monolith. Supabase (Postgres, Auth, Storage) + MapLibre + SePay. Three role panels (driver PWA, partner web, garage web) + admin panel. RLS-enforced security; GPS pipeline with daily rollup; fraud detection server-side.
+**Overview:** Next.js 16 + TypeScript monolith. Supabase (Postgres, Auth, Storage) + MapLibre + SePay. Four role panels (driver, partner, garage, admin) with shared shell architecture (sidebar + multi-page layout). RLS-enforced security; GPS pipeline with daily rollup; fraud detection server-side.
 
 ## App Routes
 
 | Route         | Purpose                                                                                                                              |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `/driver`     | Driver PWA — campaign selection, GPS logging, photo verification, earnings dashboard                                                 |
+| `/driver`     | Driver panel — dashboard (today stats, weekly KM chart), KYC verification, weekly invoices, profile & sign-out                       |
 | `/partner`    | Partner web — campaign creation, contract management, driver verification, ledger                                                    |
 | `/garage`     | Garage web — vehicle inventory, service-area map, availability toggle, team users                                                    |
 | `/admin`      | Admin panel — 11 pages (Dashboard, KYC review, creative review, install proofs, photo verifs, invoices, users, reports, ledger, map) |
@@ -29,7 +29,6 @@ Located in `src/components/shared/`. All pure server components except noted.
 | `kpi-card.tsx`        | Big-number card with green/red delta badge                                  |
 | `section-shell.tsx`   | Bordered container; light/dark variant                                      |
 | `empty-state.tsx`     | Pencil placeholder illustration (replaces old PlaceholderCard)              |
-| `bypass-banner.tsx`   | Red banner ("Admin viewing as X") — visible when `ADMIN_PANEL_BYPASS=true`  |
 
 ## Admin Shared Components
 
@@ -47,6 +46,38 @@ Located in `src/components/admin/`. Support the 11 admin pages.
 | `weekly-km-chart.tsx`         | **Client component.** Recharts line chart, 12-week mock data                                                                              |
 | `demo-badge.tsx`              | Inline "DEMO" label; renders only when `NODE_ENV !== 'production'`                                                                        |
 | `mock-data.ts`                | Single source of truth — mock rows for all 10 pages (KYC, Creatives, Install Proofs, Photo Verifs, 3× Invoices, Users, Ledger, Weekly KM) |
+
+## Driver Shared Components
+
+Located in `src/components/driver/`. Support the driver panel (dashboard, KYC, invoices, profile).
+
+| Component                         | Purpose                                                                                    |
+| --------------------------------- | ------------------------------------------------------------------------------------------ |
+| `driver-nav-config.ts`            | DRIVER_NAV: 4 sidebar items (Dashboard, Verify, Invoice, Profile) with href + label + icon |
+| `today-card.tsx`                  | Dark SectionShell — km numeral (Anton 72px), earnings, campaign badge, "Go online" CTA     |
+| `weekly-km-chart.tsx`             | Recharts AreaChart, 7-day mock data, primary fill + stroke                                 |
+| `kyc-wizard.tsx`                  | 3-step state machine, StepIndicator, FileInput w/ camera capture, sonner toast stub        |
+| `invoice-list-item.tsx`           | Expand/collapse `<details>` — status pill, day breakdown table                             |
+| `profile-vehicle-photo-input.tsx` | Isolated client component for camera file input (extracted to keep profile page ≤200)      |
+| `mock-data.ts`                    | TodayStats, DailyKmPoint, VerificationPrompt, DriverInvoiceRow — VN realistic data         |
+
+## Partner Shared Components
+
+Located in `src/components/partner/`. Support the partner panel (campaigns, contracts, verification, ledger).
+
+| Component                          | Purpose                                                                                |
+| ---------------------------------- | -------------------------------------------------------------------------------------- |
+| `partner-nav-config.ts`            | PARTNER_NAV: sidebar items for partner workflows (Campaigns, Drivers, Reports, Ledger) |
+| _[to be added as phases continue]_ | Partner-specific forms, charts, and review components                                  |
+
+## Garage Shared Components
+
+Located in `src/components/garage/`. Support the garage panel (inventory, service area, team users).
+
+| Component                          | Purpose                                                                                |
+| ---------------------------------- | -------------------------------------------------------------------------------------- |
+| `garage-nav-config.ts`             | GARAGE_NAV: sidebar items for garage workflows (Vehicles, Service Area, Team, Reports) |
+| _[to be added as phases continue]_ | Garage-specific maps, inventory, and team management components                        |
 
 ## Auth & Gating
 
