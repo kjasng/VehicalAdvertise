@@ -2,6 +2,7 @@
  * Driver Verify — KYC onboarding flow.
  * 3-step wizard: CCCD upload → selfie → vehicle photos.
  * KycWizard is a client component; this page is a server wrapper.
+ * Desktop: centered max-w-[640px] column — comfortable form width, not full-bleed.
  */
 import { KycWizard } from '@/components/driver/kyc-wizard'
 import { PageHeader } from '@/components/shared/page-header'
@@ -11,12 +12,14 @@ export const metadata = { title: 'Driver · Verify' }
 
 export default function DriverVerifyPage() {
   return (
-    <div className="mx-auto max-w-[480px] space-y-6">
+    <div className="space-y-6">
       <PageHeader kicker="ONBOARDING" title="Verify" />
 
-      <SectionShell>
-        <KycWizard />
-      </SectionShell>
+      <div className="mx-auto max-w-[640px]">
+        <SectionShell>
+          <KycWizard />
+        </SectionShell>
+      </div>
     </div>
   )
 }

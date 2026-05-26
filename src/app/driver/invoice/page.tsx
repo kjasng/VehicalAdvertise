@@ -1,6 +1,6 @@
 /**
  * Driver Invoice — earnings history.
- * Vertical list of weekly payout rows.
+ * Desktop: summary card + DemoBadge above; invoice list in SectionShell.
  * Each row uses <details> for KISS expand/collapse with day breakdown.
  * Server component.
  */
@@ -9,22 +9,22 @@ import { MOCK_DRIVER_WEEKLY_INVOICES } from '@/components/driver/mock-data'
 import { DemoBadge } from '@/components/shared/demo-badge'
 import { EmptyState } from '@/components/shared/empty-state'
 import { PageHeader } from '@/components/shared/page-header'
+import { SectionShell } from '@/components/shared/section-shell'
 
 export const metadata = { title: 'Driver · Invoices' }
 
 export default function DriverInvoicePage() {
   const invoices = MOCK_DRIVER_WEEKLY_INVOICES
 
-  // Totals
   const totalPaid = invoices
     .filter((i) => i.status === 'paid')
     .reduce((acc, i) => acc + i.amountVnd, 0)
 
   return (
-    <div className="mx-auto max-w-[480px] space-y-6">
+    <div className="space-y-6">
       <PageHeader kicker="EARNINGS" title="Invoices" />
 
-      {/* Summary pill */}
+      {/* Summary card */}
       <div className="flex items-center gap-3 rounded-md border border-[#cbccc9] bg-white px-4 py-3">
         <div>
           <p className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
@@ -41,21 +41,23 @@ export default function DriverInvoicePage() {
       </div>
 
       {/* Invoice list */}
-      {invoices.length === 0 ? (
-        <EmptyState
-          kicker="NO INVOICES"
-          title="Nothing here yet"
-          helper="Your weekly payouts will appear here once your first campaign week closes."
-        />
-      ) : (
-        <ul className="space-y-3" aria-label="Weekly invoices">
-          {invoices.map((inv) => (
-            <li key={inv.id}>
-              <InvoiceListItem invoice={inv} />
-            </li>
-          ))}
-        </ul>
-      )}
+      <SectionShell title="Weekly Payouts">
+        {invoices.length === 0 ? (
+          <EmptyState
+            kicker="NO INVOICES"
+            title="Nothing here yet"
+            helper="Your weekly payouts will appear here once your first campaign week closes."
+          />
+        ) : (
+          <ul className="space-y-3" aria-label="Weekly invoices">
+            {invoices.map((inv) => (
+              <li key={inv.id}>
+                <InvoiceListItem invoice={inv} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </SectionShell>
     </div>
   )
 }

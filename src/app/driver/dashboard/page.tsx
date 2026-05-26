@@ -1,7 +1,7 @@
 /**
  * Driver Dashboard — today's snapshot.
- * TodayCard (km + earnings + campaign + photo CTA) + weekly km area chart
- * + last 3 verification prompt rows.
+ * Desktop: TodayCard + WeeklyKmChart side-by-side at lg breakpoint.
+ * Recent verifications section below in full width.
  * Server component — all data from mock-data.ts.
  */
 import { CheckCircle, Clock, XCircle } from 'lucide-react'
@@ -34,14 +34,14 @@ export default function DriverDashboardPage() {
   const prompts = MOCK_VERIFICATION_PROMPTS.slice(0, 3)
 
   return (
-    <div className="mx-auto max-w-[480px] space-y-6">
+    <div className="space-y-6">
       <PageHeader kicker="TODAY" title="Dashboard" />
 
-      {/* Today's stats + CTA */}
-      <TodayCard stats={MOCK_TODAY_STATS} />
-
-      {/* Weekly km chart */}
-      <WeeklyKmChart data={MOCK_DAILY_KM} />
+      {/* Today's stats + weekly chart — side-by-side on desktop */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <TodayCard stats={MOCK_TODAY_STATS} />
+        <WeeklyKmChart data={MOCK_DAILY_KM} />
+      </div>
 
       {/* Recent verification prompts */}
       <SectionShell title="Recent Verifications">

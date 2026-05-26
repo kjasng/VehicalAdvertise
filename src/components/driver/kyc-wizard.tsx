@@ -68,7 +68,7 @@ function StepIndicator({ current, total }: { current: Step; total: number }) {
             {i < total - 1 && (
               <div
                 className={[
-                  'h-[2px] w-8 transition-colors',
+                  'h-[2px] w-12 transition-colors',
                   done ? 'bg-primary' : 'bg-[#cbccc9]',
                 ].join(' ')}
                 aria-hidden="true"
@@ -156,7 +156,7 @@ export function KycWizard() {
   }
 
   return (
-    <div className="max-w-[480px]">
+    <div className="w-full">
       <StepIndicator current={step} total={3} />
 
       <p className="mb-6 text-[14px] text-[#666666]">{STEPS[step - 1].description}</p>

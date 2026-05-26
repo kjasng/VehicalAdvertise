@@ -1,7 +1,8 @@
 /**
- * Driver layout — wraps all /driver/* pages with RoleShell bottom-nav.
- * Mobile-first PWA: 4-tab bottom nav, content padded pb-[80px] by RoleShell.
- * Pathname read from x-pathname header injected by proxy middleware.
+ * Driver layout — wraps all /driver/* pages with RoleShell sidebar.
+ * Desktop pencil shell: 240px dark sidebar + scrollable content area.
+ * Pathname read from x-pathname header injected by proxy middleware,
+ * keeping this a pure server component with no client-side usePathname().
  */
 import type { ReactNode } from 'react'
 
@@ -26,10 +27,11 @@ export default async function DriverLayout({ children }: { children: ReactNode }
   return (
     <RoleShell
       role="driver"
-      nav="bottom-nav"
+      nav="sidebar"
       navItems={DRIVER_NAV}
       pathname={pathname}
       userEmail={user?.email ?? null}
+      brandLabel="VehicalAdvertise"
     >
       {children}
     </RoleShell>

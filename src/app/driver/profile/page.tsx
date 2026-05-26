@@ -2,8 +2,9 @@
 
 /**
  * Driver Profile — account + vehicle + payout settings.
+ * Desktop: Personal + Payout in 2-column grid at lg; Vehicle full-width below.
+ * CTA row (Save + Sign-out) aligned right with flex justify-end gap-3.
  * react-hook-form + zod. Submit is a stub (console.log + sonner toast).
- * Sign-out button at bottom for thumb reach on mobile.
  */
 import { zodResolver } from '@hookform/resolvers/zod'
 import { LogOut } from 'lucide-react'
@@ -57,102 +58,103 @@ export default function DriverProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-[480px] space-y-6">
+    <div className="space-y-6">
       <PageHeader kicker="ACCOUNT" title="Profile" />
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="space-y-6">
-          {/* Personal */}
-          <SectionShell title="Personal">
-            <div className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
-                      Full name
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        autoComplete="name"
-                        className="h-[48px]"
-                        aria-required="true"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
-                      Phone number
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="tel"
-                        inputMode="numeric"
-                        autoComplete="tel"
-                        className="h-[48px]"
-                        aria-required="true"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </SectionShell>
+          {/* Personal + Payout — side-by-side at lg */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            <SectionShell title="Personal">
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
+                        Full name
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          autoComplete="name"
+                          className="h-[48px]"
+                          aria-required="true"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
+                        Phone number
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="tel"
+                          inputMode="numeric"
+                          autoComplete="tel"
+                          className="h-[48px]"
+                          aria-required="true"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </SectionShell>
 
-          {/* Payout */}
-          <SectionShell title="Payout">
-            <div className="space-y-4">
-              <FormField
-                control={form.control}
-                name="payoutBank"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
-                      Bank name
-                    </FormLabel>
-                    <FormControl>
-                      <Input {...field} className="h-[48px]" aria-required="true" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="payoutAccount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
-                      Account number
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        inputMode="numeric"
-                        autoComplete="off"
-                        className="h-[48px]"
-                        aria-required="true"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </SectionShell>
+            <SectionShell title="Payout">
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="payoutBank"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
+                        Bank name
+                      </FormLabel>
+                      <FormControl>
+                        <Input {...field} className="h-[48px]" aria-required="true" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="payoutAccount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
+                        Account number
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          inputMode="numeric"
+                          autoComplete="off"
+                          className="h-[48px]"
+                          aria-required="true"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </SectionShell>
+          </div>
 
-          {/* Vehicle */}
+          {/* Vehicle — full width */}
           <SectionShell title="Vehicle">
             <div className="space-y-4">
               <FormField
@@ -179,30 +181,29 @@ export default function DriverProfilePage() {
             </div>
           </SectionShell>
 
-          <Button
-            type="submit"
-            className="h-12 w-full text-[13px] font-bold tracking-[1px] uppercase"
-            disabled={form.formState.isSubmitting}
-          >
-            Save changes
-          </Button>
+          {/* CTA row — right-aligned */}
+          <div className="flex justify-end gap-3 border-t border-[#cbccc9] pt-4">
+            <form action={signOutAction}>
+              <Button
+                type="submit"
+                variant="outline"
+                className="h-12 gap-2 px-6 text-[13px] font-bold tracking-[1px] text-red-600 uppercase hover:bg-red-50 hover:text-red-700"
+                aria-label="Sign out of driver account"
+              >
+                <LogOut className="size-4" aria-hidden="true" />
+                Sign out
+              </Button>
+            </form>
+            <Button
+              type="submit"
+              className="h-12 px-8 text-[13px] font-bold tracking-[1px] uppercase"
+              disabled={form.formState.isSubmitting}
+            >
+              Save changes
+            </Button>
+          </div>
         </form>
       </Form>
-
-      {/* Sign-out — large tap target at bottom for thumb reach */}
-      <div className="border-t border-[#cbccc9] pt-4">
-        <form action={signOutAction}>
-          <Button
-            type="submit"
-            variant="outline"
-            className="h-12 w-full gap-2 text-[13px] font-bold tracking-[1px] text-red-600 uppercase hover:bg-red-50 hover:text-red-700"
-            aria-label="Sign out of driver account"
-          >
-            <LogOut className="size-4" aria-hidden="true" />
-            Sign out
-          </Button>
-        </form>
-      </div>
     </div>
   )
 }
