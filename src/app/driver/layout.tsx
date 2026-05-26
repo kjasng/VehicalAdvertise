@@ -1,17 +1,37 @@
-import { BottomNav, type NavItem } from '@/components/shared/role-nav'
+/**
+ * Driver layout — wraps all /driver/* pages with RoleShell bottom-nav.
+ * Mobile-first PWA: 4-tab bottom nav, content padded pb-[80px] by RoleShell.
+ * Pathname read from x-pathname header injected by proxy middleware.
+ */
+import type { ReactNode } from 'react'
 
-const NAV: NavItem[] = [
-  { href: '/driver/dashboard', label: 'Home' },
-  { href: '/driver/verify', label: 'Verify' },
-  { href: '/driver/invoice', label: 'Invoice' },
-  { href: '/driver/profile', label: 'Profile' },
-]
+import { headers } from 'next/headers'
 
-export default function DriverLayout({ children }: { children: React.ReactNode }) {
+import { DRIVER_NAV } from '@/components/driver/driver-nav-config'
+import { RoleShell } from '@/components/shared/role-shell'
+import { requireRole } from '@/lib/auth/role-gate'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
+
+export default async function DriverLayout({ children }: { children: ReactNode }) {
+  await requireRole('driver')
+
+  const supabase = await createSupabaseServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const headersList = await headers()
+  const pathname = headersList.get('x-pathname') ?? '/driver/dashboard'
+
   return (
-    <div className="flex min-h-screen flex-col">
-      <main className="flex-1 p-4">{children}</main>
-      <BottomNav items={NAV} />
-    </div>
+    <RoleShell
+      role="driver"
+      nav="bottom-nav"
+      navItems={DRIVER_NAV}
+      pathname={pathname}
+      userEmail={user?.email ?? null}
+    >
+      {children}
+    </RoleShell>
   )
 }
