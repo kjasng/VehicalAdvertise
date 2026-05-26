@@ -4,9 +4,8 @@
  * - `getProfileRole(userId)` reads `profiles.role` via the service-role client
  *   (lookups during middleware can't rely on RLS-scoped session client).
  * - `requireRole(role)` for use inside server components / route handlers;
- *   throws a Next redirect-friendly Response if mismatched.
- * - `getEffectiveProfileAndPanel(pathname)` returns the data needed by
- *   BypassBanner to know whether impersonation is active.
+ *   throws a Next redirect-friendly Response if mismatched. Honors the
+ *   ADMIN_PANEL_BYPASS env flag so admins can inspect other panels in dev.
  */
 import 'server-only'
 
@@ -54,22 +53,6 @@ export async function requireRole(role: UserRole): Promise<UserRole> {
     return current! // profileRole is 'admin' when bypass is true; cannot be null
   }
   redirect('/login')
-}
-
-/**
- * Returns profile + panel context for the BypassBanner component.
- * panelRole is derived from the pathname prefix (/driver, /partner, /garage, /admin).
- * bypassActive is true when an admin is viewing a different role's panel.
- */
-export async function getEffectiveProfileAndPanel(pathname: string): Promise<{
-  profileRole: UserRole | null
-  panelRole: Exclude<UserRole, 'pending'> | null
-  bypassActive: boolean
-}> {
-  const profileRole = await getCurrentUserRole()
-  const panelRole = pathRequiresRole(pathname)
-  const bypassActive = canAdminBypassPath(profileRole, panelRole)
-  return { profileRole, panelRole, bypassActive }
 }
 
 const GATED_PREFIXES: Record<Exclude<UserRole, 'pending'>, string> = {

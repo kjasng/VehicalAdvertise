@@ -1,9 +1,7 @@
 /**
  * EmptyState — server component.
  * Pencil-styled placeholder: kicker + Anton h2 + helper copy + optional CTA.
- * Replaces PlaceholderCard. Same broad API so callers can switch with minimal
- * churn. PlaceholderCard re-export is kept in role-nav.tsx for phases 03-06
- * backwards compat; removed in phase 07.
+ * Replaces the older PlaceholderCard from the deleted role-nav.tsx.
  */
 import type { ReactNode } from 'react'
 

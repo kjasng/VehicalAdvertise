@@ -3,7 +3,7 @@
  * h-[64px] bar used in bottom-nav layouts (mobile driver panel) and
  * optionally as a supplemental top bar in sidebar layouts.
  * Slots: page title (left), user menu (right).
- * BypassBanner is rendered above this bar by RoleShell when active.
+ * No bypass banner is rendered alongside — see role-shell.tsx for rationale.
  */
 import type { ReactNode } from 'react'
 
