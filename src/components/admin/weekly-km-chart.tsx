@@ -2,7 +2,7 @@
 
 /**
  * WeeklyKmChart — recharts line chart of weekly km driven (last 12 weeks).
- * Client component; data comes from mock-data.ts.
+ * Client component; data passed as prop from parent server component.
  */
 import {
   LineChart,
@@ -14,12 +14,16 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 
-import { MOCK_WEEKLY_KM } from './mock-data'
+import type { WeeklyKmPoint } from '@/lib/admin/queries-reports'
 
-export function WeeklyKmChart() {
+interface WeeklyKmChartProps {
+  data: WeeklyKmPoint[]
+}
+
+export function WeeklyKmChart({ data }: WeeklyKmChartProps) {
   return (
     <ResponsiveContainer width="100%" height={240}>
-      <LineChart data={MOCK_WEEKLY_KM} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
+      <LineChart data={data} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#cbccc9" />
         <XAxis
           dataKey="week"

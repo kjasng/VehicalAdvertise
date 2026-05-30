@@ -1,13 +1,14 @@
 /**
  * Reports — CSV download cards + weekly km line chart.
- * Chart is client-side (recharts); download cards are static links (stub hrefs).
+ * Chart receives real data from getReportsData().
  */
 import { Download } from 'lucide-react'
 
-import { DemoBadge } from '@/components/admin/demo-badge'
 import { WeeklyKmChart } from '@/components/admin/weekly-km-chart'
+import { EmptyState } from '@/components/shared/empty-state'
 import { PageHeader } from '@/components/shared/page-header'
 import { SectionShell } from '@/components/shared/section-shell'
+import { getReportsData } from '@/lib/admin/queries-reports'
 
 export const metadata = { title: 'Admin · Reports' }
 
@@ -38,10 +39,26 @@ const CSV_REPORTS = [
   },
 ]
 
-export default function ReportsPage() {
+export default async function ReportsPage() {
+  const report = await getReportsData()
+
   return (
     <div className="space-y-8">
       <PageHeader kicker="System" title="Reports" />
+
+      {/* Summary stats */}
+      <div className="flex gap-6 text-[13px] text-[#666666]">
+        <span>
+          <span className="font-bold text-[#1a1a1a]">{report.totalDrivers}</span> drivers
+        </span>
+        <span>
+          <span className="font-bold text-[#1a1a1a]">{report.totalPartners}</span> partners
+        </span>
+        <span>
+          <span className="font-bold text-[#1a1a1a]">{report.totalKmAllTime.toLocaleString()}</span>{' '}
+          km all-time
+        </span>
+      </div>
 
       {/* CSV download cards */}
       <section>
@@ -74,8 +91,16 @@ export default function ReportsPage() {
       </section>
 
       {/* Weekly km chart */}
-      <SectionShell title="Weekly KM — Last 12 Weeks" action={<DemoBadge />}>
-        <WeeklyKmChart />
+      <SectionShell title="Weekly KM — Last 12 Weeks">
+        {report.weeklyKm.length === 0 ? (
+          <EmptyState
+            kicker="empty"
+            title="No Data"
+            helper="Weekly km data will appear once drivers are active."
+          />
+        ) : (
+          <WeeklyKmChart data={report.weeklyKm} />
+        )}
       </SectionShell>
     </div>
   )

@@ -1,20 +1,21 @@
 /**
- * Partner Invoices — monthly charge invoice table with filters.
+ * Partner Invoices — partner top-up and charge ledger entries.
  */
-import { DemoBadge } from '@/components/admin/demo-badge'
 import { InvoiceTable } from '@/components/admin/invoice-table'
-import { MOCK_PARTNER_INVOICES } from '@/components/admin/mock-data'
 import { PageHeader } from '@/components/shared/page-header'
 import { SectionShell } from '@/components/shared/section-shell'
+import { getPartnerInvoices } from '@/lib/admin/queries-invoices'
 
 export const metadata = { title: 'Admin · Partner Invoices' }
 
-export default function PartnerInvoicesPage() {
+export default async function PartnerInvoicesPage() {
+  const rows = await getPartnerInvoices()
+
   return (
     <div className="space-y-6">
       <PageHeader kicker="Money" title="Partner Invoices" />
-      <SectionShell title="Monthly Charges" action={<DemoBadge />}>
-        <InvoiceTable rows={MOCK_PARTNER_INVOICES} />
+      <SectionShell title="Top-ups & Charges">
+        <InvoiceTable rows={rows} />
       </SectionShell>
     </div>
   )

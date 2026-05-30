@@ -1,20 +1,23 @@
 /**
- * Garage Invoices — weekly payout invoice table with filters.
+ * Garage Invoices — platform fee ledger entries linked to garage contracts.
+ * Note: ledger_entries has no garage_id; entries derived via contract chain.
+ * Shows empty state when no data — acceptable until P4 contracts land.
  */
-import { DemoBadge } from '@/components/admin/demo-badge'
 import { InvoiceTable } from '@/components/admin/invoice-table'
-import { MOCK_GARAGE_INVOICES } from '@/components/admin/mock-data'
 import { PageHeader } from '@/components/shared/page-header'
 import { SectionShell } from '@/components/shared/section-shell'
+import { getGarageInvoices } from '@/lib/admin/queries-invoices'
 
 export const metadata = { title: 'Admin · Garage Invoices' }
 
-export default function GarageInvoicesPage() {
+export default async function GarageInvoicesPage() {
+  const rows = await getGarageInvoices()
+
   return (
     <div className="space-y-6">
       <PageHeader kicker="Money" title="Garage Invoices" />
-      <SectionShell title="Weekly Payouts" action={<DemoBadge />}>
-        <InvoiceTable rows={MOCK_GARAGE_INVOICES} />
+      <SectionShell title="Platform Fees">
+        <InvoiceTable rows={rows} />
       </SectionShell>
     </div>
   )
