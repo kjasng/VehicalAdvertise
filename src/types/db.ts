@@ -1008,6 +1008,22 @@ export type Database = {
             }
             Returns: string
           }
+      approve_campaign: {
+        Args: {
+          p_campaign_id: string
+          p_decision: Database['public']['Enums']['campaign_status']
+          p_reason?: string
+        }
+        Returns: undefined
+      }
+      approve_driver_kyc: {
+        Args: {
+          p_driver_id: string
+          p_decision: Database['public']['Enums']['kyc_status']
+          p_reason?: string
+        }
+        Returns: undefined
+      }
       assert_transition: {
         Args: { entity_type: string; from_state: string; to_state: string }
         Returns: undefined
@@ -1207,6 +1223,10 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      set_user_blocked: {
+        Args: { p_target_id: string; p_blocked: boolean }
+        Returns: undefined
+      }
       st_3dclosestpoint: {
         Args: { geom1: unknown; geom2: unknown }
         Returns: unknown
