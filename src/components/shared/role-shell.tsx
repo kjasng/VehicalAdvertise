@@ -21,6 +21,8 @@ import { RoleTopbar } from './role-topbar'
 interface RoleShellSidebarProps {
   nav: 'sidebar'
   navItems: NavItem[]
+  /** Client-rendered nav override passed through to RoleSidebar. */
+  navContent?: ReactNode
 }
 
 interface RoleShellBottomNavProps {
@@ -44,7 +46,9 @@ export function RoleShell({
   pathname,
   userEmail,
   children,
+  ...rest
 }: RoleShellProps) {
+  const navContent = nav === 'sidebar' ? (rest as RoleShellSidebarProps).navContent : undefined
   if (nav === 'sidebar') {
     return (
       <div className="flex min-h-screen">
@@ -54,6 +58,7 @@ export function RoleShell({
           brandLabel={brandLabel}
           pathname={pathname}
           userEmail={userEmail}
+          navContent={navContent}
         />
         <div className="flex min-w-0 flex-1 flex-col">
           <main className="flex-1 p-6">{children}</main>

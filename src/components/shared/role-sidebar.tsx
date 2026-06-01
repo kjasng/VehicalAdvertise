@@ -29,6 +29,9 @@ interface RoleSidebarProps {
   brandLabel?: string
   pathname: string
   userEmail: string | null
+  /** Optional client-rendered nav override. When provided, replaces the
+   *  server-rendered navItems loop (avoids stale pathname on client nav). */
+  navContent?: React.ReactNode
 }
 
 const ROLE_BADGE: Record<UserRole, string> = {
@@ -45,6 +48,7 @@ export function RoleSidebar({
   brandLabel = 'VehicalAdvertise',
   pathname,
   userEmail,
+  navContent,
 }: RoleSidebarProps) {
   return (
     <aside
@@ -60,46 +64,46 @@ export function RoleSidebar({
         </p>
       </div>
 
-      {/* Middle: nav items */}
+      {/* Middle: nav items — use client navContent when provided (avoids stale pathname) */}
       <nav className="flex-1 overflow-y-auto px-2 py-3">
-        <ul className="flex flex-col gap-0.5">
-          {navItems.map((item) => {
-            const Icon = item.icon
+        {navContent ?? (
+          <ul className="flex flex-col gap-0.5">
+            {navItems.map((item) => {
+              const Icon = item.icon
 
-            // ── Collapsible group (client component island) ──────────────
-            if (item.children?.length) {
+              if (item.children?.length) {
+                return (
+                  <NavGroup
+                    key={item.label}
+                    item={item as NavItem & { children: NavItem[] }}
+                    pathname={pathname}
+                  />
+                )
+              }
+
+              if (!item.href) return null
+              const active = pathname === item.href || pathname.startsWith(item.href + '/')
               return (
-                <NavGroup
-                  key={item.label}
-                  item={item as NavItem & { children: NavItem[] }}
-                  pathname={pathname}
-                />
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    aria-current={active ? 'page' : undefined}
+                    className={cn(
+                      'flex items-center gap-3 rounded px-4 py-3 text-[13px] font-medium transition-colors duration-150',
+                      'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-[#1a1a1a] focus-visible:outline-none',
+                      active
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-white/70 hover:bg-white/10 hover:text-white',
+                    )}
+                  >
+                    <Icon className="size-4 shrink-0" aria-hidden="true" />
+                    {item.label}
+                  </Link>
+                </li>
               )
-            }
-
-            // ── Regular leaf link ────────────────────────────────────────
-            if (!item.href) return null
-            const active = pathname === item.href || pathname.startsWith(item.href + '/')
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  aria-current={active ? 'page' : undefined}
-                  className={cn(
-                    'flex items-center gap-3 rounded px-4 py-3 text-[13px] font-medium transition-colors duration-150',
-                    'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-[#1a1a1a] focus-visible:outline-none',
-                    active
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-white/70 hover:bg-white/10 hover:text-white',
-                  )}
-                >
-                  <Icon className="size-4 shrink-0" aria-hidden="true" />
-                  {item.label}
-                </Link>
-              </li>
-            )
-          })}
-        </ul>
+            })}
+          </ul>
+        )}
       </nav>
 
       {/* Bottom: user menu */}
