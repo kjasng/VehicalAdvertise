@@ -10,6 +10,7 @@ export type KycQueueRow = {
   submittedAt: string
   kycStatus: 'pending' | 'approved' | 'rejected'
   district: string | null
+  bodyType: string | null
   signedFront: string | null
   signedBack: string | null
   signedSelfie: string | null
@@ -22,7 +23,9 @@ export async function getKycQueue(): Promise<KycQueueRow[]> {
 
   const { data: profiles, error } = await supabase
     .from('profiles')
-    .select('id, full_name, email, phone_e164, kyc_status, created_at, drivers(primary_city)')
+    .select(
+      'id, full_name, email, phone_e164, kyc_status, created_at, drivers(primary_city, body_type)',
+    )
     .eq('role', 'driver')
     .eq('kyc_status', 'pending')
     .order('created_at', { ascending: true })
@@ -80,6 +83,7 @@ export async function getKycQueue(): Promise<KycQueueRow[]> {
       submittedAt: profile.created_at,
       kycStatus: profile.kyc_status as KycQueueRow['kycStatus'],
       district: driverRow?.primary_city ?? null,
+      bodyType: (driverRow as { body_type?: string | null } | null)?.body_type ?? null,
       signedFront: urls['kyc_cccd_front'] ?? null,
       signedBack: urls['kyc_cccd_back'] ?? null,
       signedSelfie: urls['kyc_selfie'] ?? null,

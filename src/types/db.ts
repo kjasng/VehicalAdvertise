@@ -275,6 +275,7 @@ export type Database = {
           bank_account_name: string | null
           bank_account_number: string | null
           bank_bin: string | null
+          body_type: string | null
           cccd_number: string | null
           id: string
           primary_city: string
@@ -284,6 +285,7 @@ export type Database = {
           bank_account_name?: string | null
           bank_account_number?: string | null
           bank_bin?: string | null
+          body_type?: string | null
           cccd_number?: string | null
           id: string
           primary_city?: string
@@ -293,6 +295,7 @@ export type Database = {
           bank_account_name?: string | null
           bank_account_number?: string | null
           bank_bin?: string | null
+          body_type?: string | null
           cccd_number?: string | null
           id?: string
           primary_city?: string

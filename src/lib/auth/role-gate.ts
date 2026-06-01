@@ -29,6 +29,21 @@ export async function getProfileRole(userId: string): Promise<UserRole | null> {
   return data.role
 }
 
+/** Fetches role + kyc_status in one query for the proxy middleware. */
+export async function getProfileData(
+  userId: string,
+): Promise<{ role: UserRole; kycStatus: string } | null> {
+  const admin = createSupabaseAdminClient()
+  const { data, error } = await admin
+    .from('profiles')
+    .select('role, kyc_status')
+    .eq('id', userId)
+    .maybeSingle()
+
+  if (error || !data) return null
+  return { role: data.role as UserRole, kycStatus: data.kyc_status }
+}
+
 export async function getCurrentUserRole(): Promise<UserRole | null> {
   const supabase = await createSupabaseServerClient()
   const { data: userData } = await supabase.auth.getUser()

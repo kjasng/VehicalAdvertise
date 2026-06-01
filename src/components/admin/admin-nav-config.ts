@@ -37,11 +37,6 @@ export const ADMIN_NAV: NavItem[] = [
     ],
   },
 
-  { href: '/admin/campaigns', label: 'Campaigns', icon: Megaphone },
-
-  // ── Money ─────────────────────────────────────────────────────
-  { href: '/admin/payouts', label: 'Payouts', icon: Wallet },
-
   // Invoices group
   {
     label: 'Invoices',
@@ -52,6 +47,10 @@ export const ADMIN_NAV: NavItem[] = [
       { href: '/admin/invoices/garage', label: 'Garage', icon: FileText },
     ],
   },
+  { href: '/admin/campaigns', label: 'Campaigns', icon: Megaphone },
+
+  // ── Money ─────────────────────────────────────────────────────
+  { href: '/admin/payouts', label: 'Payouts', icon: Wallet },
 
   // ── System ────────────────────────────────────────────────────
   { href: '/admin/users', label: 'Users', icon: Users },

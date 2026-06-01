@@ -44,8 +44,9 @@ export function KycReviewContent({ row, onClose }: KycReviewContentProps) {
           {[
             ['Name', row.fullName],
             ['Phone', row.phone ?? '—'],
+            ['Vehicle', row.bodyType ? row.bodyType.toUpperCase() : '—'],
             ['District', row.district ?? '—'],
-            ['Submitted', row.submittedAt],
+            ['Submitted', row.submittedAt.slice(0, 10)],
             ['Status', row.kycStatus],
           ].map(([label, value]) => (
             <div key={label}>

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { canAdminBypassPath } from '@/lib/auth/admin-bypass'
-import { getProfileRole, pathAllowedForPending, pathRequiresRole } from '@/lib/auth/role-gate'
+import { getProfileData, pathAllowedForPending, pathRequiresRole } from '@/lib/auth/role-gate'
 import { updateSupabaseSession } from '@/lib/supabase/middleware'
 
 // ADMIN_PANEL_BYPASS feature flag:
@@ -23,10 +23,22 @@ export async function proxy(request: NextRequest) {
   // Onboarding-specific gate: signed-in pending users must finish onboarding before
   // any other route except the allowlist (landing, login, onboarding, callback).
   if (userId && !pathAllowedForPending(pathname)) {
-    const role = await getProfileRole(userId)
+    const profile = await getProfileData(userId)
+    const role = profile?.role ?? null
+
     if (role === 'pending') {
       return NextResponse.redirect(new URL('/onboarding', request.url))
     }
+
+    // KYC gate: drivers without an approved KYC can only access /driver/verify.
+    if (
+      role === 'driver' &&
+      profile?.kycStatus !== 'approved' &&
+      !pathname.startsWith('/driver/verify')
+    ) {
+      return NextResponse.redirect(new URL('/driver/verify', request.url))
+    }
+
     if (requiredRole && role !== requiredRole) {
       // Admin bypass: allow an admin to visit non-admin role paths when flag is on.
       if (canAdminBypassPath(role, requiredRole)) return response
@@ -39,7 +51,8 @@ export async function proxy(request: NextRequest) {
     if (!userId) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
-    const role = await getProfileRole(userId)
+    const profile = await getProfileData(userId)
+    const role = profile?.role ?? null
     if (role !== requiredRole) {
       // Admin bypass: allow an admin to visit non-admin role paths when flag is on.
       if (canAdminBypassPath(role, requiredRole)) return response
