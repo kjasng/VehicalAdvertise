@@ -27,7 +27,8 @@ export async function setUserBlocked(raw: unknown): Promise<{ error: string | nu
   const role = await getCurrentUserRole()
   if (role !== 'admin') return { error: 'Forbidden' }
 
-  const supabase = createSupabaseAdminClient()
+  // RPC must run under the user JWT so auth.uid() works inside the security-definer function.
+  const supabase = await createSupabaseServerClient()
   const { error } = await supabase.rpc('set_user_blocked', {
     p_target_id: targetId,
     p_blocked: blocked,

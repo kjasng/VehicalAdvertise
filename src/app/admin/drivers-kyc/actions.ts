@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
 import { getCurrentUserRole } from '@/lib/auth/role-gate'
-import { createSupabaseAdminClient } from '@/lib/supabase/admin'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 const ReviewSchema = z
   .object({
@@ -26,7 +26,8 @@ export async function reviewDriverKyc(raw: unknown): Promise<{ error: string | n
   const role = await getCurrentUserRole()
   if (role !== 'admin') return { error: 'Forbidden' }
 
-  const supabase = createSupabaseAdminClient()
+  // RPC must run under the user JWT so auth.uid() works inside the security-definer function.
+  const supabase = await createSupabaseServerClient()
   const { error } = await supabase.rpc('approve_driver_kyc', {
     p_driver_id: driverId,
     p_decision: decision,

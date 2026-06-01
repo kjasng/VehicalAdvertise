@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
 import { getCurrentUserRole } from '@/lib/auth/role-gate'
-import { createSupabaseAdminClient } from '@/lib/supabase/admin'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 const ReviewSchema = z
   .object({
@@ -25,7 +25,8 @@ export async function reviewCampaign(raw: unknown): Promise<{ error: string | nu
   const role = await getCurrentUserRole()
   if (role !== 'admin') return { error: 'Forbidden' }
 
-  const supabase = createSupabaseAdminClient()
+  // RPC must run under the user JWT so auth.uid() works inside the security-definer function.
+  const supabase = await createSupabaseServerClient()
   const { error } = await supabase.rpc('approve_campaign', {
     p_campaign_id: campaignId,
     p_decision: decision,
