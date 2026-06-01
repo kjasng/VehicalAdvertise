@@ -24,38 +24,6 @@ export function PartnerOnboardingForm({ status, rejectReason, existingData }: Pr
   const [taxCode, setTaxCode] = useState(existingData?.taxCode ?? '')
   const [billingAddress, setBillingAddress] = useState(existingData?.billingAddress ?? '')
 
-  // Shared waiting screen — shown when pending from DB (reload) or right after submit
-  const WaitingScreen = (
-    <div className="flex flex-col items-center gap-4 py-16 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-        <svg
-          className="size-8 text-green-600"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-      </div>
-      <div className="space-y-2">
-        <h2 className="font-heading text-[24px] text-[#1a1a1a] uppercase">Đã gửi hồ sơ</h2>
-        <p className="max-w-[400px] text-[14px] leading-[1.6] text-[#666666]">
-          Hồ sơ công ty của bạn đang được xem xét. Chúng tôi sẽ gửi email thông báo trong vòng{' '}
-          <strong>24 giờ</strong>.
-        </p>
-      </div>
-      <p className="text-[12px] text-[#999]">Bạn có thể đóng trang này.</p>
-    </div>
-  )
-
-  if (status === 'pending' || submitted) return WaitingScreen
-
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     startTransition(async () => {
@@ -63,6 +31,38 @@ export function PartnerOnboardingForm({ status, rejectReason, existingData }: Pr
       if (result.error) toast.error(result.error)
       else setSubmitted(true)
     })
+  }
+
+  // Waiting screen — right after submit (submitted=true) OR on reload (status='pending' from DB)
+  if (status === 'pending' || submitted) {
+    return (
+      <div className="flex flex-col items-center gap-4 py-16 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+          <svg
+            className="size-8 text-green-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        </div>
+        <div className="space-y-2">
+          <h2 className="font-heading text-[24px] text-[#1a1a1a] uppercase">Đã gửi hồ sơ</h2>
+          <p className="max-w-[400px] text-[14px] leading-[1.6] text-[#666666]">
+            Hồ sơ công ty của bạn đang được xem xét. Chúng tôi sẽ gửi email thông báo trong vòng{' '}
+            <strong>24 giờ</strong>.
+          </p>
+        </div>
+        <p className="text-[12px] text-[#999]">Bạn có thể đóng trang này.</p>
+      </div>
+    )
   }
 
   return (
