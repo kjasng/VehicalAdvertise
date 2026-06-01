@@ -182,80 +182,75 @@ export function UsersTableClient({ users }: Props) {
 
   return (
     <>
-      {/* Filter bar + header */}
-      <div className="mb-4 space-y-3">
-        {/* Top row: search + add */}
-        <div className="flex items-center gap-3">
-          <div className="focus-within:ring-primary flex flex-1 items-center gap-2 rounded-lg border border-[#cbccc9] px-3 py-2 focus-within:ring-2">
-            <Search className="size-4 shrink-0 text-[#999]" aria-hidden="true" />
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name or email…"
-              className="flex-1 bg-transparent text-[13px] text-[#1a1a1a] placeholder:text-[#bbb] focus:outline-none"
-            />
-          </div>
+      {/* ── Toolbar: search + dropdown filters + add button ── */}
+      <div className="mb-5 flex flex-wrap items-center gap-2">
+        {/* Search */}
+        <div className="focus-within:ring-primary flex min-w-[160px] flex-1 items-center gap-2 rounded border border-[#cbccc9] bg-white px-3 py-[7px] focus-within:ring-2">
+          <Search className="size-3.5 shrink-0 text-[#bbb]" aria-hidden="true" />
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search"
+            className="flex-1 bg-transparent text-[13px] text-[#1a1a1a] placeholder:text-[#bbb] focus:outline-none"
+          />
+        </div>
+
+        {/* Status dropdown */}
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="focus:ring-primary h-[34px] cursor-pointer appearance-none rounded border border-[#cbccc9] bg-white bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23666%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22M6%209l6%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[right_8px_center] bg-no-repeat px-3 pr-8 text-[13px] text-[#1a1a1a] focus:ring-2 focus:outline-none"
+          aria-label="Filter by status"
+        >
+          <option value="">Status</option>
+          <option value="active">Active</option>
+          <option value="suspended">Suspended</option>
+        </select>
+
+        {/* Role dropdown */}
+        <select
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
+          className="focus:ring-primary h-[34px] cursor-pointer appearance-none rounded border border-[#cbccc9] bg-white bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23666%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22M6%209l6%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[right_8px_center] bg-no-repeat px-3 pr-8 text-[13px] text-[#1a1a1a] focus:ring-2 focus:outline-none"
+          aria-label="Filter by role"
+        >
+          <option value="">Role</option>
+          {ROLES.map((r) => (
+            <option key={r} value={r}>
+              {r.charAt(0).toUpperCase() + r.slice(1)}
+            </option>
+          ))}
+        </select>
+
+        {(search || roleFilter || statusFilter) && (
           <button
-            onClick={() => setModalUser(null)}
-            className="focus-visible:ring-primary flex shrink-0 items-center gap-1.5 rounded bg-[#1a1a1a] px-3 py-2 text-[12px] font-bold text-white hover:bg-[#333] focus-visible:ring-2 focus-visible:outline-none"
+            type="button"
+            onClick={() => {
+              setSearch('')
+              setRoleFilter('')
+              setStatusFilter('')
+            }}
+            className="h-[34px] rounded border border-[#cbccc9] px-3 text-[12px] text-[#666666] hover:border-[#1a1a1a] hover:text-[#1a1a1a]"
           >
-            <Plus className="size-3.5" aria-hidden="true" /> Add User
+            Clear
           </button>
-        </div>
+        )}
 
-        {/* Filter pills */}
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-1">
-            <span className="mr-1 text-[11px] font-bold tracking-[1.5px] text-[#999] uppercase">
-              Role
-            </span>
-            {['', ...ROLES].map((r) => (
-              <button
-                key={r || 'all'}
-                type="button"
-                onClick={() => setRoleFilter(r)}
-                className={`rounded-full px-3 py-1 text-[11px] font-bold tracking-[0.5px] transition-colors ${roleFilter === r ? 'bg-[#1a1a1a] text-white' : 'text-[#666666] hover:bg-[#f0f0ee] hover:text-[#1a1a1a]'}`}
-              >
-                {r === '' ? 'All' : r.charAt(0).toUpperCase() + r.slice(1)}
-              </button>
-            ))}
-          </div>
-          <div className="h-4 w-px bg-[#e0e0de]" />
-          <div className="flex items-center gap-1">
-            <span className="mr-1 text-[11px] font-bold tracking-[1.5px] text-[#999] uppercase">
-              Status
-            </span>
-            {[
-              { v: '', l: 'All' },
-              { v: 'active', l: 'Active' },
-              { v: 'suspended', l: 'Suspended' },
-            ].map(({ v, l }) => (
-              <button
-                key={v || 'all'}
-                type="button"
-                onClick={() => setStatusFilter(v)}
-                className={`rounded-full px-3 py-1 text-[11px] font-bold tracking-[0.5px] transition-colors ${statusFilter === v ? (v === 'suspended' ? 'bg-red-600 text-white' : v === 'active' ? 'bg-green-600 text-white' : 'bg-[#1a1a1a] text-white') : 'text-[#666666] hover:bg-[#f0f0ee] hover:text-[#1a1a1a]'}`}
-              >
-                {l}
-              </button>
-            ))}
-          </div>
-          {(search || roleFilter || statusFilter) && (
-            <button
-              type="button"
-              onClick={() => {
-                setSearch('')
-                setRoleFilter('')
-                setStatusFilter('')
-              }}
-              className="ml-auto text-[11px] font-medium text-[#999] underline underline-offset-2 hover:text-[#1a1a1a]"
-            >
-              Clear all
-            </button>
-          )}
-        </div>
+        {/* Spacer */}
+        <div className="flex-1" />
 
+        {/* Add User button */}
+        <button
+          onClick={() => setModalUser(null)}
+          className="focus-visible:ring-primary flex shrink-0 items-center gap-1.5 rounded bg-[#1a1a1a] px-4 py-[7px] text-[13px] font-bold text-white hover:bg-[#333] focus-visible:ring-2 focus-visible:outline-none"
+        >
+          <Plus className="size-3.5" aria-hidden="true" /> New User
+        </button>
+      </div>
+
+      {/* Row count */}
+      <div className="mb-3">
         <p className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
           {filtered.length === users.length
             ? `All Users (${users.length})`
