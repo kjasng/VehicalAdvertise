@@ -93,7 +93,15 @@ export async function submitKyc(formData: FormData): Promise<{ error: string | n
     .from('profiles')
     .update({ full_name: fullName, phone_e164: phone })
     .eq('id', uid)
-  if (profileErr) return { error: profileErr.message }
+  if (profileErr) {
+    // Postgres unique_violation code 23505 — phone already used by another account
+    if (profileErr.code === '23505') {
+      return {
+        error: 'Số điện thoại này đã được sử dụng bởi tài khoản khác. Vui lòng nhập số khác.',
+      }
+    }
+    return { error: profileErr.message }
+  }
 
   // Update driver body_type
   const { error: driverErr } = await supabase
