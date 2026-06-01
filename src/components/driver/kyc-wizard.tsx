@@ -61,11 +61,14 @@ function StepBar({ current }: { current: Step }) {
   )
 }
 
-export function KycWizard() {
+interface KycWizardProps {
+  /** True when admin previously rejected the driver's KYC — shows rejection banner. */
+  rejected?: boolean
+}
+
+export function KycWizard({ rejected = false }: KycWizardProps) {
   const [step, setStep] = useState<Step>(1)
   const [pending, startTransition] = useTransition()
-  const [submitted, setSubmitted] = useState(false)
-
   // Step 1 state
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
@@ -92,47 +95,13 @@ export function KycWizard() {
       fd.append('selfie', selfie)
       const result = await submitKyc(fd)
       if (result.error) {
-        // Phone duplicate — send user back to step 1 to fix it
         if (result.error.includes('điện thoại')) setStep(1)
         toast.error(result.error)
       } else {
-        setSubmitted(true)
+        // Server page re-renders on next load and shows waiting screen from DB state
+        toast.success('Hồ sơ đã được gửi. Chúng tôi sẽ phản hồi trong 24 giờ.')
       }
     })
-  }
-
-  // Waiting screen after successful submission
-  if (submitted) {
-    return (
-      <div className="flex flex-col items-center gap-5 py-10 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-          <svg
-            className="size-8 text-green-600"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-        </div>
-        <div className="space-y-2">
-          <h2 className="font-heading text-[22px] leading-none text-[#1a1a1a] uppercase">
-            Đã gửi hồ sơ
-          </h2>
-          <p className="max-w-[360px] text-[14px] leading-[1.6] text-[#666666]">
-            Hồ sơ của bạn đang được xem xét. Chúng tôi sẽ thông báo qua email trong vòng{' '}
-            <strong>24 giờ</strong>.
-          </p>
-        </div>
-        <p className="text-[12px] text-[#999]">Bạn có thể đóng trang này.</p>
-      </div>
-    )
   }
 
   return (
@@ -142,6 +111,19 @@ export function KycWizard() {
       {/* Step 1 — Profile info */}
       {step === 1 && (
         <div className="space-y-4">
+          {rejected && (
+            <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+              <span className="mt-0.5 text-red-600" aria-hidden="true">
+                ✕
+              </span>
+              <div>
+                <p className="text-[13px] font-bold text-red-700">Hồ sơ bị từ chối</p>
+                <p className="mt-0.5 text-[12px] text-red-600">
+                  Vui lòng kiểm tra lại thông tin và ảnh, sau đó gửi lại.
+                </p>
+              </div>
+            </div>
+          )}
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="full-name"
