@@ -30,21 +30,17 @@ function readAsDataUrl(file: File): Promise<string> {
 export function KycPhotoInput({ id, label, name, file, onChange }: Props) {
   const cameraRef = useRef<HTMLInputElement>(null)
   const libraryRef = useRef<HTMLInputElement>(null)
-  const prevFileRef = useRef<File | null | undefined>(file)
+  // Initialize fileName immediately so the UI doesn't flash "no file" on remount
+  const [fileName, setFileName] = useState<string | null>(file?.name ?? null)
   const [preview, setPreview] = useState<string | null>(null)
-  const [fileName, setFileName] = useState<string | null>(null)
 
-  // Load preview when parent passes a file
+  // Restore preview whenever `file` changes or on remount with an existing file
   useEffect(() => {
-    if (file && file !== prevFileRef.current) {
-      prevFileRef.current = file
-      readAsDataUrl(file).then((dataUrl) => {
-        setFileName(file.name)
-        setPreview(dataUrl)
-      })
-    } else if (!file && prevFileRef.current !== null) {
-      prevFileRef.current = null
-    }
+    if (!file) return
+    readAsDataUrl(file).then((dataUrl) => {
+      setFileName(file.name)
+      setPreview(dataUrl)
+    })
   }, [file])
 
   async function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
