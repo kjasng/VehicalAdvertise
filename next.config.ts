@@ -11,6 +11,12 @@ const supabaseHost = (() => {
 })()
 
 const nextConfig: NextConfig = {
+  experimental: {
+    serverActions: {
+      // Default 1 MB is too small for CCCD + selfie photo uploads
+      bodySizeLimit: '10mb',
+    },
+  },
   images: {
     remotePatterns: [
       {
