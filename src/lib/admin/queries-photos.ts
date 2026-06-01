@@ -151,6 +151,7 @@ export async function getPhotoVerifications(): Promise<PhotoVerifRow[]> {
       'id, subject_id, storage_path, status, created_at, exif_lat, exif_lng, client_lat, client_lng',
     )
     .in('kind', ['periodic_vehicle', 'periodic_selfie'])
+    .eq('status', 'pending') // only show actionable items in the review queue
     .order('created_at', { ascending: false })
     .limit(200)
 

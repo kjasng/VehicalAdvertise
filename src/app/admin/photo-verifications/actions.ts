@@ -34,7 +34,7 @@ export async function reviewPhotoVerif(raw: unknown): Promise<{ error: string | 
 
   const supabase = createSupabaseAdminClient()
 
-  const { error: updateError } = await supabase
+  const { data: updated, error: updateError } = await supabase
     .from('photos')
     .update({
       status: decision,
@@ -43,8 +43,11 @@ export async function reviewPhotoVerif(raw: unknown): Promise<{ error: string | 
       reject_reason: decision === 'rejected' ? (reason ?? null) : null,
     })
     .eq('id', photoId)
+    .eq('status', 'pending') // prevent overwriting an already-reviewed photo
+    .select('id')
 
   if (updateError) return { error: updateError.message }
+  if (!updated?.length) return { error: 'Photo already reviewed or not found' }
 
   const { error: auditError } = await supabase.from('audit_log').insert({
     actor_id: user.id,

@@ -1,7 +1,6 @@
 /**
  * Admin Dashboard — ops health snapshot.
- * 6 KPI cards + recent ledger table.
- * Real data from getDashboardStats(); alerts section is static until P5.
+ * 6 KPI cards + recent ledger table + live alerts derived from DB stats.
  */
 import { AlertTriangle } from 'lucide-react'
 
@@ -12,14 +11,34 @@ import { getDashboardStats } from '@/lib/admin/queries-dashboard'
 
 export const metadata = { title: 'Admin · Dashboard' }
 
-// Static alerts until a dedicated alerts table ships in P5
-const STATIC_ALERTS = [
-  {
-    id: 1,
-    message: 'Photo verification anomalies will appear here once GPS tracking is live.',
-    severity: 'medium',
-  },
-]
+type AlertItem = { key: string; message: string; severity: 'high' | 'medium' | 'low' }
+
+function deriveAlerts(stats: Awaited<ReturnType<typeof getDashboardStats>>): AlertItem[] {
+  const alerts: AlertItem[] = []
+
+  if (stats.pendingKyc > 0) {
+    alerts.push({
+      key: 'kyc',
+      message: `${stats.pendingKyc} driver KYC submission${stats.pendingKyc > 1 ? 's' : ''} pending review.`,
+      severity: stats.pendingKyc >= 5 ? 'high' : 'medium',
+    })
+  }
+  if (stats.pendingPayouts > 0) {
+    alerts.push({
+      key: 'payouts',
+      message: `${stats.pendingPayouts} driver payout${stats.pendingPayouts > 1 ? 's' : ''} pending processing.`,
+      severity: 'medium',
+    })
+  }
+  if (alerts.length === 0) {
+    alerts.push({
+      key: 'clear',
+      message: 'All queues clear. No pending actions required.',
+      severity: 'low',
+    })
+  }
+  return alerts
+}
 
 export default async function AdminDashboardPage() {
   const stats = await getDashboardStats()
@@ -87,13 +106,13 @@ export default async function AdminDashboardPage() {
           )}
         </SectionShell>
 
-        {/* Alerts */}
+        {/* Alerts — derived from live DB stats */}
         <SectionShell title="Alerts" variant="dark">
           <ul className="space-y-3">
-            {STATIC_ALERTS.map((alert) => (
-              <li key={alert.id} className="flex items-start gap-3">
+            {deriveAlerts(stats).map((alert) => (
+              <li key={alert.key} className="flex items-start gap-3">
                 <AlertTriangle
-                  className="mt-0.5 size-4 shrink-0 text-yellow-400"
+                  className={`mt-0.5 size-4 shrink-0 ${alert.severity === 'high' ? 'text-red-400' : alert.severity === 'medium' ? 'text-yellow-400' : 'text-green-400'}`}
                   aria-hidden="true"
                 />
                 <p className="text-[13px] leading-[1.5] text-white/70">{alert.message}</p>
