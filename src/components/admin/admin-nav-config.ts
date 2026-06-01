@@ -14,6 +14,7 @@ import {
   Users,
   BarChart2,
   Map,
+  ScrollText,
 } from 'lucide-react'
 
 import type { NavItem } from '@/components/shared/role-sidebar'
@@ -33,5 +34,6 @@ export const ADMIN_NAV: NavItem[] = [
   // System group
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/reports', label: 'Reports', icon: BarChart2 },
+  { href: '/admin/audit-log', label: 'Audit Log', icon: ScrollText },
   { href: '/admin/map', label: 'Map', icon: Map },
 ]
