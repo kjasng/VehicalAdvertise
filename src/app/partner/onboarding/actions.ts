@@ -1,6 +1,5 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
@@ -40,6 +39,7 @@ export async function submitPartnerProfile(raw: unknown): Promise<{ error: strin
 
   if (error) return { error: error.message }
 
-  revalidatePath('/partner/onboarding')
+  // No revalidatePath — client-side `submitted` state handles immediate feedback.
+  // Server component shows pending screen on next page load via DB check.
   return { error: null }
 }
