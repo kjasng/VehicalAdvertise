@@ -14,6 +14,7 @@ export type DashboardStats = {
   totalDrivers: number
   pendingKyc: number
   activePartners: number
+  pendingPartners: number
   activeCampaigns: number
   weeklyKmSum: number
   pendingPayouts: number
@@ -29,18 +30,23 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     driversRes,
     pendingKycRes,
     partnersRes,
+    pendingPartnersRes,
     campaignsRes,
     weeklyKmRes,
     pendingPayoutsRes,
     ledgerRes,
   ] = await Promise.all([
     supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'driver'),
+    // Pending KYC = drivers who have submitted photos (pending review) but not yet approved
     supabase
       .from('profiles')
       .select('*', { count: 'exact', head: true })
       .eq('kyc_status', 'pending')
       .eq('role', 'driver'),
-    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'partner'),
+    // Active partners = approved only
+    supabase.from('partners').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
+    // Pending partner reviews
+    supabase.from('partners').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
     supabase.from('campaigns').select('*', { count: 'exact', head: true }).eq('status', 'active'),
     supabase.from('contract_daily_stats').select('km_valid').gte('day', sevenDaysAgo),
     supabase.from('payouts').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
@@ -57,6 +63,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     driversRes.error,
     pendingKycRes.error,
     partnersRes.error,
+    pendingPartnersRes.error,
     campaignsRes.error,
     weeklyKmRes.error,
     pendingPayoutsRes.error,
@@ -81,6 +88,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     totalDrivers: driversRes.count ?? 0,
     pendingKyc: pendingKycRes.count ?? 0,
     activePartners: partnersRes.count ?? 0,
+    pendingPartners: pendingPartnersRes.count ?? 0,
     activeCampaigns: campaignsRes.count ?? 0,
     weeklyKmSum,
     pendingPayouts: pendingPayoutsRes.count ?? 0,

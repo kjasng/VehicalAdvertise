@@ -23,6 +23,13 @@ function deriveAlerts(stats: Awaited<ReturnType<typeof getDashboardStats>>): Ale
       severity: stats.pendingKyc >= 5 ? 'high' : 'medium',
     })
   }
+  if (stats.pendingPartners > 0) {
+    alerts.push({
+      key: 'partners',
+      message: `${stats.pendingPartners} partner application${stats.pendingPartners > 1 ? 's' : ''} pending review.`,
+      severity: 'medium',
+    })
+  }
   if (stats.pendingPayouts > 0) {
     alerts.push({
       key: 'payouts',
