@@ -7,7 +7,8 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 import type { UserRole } from '@/types/db'
 
-const SELF_ASSIGNABLE: UserRole[] = ['driver', 'partner', 'garage']
+// Garage is handled manually by admin — not self-assignable
+const SELF_ASSIGNABLE: UserRole[] = ['driver', 'partner']
 
 export async function chooseRoleAction(formData: FormData) {
   const target = formData.get('role')

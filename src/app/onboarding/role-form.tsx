@@ -11,7 +11,8 @@ import { chooseRoleAction } from './actions'
 
 import type { UserRole } from '@/types/db'
 
-type SelfAssignable = Exclude<UserRole, 'admin' | 'pending'>
+// Garage is intentionally excluded — handled manually by admin
+type SelfAssignable = Exclude<UserRole, 'admin' | 'pending' | 'garage'>
 
 // Each role advertises a feature image that reveals as the panel background on
 // hover. Images live in /public/landing/pencil/ to stay consistent with the
@@ -36,13 +37,6 @@ const ROLES: {
     copy: 'Run campaigns on vehicles in Hanoi. Top up, brief, go live.',
     image: '/landing/pencil/advertiser.jpg',
     alt: 'Advertiser planning campaign',
-  },
-  {
-    id: 'garage',
-    label: 'I install decals',
-    copy: 'Receive install orders, upload proof, get paid weekly.',
-    image: '/landing/pencil/garage-cau-giay.jpg',
-    alt: 'Decal installation at garage',
   },
 ]
 
