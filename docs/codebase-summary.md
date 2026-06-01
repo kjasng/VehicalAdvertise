@@ -4,15 +4,16 @@
 
 ## App Routes
 
-| Route         | Purpose                                                                                                                              |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `/driver`     | Driver panel — dashboard (today stats, weekly KM chart), KYC verification, weekly invoices, profile & sign-out                       |
-| `/partner`    | Partner web — campaign creation, contract management, driver verification, ledger                                                    |
-| `/garage`     | Garage web — vehicle inventory, service-area map, availability toggle, team users                                                    |
-| `/admin`      | Admin panel — 11 pages (Dashboard, KYC review, creative review, install proofs, photo verifs, invoices, users, reports, ledger, map) |
-| `/(public)`   | Landing, OAuth login (Google + GitHub), QR redirect                                                                                  |
-| `/onboarding` | Role selection & CCCD upload (pending users post-signup)                                                                             |
-| `/api/v1/*`   | Route handlers — GPS ingest, photo finalize, webhooks (SePay, Supabase), state transitions                                           |
+| Route                                | Purpose                                                                                                                              |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `/driver`                            | Driver panel — dashboard (today stats, weekly KM chart), KYC verification, weekly invoices, profile & sign-out                       |
+| `/partner`                           | Partner web — campaign creation, contract management, driver verification, ledger                                                    |
+| `/garage`                            | Garage web — vehicle inventory, service-area map, availability toggle, team users                                                    |
+| `/admin`                             | Admin panel — 11 pages (Dashboard, KYC review, creative review, install proofs, photo verifs, invoices, users, reports, ledger, map) |
+| `/(public)`                          | Landing, OAuth login (Google + GitHub), QR redirect                                                                                  |
+| `/onboarding`                        | Role selection & CCCD upload (pending users post-signup)                                                                             |
+| `/api/v1/*`                          | Route handlers — GPS ingest, photo finalize, webhooks (SePay, Supabase), state transitions                                           |
+| `/api/v1/admin/reports/[type]` (GET) | CSV export (drivers, campaigns, invoices, fraud); admin-auth guarded                                                                 |
 
 ## Shared Shell Primitives
 
@@ -32,20 +33,54 @@ Located in `src/components/shared/`. All pure server components except noted.
 
 ## Admin Shared Components
 
-Located in `src/components/admin/`. Support the 11 admin pages.
+Located in `src/components/admin/` and `src/app/admin/*/`. All 11 pages wire real Supabase data via query library; no mock data in pages.
 
-| Component                     | Purpose                                                                                                                                   |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `admin-nav-config.ts`         | ADMIN_NAV: 11 sidebar items (Dashboard → Map) with href + label + icon                                                                    |
-| `data-table.tsx`              | **Client component.** Generic `<DataTable<T>>` — sticky header, zebra rows, click-to-sort, pencil border colors                           |
-| `review-drawer.tsx`           | **Client component.** Slide-in-from-right with backdrop + Escape close, role=dialog a11y                                                  |
-| `kyc-review-content.tsx`      | **Client component.** KYC review drawer body — CCCD photos, selfie, approve/reject stubs                                                  |
-| `creative-review-content.tsx` | **Client component.** Creative review drawer body — image preview, spec list, stubs                                                       |
-| `invoice-filters.tsx`         | **Client component.** Date range + status select + search; lifted state via callback                                                      |
-| `invoice-table.tsx`           | **Client component.** InvoiceFilters + DataTable combined with client-side filter logic                                                   |
-| `weekly-km-chart.tsx`         | **Client component.** Recharts line chart, 12-week mock data                                                                              |
-| `demo-badge.tsx`              | Inline "DEMO" label; renders only when `NODE_ENV !== 'production'`                                                                        |
-| `mock-data.ts`                | Single source of truth — mock rows for all 10 pages (KYC, Creatives, Install Proofs, Photo Verifs, 3× Invoices, Users, Ledger, Weekly KM) |
+| Component                        | Purpose                                                                                                         |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `admin-nav-config.ts`            | ADMIN_NAV: 11 sidebar items (Dashboard → Map) with href + label + icon                                          |
+| `data-table.tsx`                 | **Client component.** Generic `<DataTable<T>>` — sticky header, zebra rows, click-to-sort, pencil border colors |
+| `review-drawer.tsx`              | **Client component.** Slide-in-from-right with backdrop + Escape close, role=dialog a11y                        |
+| `kyc-review-content.tsx`         | **Client component.** KYC review drawer body — CCCD photos, selfie, approve/reject actions                      |
+| `creative-review-content.tsx`    | **Client component.** Creative review drawer body — image preview, spec list, approve/reject actions            |
+| `photo-verif-review-content.tsx` | **Client component.** Photo verification drawer body — verify image, approve/reject with reason                 |
+| `invoice-filters.tsx`            | **Client component.** Date range + status select + search; lifted state via callback                            |
+| `invoice-table.tsx`              | **Client component.** InvoiceFilters + DataTable with real invoice rows and client-side filtering               |
+| `weekly-km-chart.tsx`            | **Client component.** Recharts line chart accepting real data prop from dashboard                               |
+| `demo-badge.tsx`                 | Inline "DEMO" label; renders only when `NODE_ENV !== 'production'`                                              |
+| `kyc-queue-client.tsx`           | **Client component.** Drawer + DataTable for KYC queue; handles row selection and reviewer actions              |
+| `creatives-queue-client.tsx`     | **Client component.** Drawer + DataTable for creatives review; handles approval workflow                        |
+| `install-proofs-client.tsx`      | **Client component.** Drawer + DataTable for installation proofs; multi-image gallery + proof verification      |
+| `photo-verif-queue-client.tsx`   | **Client component.** Drawer + DataTable for photo verification queue; interactive review + rejection handling  |
+| `users-table-client.tsx`         | **Client component.** DataTable with search params (?q=) for user filtering and status management               |
+| `mock-data.ts`                   | Reference data (not imported in any page; used only for component development and tests)                        |
+
+## Admin Query Library
+
+Located in `src/lib/admin/`. Server-side query helpers for dashboard, review queues, and reporting.
+
+| Query                         | Purpose                                                                |
+| ----------------------------- | ---------------------------------------------------------------------- |
+| `getDashboardStats`           | KPIs for admin dashboard (users, revenue, active drivers)              |
+| `getKycQueue`                 | Pending KYC reviews with profile + document URLs                       |
+| `getCreativesQueue`           | Campaign creatives awaiting approval                                   |
+| `getInstallProofs`            | Installation verification submissions                                  |
+| `getPhotoVerifications`       | Photo verification queue                                               |
+| `getDriverInvoices`           | Driver invoice ledger filtered by period                               |
+| `getPartnerInvoices`          | Partner invoice ledger filtered by period                              |
+| `getGarageInvoices`           | Garage invoice ledger filtered by period                               |
+| `getUsers`                    | Users list with role + status filtering                                |
+| `getReportsData(period)`      | Fraud/performance reports grouped by week/month/year with period range |
+| `periodRange(period)`         | Helper — returns [startDate, endDate] for week/month/prev_month/year   |
+| `groupByPeriod(rows, period)` | Helper — buckets daily stats into period labels (week/month/year)      |
+| `getActiveGpsTrails`          | Live GPS traces for map view                                           |
+
+## Admin Utilities
+
+CSV export and report helpers in `src/lib/admin/`.
+
+| Module           | Purpose                                                                     |
+| ---------------- | --------------------------------------------------------------------------- |
+| `csv-helpers.ts` | `toCsv()` (RFC 4180 + formula injection defense), `csvResponse()` (headers) |
 
 ## Driver Shared Components
 
@@ -102,6 +137,6 @@ All components use:
 
 1. **`x-pathname` header:** Set early in `proxy.ts`. Server layouts read via `headers().get('x-pathname')` to determine active nav item without client-side hooks.
 2. **File size:** All code files ≤ 200 lines; largest is `mock-data.ts` (179 LOC).
-3. **Mock data isolation:** Phase 03 uses `mock-data.ts` — single import per admin page. Swap to real Supabase queries in Phase 07+.
-4. **Server/client boundary:** Layouts + dashboards are server components. Only state/event handlers use `'use client'`.
-5. **Stubs marked:** All unimplemented approve/reject/suspend handlers tagged `[STUB]` in console; real RPC calls target Phase 07+.
+3. **Real data wiring:** All admin pages fetch via `src/lib/admin/` query library (getKycQueue, getCreativesQueue, getInstallProofs, etc.). Mock-data.ts retained for reference only.
+4. **Server/client boundary:** Pages are server components that fetch data; client wrapper components (e.g., kyc-queue-client) handle interactivity (drawers, state, actions).
+5. **Action handlers:** Approve/reject/suspend now call real server actions (reviewDriverKyc, reviewCampaign, etc.) wired to Supabase security-definer RPCs.

@@ -46,6 +46,8 @@ Rule: anything touching money or GPS goes through a service-role API route. Neve
 
 **Admin bypass flag (`ADMIN_PANEL_BYPASS`):** A dev-only env var (explicit opt-in, default false). When set to `"true"`, users whose `profiles.role = 'admin'` may visit `/driver`, `/partner`, and `/garage` routes without being redirected — useful for inspecting role panels during development. The bypass is routing-only and silent: RLS still enforces what data the admin can read/write at the DB level, and all writes continue to carry the admin's real `user_id`. Non-admin users are never affected regardless of flag state. **Critical for production: this flag MUST be unset in deployed environments (env var deleted from Vercel or `.env.local`) — no code change required.**
 
+**Admin security-definer RPCs:** Three RPCs in `0010_admin_rpcs.sql` (`approve_driver_kyc`, `approve_campaign`, `set_user_blocked`) are security-definer functions owned by postgres. Each guards with `is_admin()`, performs a privileged write to columns revoked from authenticated role, logs to `audit_log`, and grants execute only to authenticated users. These are the **only path** to write KYC decisions, campaign review decisions, and user suspension flags.
+
 ## 4. State machines
 
 ```
@@ -88,14 +90,16 @@ Driver PWA → `browser-image-compression` (< 2 MB) → Supabase Storage signed 
 ```
 src/
 ├── app/{driver,partner,admin,garage,(public),api/v1}/
+│   ├── api/v1/admin/reports/[type]/route.ts    Dynamic CSV export (drivers, campaigns, invoices, fraud)
 ├── components/{ui,driver,partner,admin,garage,shared}/
 │   ├── shared/role-*.tsx         shell primitives: role-shell, role-sidebar, role-bottom-nav, role-topbar, role-user-menu
 │   ├── shared/{page-header,kpi-card,section-shell,empty-state}.tsx
 │   ├── driver/                   driver panel components: driver-nav-config, today-card, weekly-km-chart, kyc-wizard, invoice-list-item, profile-vehicle-photo-input, mock-data
 │   ├── partner/                  partner panel components (under development)
 │   ├── garage/                   garage panel components (under development)
-│   └── admin/                    admin panel components: admin-nav-config, data-table, review-drawer, invoice-filters, review-content, weekly-km-chart, demo-badge
+│   └── admin/                    admin panel components: admin-nav-config, data-table, review-drawer, review-content (KYC, creative, photo verif), queue-client (KYC, creatives, install-proofs, photo-verif)
 ├── lib/{supabase,geo,money,photo,qr,sepay,fraud,auth}/
+│   └── admin/                    query library (getKycQueue, getCreativesQueue, getPhotoVerifications, getReportsData w/ period), csv-helpers (toCsv, csvResponse)
 ├── server/{distance,payout,state-machine}/  # server-only, never bundled
 ├── providers/  hooks/  types/  proxy.ts
 ```
