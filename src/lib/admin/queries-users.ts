@@ -12,8 +12,15 @@ export type AdminUserRow = {
   blocked: boolean
 }
 
-export async function getUsers(search?: string): Promise<AdminUserRow[]> {
+export interface UserFilters {
+  search?: string
+  role?: string // empty = all roles
+  status?: string // 'active' | 'suspended' | '' = all
+}
+
+export async function getUsers(filters: UserFilters = {}): Promise<AdminUserRow[]> {
   const supabase = createSupabaseAdminClient()
+  const { search, role, status } = filters
 
   let query = supabase
     .from('profiles')
@@ -22,15 +29,16 @@ export async function getUsers(search?: string): Promise<AdminUserRow[]> {
     .limit(200)
 
   if (search?.trim()) {
-    // Strip PostgREST filter meta-characters to prevent filter-string injection.
-    // Comma, parens, dot, and quote characters are used as separators/operators
-    // in the .or() filter expression and must not be passed through raw.
     const sanitized = search.trim().replace(/[(),.'"\\%_]/g, '')
     if (sanitized) {
       const term = `%${sanitized}%`
       query = query.or(`full_name.ilike.${term},email.ilike.${term}`)
     }
   }
+
+  if (role) query = query.eq('role', role as 'driver' | 'partner' | 'garage' | 'admin' | 'pending')
+  if (status === 'active') query = query.eq('blocked', false)
+  if (status === 'suspended') query = query.eq('blocked', true)
 
   const { data, error } = await query
   if (error || !data) return []

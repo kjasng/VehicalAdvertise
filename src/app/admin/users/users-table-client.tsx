@@ -2,13 +2,20 @@
 
 import { useState, useTransition } from 'react'
 
-import { Pencil, ShieldCheck, ShieldOff, Trash2, X, Check } from 'lucide-react'
+import { Check, Pencil, Plus, ShieldCheck, ShieldOff, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { EmptyState } from '@/components/shared/empty-state'
 import type { AdminUserRow } from '@/lib/admin/queries-users'
 
-import { changeUserRole, deleteUser, setUserBlocked } from './actions'
+import {
+  bulkChangeRole,
+  bulkDeleteUsers,
+  bulkSetUsersBlocked,
+  deleteUser,
+  setUserBlocked,
+} from './actions'
+import { UserModal } from './user-modal'
 
 interface Props {
   users: AdminUserRow[]
@@ -21,10 +28,6 @@ const ROLE_STYLES: Record<string, string> = {
   garage: 'bg-orange-100 text-orange-700',
   pending: 'bg-[#f0f0ee] text-[#666666]',
 }
-
-const EDITABLE_ROLES = ['driver', 'partner', 'garage'] as const
-
-// ── Tooltip icon button ────────────────────────────────────────────────────
 
 function IconBtn({
   tooltip,
@@ -39,7 +42,7 @@ function IconBtn({
   variant?: 'default' | 'danger' | 'warning'
   children: React.ReactNode
 }) {
-  const colorMap = {
+  const cls = {
     default: 'text-[#666666] hover:bg-[#f0f0ee] hover:text-[#1a1a1a]',
     danger: 'text-red-500 hover:bg-red-50 hover:text-red-600',
     warning: 'text-yellow-600 hover:bg-yellow-50',
@@ -51,11 +54,10 @@ function IconBtn({
         disabled={disabled}
         onClick={onClick}
         aria-label={tooltip}
-        className={`focus-visible:ring-primary flex h-7 w-7 items-center justify-center rounded transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:opacity-40 ${colorMap[variant]}`}
+        className={`focus-visible:ring-primary flex h-7 w-7 items-center justify-center rounded transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:opacity-40 ${cls[variant]}`}
       >
         {children}
       </button>
-      {/* CSS-only tooltip */}
       <span
         role="tooltip"
         className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 rounded bg-[#1a1a1a] px-2 py-1 text-[11px] leading-none whitespace-nowrap text-white opacity-0 transition-opacity group-hover/tip:opacity-100"
@@ -66,43 +68,30 @@ function IconBtn({
   )
 }
 
-// ── Main table ─────────────────────────────────────────────────────────────
-
 export function UsersTableClient({ users }: Props) {
   const [pending, startTransition] = useTransition()
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [editRole, setEditRole] = useState<string>('')
+  const [selected, setSelected] = useState<Set<string>>(new Set())
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [bulkRole, setBulkRole] = useState('driver')
+  const [bulkDeleting, setBulkDeleting] = useState(false)
+  // undefined = closed, null = create mode, AdminUserRow = edit mode
+  const [modalUser, setModalUser] = useState<AdminUserRow | null | undefined>(undefined)
 
-  function startEdit(user: AdminUserRow) {
-    setEditingId(user.id)
-    setEditRole(user.role)
-    setDeletingId(null)
-  }
-
-  function handleSaveRole(user: AdminUserRow) {
-    startTransition(async () => {
-      const result = await changeUserRole({ targetId: user.id, role: editRole })
-      if (result.error) toast.error(result.error)
-      else {
-        toast.success(`${user.fullName} role changed to ${editRole}`)
-        setEditingId(null)
-      }
+  const allIds = users.filter((u) => u.role !== 'admin').map((u) => u.id)
+  const allChecked = allIds.length > 0 && allIds.every((id) => selected.has(id))
+  const toggle = (id: string) =>
+    setSelected((prev) => {
+      const s = new Set(prev)
+      if (s.has(id)) s.delete(id)
+      else s.add(id)
+      return s
     })
-  }
-
-  function handleToggleBlocked(user: AdminUserRow) {
-    startTransition(async () => {
-      const result = await setUserBlocked({ targetId: user.id, blocked: !user.blocked })
-      if (result.error) toast.error(result.error)
-      else toast.success(`${user.fullName} ${!user.blocked ? 'suspended' : 'unsuspended'}`)
-    })
-  }
+  const toggleAll = () => setSelected(allChecked ? new Set() : new Set(allIds))
 
   function handleDelete(user: AdminUserRow) {
     startTransition(async () => {
-      const result = await deleteUser({ targetId: user.id })
-      if (result.error) toast.error(result.error)
+      const r = await deleteUser({ targetId: user.id })
+      if (r.error) toast.error(r.error)
       else {
         toast.success(`${user.fullName} deleted`)
         setDeletingId(null)
@@ -110,149 +99,282 @@ export function UsersTableClient({ users }: Props) {
     })
   }
 
-  if (users.length === 0)
-    return <EmptyState kicker="empty" title="No Users" helper="No users match your search." />
+  function handleToggleBlocked(user: AdminUserRow) {
+    startTransition(async () => {
+      const r = await setUserBlocked({ targetId: user.id, blocked: !user.blocked })
+      if (r.error) toast.error(r.error)
+      else toast.success(`${user.fullName} ${!user.blocked ? 'suspended' : 'unsuspended'}`)
+    })
+  }
+
+  function handleBulkSuspend(blocked: boolean) {
+    startTransition(async () => {
+      const r = await bulkSetUsersBlocked({ ids: [...selected], blocked })
+      if (r.error) toast.error(r.error)
+      else {
+        toast.success(`${r.count} user(s) ${blocked ? 'suspended' : 'unsuspended'}`)
+        setSelected(new Set())
+      }
+    })
+  }
+
+  function handleBulkRole() {
+    startTransition(async () => {
+      const r = await bulkChangeRole({
+        ids: [...selected],
+        role: bulkRole as 'driver' | 'partner' | 'garage',
+      })
+      if (r.error) toast.error(r.error)
+      else {
+        toast.success(`${r.count} user(s) role changed to ${bulkRole}`)
+        setSelected(new Set())
+      }
+    })
+  }
+
+  function handleBulkDelete() {
+    if (!bulkDeleting) {
+      setBulkDeleting(true)
+      return
+    }
+    startTransition(async () => {
+      const r = await bulkDeleteUsers({ ids: [...selected] })
+      if (r.error) toast.error(r.error)
+      else {
+        toast.success(`${r.count} user(s) deleted`)
+        setSelected(new Set())
+        setBulkDeleting(false)
+      }
+    })
+  }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-[13px]">
-        <thead className="bg-[#f7f8fa]">
-          <tr>
-            {['Name', 'Email', 'Role', 'Joined', 'Status', 'Actions'].map((h) => (
-              <th
-                key={h}
-                className="border-b border-[#cbccc9] px-4 py-3 text-left text-[12px] font-extrabold tracking-[1.5px] text-[#1a1a1a] uppercase"
+    <>
+      {/* Section header */}
+      <div className="mb-4 flex items-center justify-between">
+        <p className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
+          All Users ({users.length})
+        </p>
+        <button
+          onClick={() => setModalUser(null)}
+          className="focus-visible:ring-primary flex items-center gap-1.5 rounded bg-[#1a1a1a] px-3 py-1.5 text-[12px] font-bold text-white transition-colors hover:bg-[#333] focus-visible:ring-2 focus-visible:outline-none"
+        >
+          <Plus className="size-3.5" aria-hidden="true" /> Add User
+        </button>
+      </div>
+
+      {/* Bulk action bar */}
+      {selected.size > 0 && (
+        <div className="mb-3 flex flex-wrap items-center gap-3 rounded border border-[#cbccc9] bg-[#f7f8fa] px-4 py-2.5">
+          <span className="text-[12px] font-bold text-[#1a1a1a]">{selected.size} selected</span>
+          <button
+            onClick={() => {
+              setSelected(new Set())
+              setBulkDeleting(false)
+            }}
+            className="text-[12px] text-[#666666] underline hover:text-[#1a1a1a]"
+          >
+            Clear
+          </button>
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            {/* Role change */}
+            <div className="flex items-center gap-1">
+              <select
+                value={bulkRole}
+                onChange={(e) => setBulkRole(e.target.value)}
+                className="focus:ring-primary h-7 rounded border border-[#cbccc9] bg-white px-2 text-[12px] focus:ring-2 focus:outline-none"
               >
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((user, i) => (
-            <tr
-              key={user.id}
-              className={`border-b border-[#cbccc9] last:border-0 ${i % 2 === 1 ? 'bg-[#f7f8fa]' : ''}`}
+                {['driver', 'partner', 'garage'].map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+              <button
+                disabled={pending}
+                onClick={handleBulkRole}
+                className="h-7 rounded border border-[#cbccc9] px-2 text-[12px] font-medium text-[#1a1a1a] hover:bg-white disabled:opacity-50"
+              >
+                Set role
+              </button>
+            </div>
+            <button
+              disabled={pending}
+              onClick={() => handleBulkSuspend(true)}
+              className="flex h-7 items-center gap-1 rounded border border-[#cbccc9] px-2 text-[12px] font-medium text-yellow-700 hover:bg-yellow-50 disabled:opacity-50"
             >
-              <td className="px-4 py-3 font-medium text-[#1a1a1a]">{user.fullName}</td>
-              <td className="px-4 py-3 text-[#666666]">{user.email ?? '—'}</td>
+              <ShieldOff className="size-3" /> Suspend
+            </button>
+            <button
+              disabled={pending}
+              onClick={() => handleBulkSuspend(false)}
+              className="flex h-7 items-center gap-1 rounded border border-[#cbccc9] px-2 text-[12px] font-medium text-green-700 hover:bg-green-50 disabled:opacity-50"
+            >
+              <ShieldCheck className="size-3" /> Unsuspend
+            </button>
+            {bulkDeleting ? (
+              <div className="flex items-center gap-1">
+                <span className="text-[12px] font-medium text-red-600">
+                  Delete {selected.size}?
+                </span>
+                <button
+                  disabled={pending}
+                  onClick={handleBulkDelete}
+                  className="flex h-7 items-center gap-1 rounded bg-red-600 px-2 text-[12px] font-bold text-white hover:bg-red-700 disabled:opacity-50"
+                >
+                  <Check className="size-3" /> Confirm
+                </button>
+                <button
+                  onClick={() => setBulkDeleting(false)}
+                  className="flex h-7 items-center rounded px-1 text-[#666666] hover:text-[#1a1a1a]"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                disabled={pending}
+                onClick={handleBulkDelete}
+                className="flex h-7 items-center gap-1 rounded border border-red-200 px-2 text-[12px] font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+              >
+                <Trash2 className="size-3" /> Delete
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
-              {/* Role — editable inline */}
-              <td className="px-4 py-3">
-                {editingId === user.id ? (
-                  <select
-                    value={editRole}
-                    onChange={(e) => setEditRole(e.target.value)}
-                    className="focus:ring-primary rounded border border-[#cbccc9] bg-white px-2 py-1 text-[12px] text-[#1a1a1a] focus:ring-2 focus:outline-none"
-                    autoFocus
+      {users.length === 0 ? (
+        <EmptyState kicker="empty" title="No Users" helper="No users match your search." />
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-[13px]">
+            <thead className="bg-[#f7f8fa]">
+              <tr>
+                <th className="border-b border-[#cbccc9] px-3 py-3">
+                  <input
+                    type="checkbox"
+                    checked={allChecked}
+                    onChange={toggleAll}
+                    className="accent-primary size-3.5"
+                    aria-label="Select all"
+                  />
+                </th>
+                {['Name', 'Email', 'Role', 'Joined', 'Status', 'Actions'].map((h) => (
+                  <th
+                    key={h}
+                    className="border-b border-[#cbccc9] px-4 py-3 text-left text-[12px] font-extrabold tracking-[1.5px] text-[#1a1a1a] uppercase"
                   >
-                    {EDITABLE_ROLES.map((r) => (
-                      <option key={r} value={r}>
-                        {r}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <span
-                    className={`inline-block rounded px-2 py-0.5 text-[11px] font-bold tracking-[1px] uppercase ${ROLE_STYLES[user.role] ?? ''}`}
-                  >
-                    {user.role}
-                  </span>
-                )}
-              </td>
-
-              <td className="px-4 py-3 text-[#666666]">{user.joinedAt.slice(0, 10)}</td>
-
-              {/* Status */}
-              <td className="px-4 py-3">
-                {user.blocked ? (
-                  <span className="inline-block rounded bg-red-100 px-2 py-0.5 text-[11px] font-bold tracking-[1px] text-red-600 uppercase">
-                    Suspended
-                  </span>
-                ) : (
-                  <span className="inline-block rounded bg-green-100 px-2 py-0.5 text-[11px] font-bold tracking-[1px] text-green-700 uppercase">
-                    Active
-                  </span>
-                )}
-              </td>
-
-              {/* Actions */}
-              <td className="px-4 py-3">
-                {editingId === user.id ? (
-                  /* Save / Cancel when editing */
-                  <div className="flex items-center gap-1">
-                    <IconBtn
-                      tooltip="Save"
-                      onClick={() => handleSaveRole(user)}
-                      disabled={pending}
-                      variant="default"
-                    >
-                      <Check className="size-3.5" />
-                    </IconBtn>
-                    <IconBtn tooltip="Cancel" onClick={() => setEditingId(null)} variant="default">
-                      <X className="size-3.5" />
-                    </IconBtn>
-                  </div>
-                ) : deletingId === user.id ? (
-                  /* Confirm delete */
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-red-600">Delete?</span>
-                    <IconBtn
-                      tooltip="Confirm delete"
-                      onClick={() => handleDelete(user)}
-                      disabled={pending}
-                      variant="danger"
-                    >
-                      <Check className="size-3.5" />
-                    </IconBtn>
-                    <IconBtn tooltip="Cancel" onClick={() => setDeletingId(null)} variant="default">
-                      <X className="size-3.5" />
-                    </IconBtn>
-                  </div>
-                ) : (
-                  /* Normal: 3 icon buttons */
-                  <div className="flex items-center gap-0.5">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((user, i) => (
+                <tr
+                  key={user.id}
+                  className={`border-b border-[#cbccc9] last:border-0 ${i % 2 === 1 ? 'bg-[#f7f8fa]' : ''} ${selected.has(user.id) ? 'bg-primary/5' : ''}`}
+                >
+                  <td className="px-3 py-3">
                     {user.role !== 'admin' && (
-                      <IconBtn
-                        tooltip="Edit role"
-                        onClick={() => startEdit(user)}
-                        disabled={pending}
-                      >
-                        <Pencil className="size-3.5" />
-                      </IconBtn>
+                      <input
+                        type="checkbox"
+                        checked={selected.has(user.id)}
+                        onChange={() => toggle(user.id)}
+                        className="accent-primary size-3.5"
+                        aria-label={`Select ${user.fullName}`}
+                      />
                     )}
-                    <IconBtn
-                      tooltip={user.blocked ? 'Unsuspend' : 'Suspend'}
-                      onClick={() => handleToggleBlocked(user)}
-                      disabled={pending}
-                      variant={user.blocked ? 'default' : 'warning'}
+                  </td>
+                  <td className="px-4 py-3 font-medium text-[#1a1a1a]">{user.fullName}</td>
+                  <td className="px-4 py-3 text-[#666666]">{user.email ?? '—'}</td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`inline-block rounded px-2 py-0.5 text-[11px] font-bold tracking-[1px] uppercase ${ROLE_STYLES[user.role] ?? ''}`}
                     >
-                      {user.blocked ? (
-                        <ShieldCheck className="size-3.5" />
-                      ) : (
-                        <ShieldOff className="size-3.5" />
-                      )}
-                    </IconBtn>
-                    {user.role !== 'admin' && (
-                      <IconBtn
-                        tooltip="Delete user"
-                        onClick={() => {
-                          setDeletingId(user.id)
-                          setEditingId(null)
-                        }}
-                        disabled={pending}
-                        variant="danger"
-                      >
-                        <Trash2 className="size-3.5" />
-                      </IconBtn>
+                      {user.role}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-[#666666]">{user.joinedAt.slice(0, 10)}</td>
+                  <td className="px-4 py-3">
+                    {user.blocked ? (
+                      <span className="inline-block rounded bg-red-100 px-2 py-0.5 text-[11px] font-bold tracking-[1px] text-red-600 uppercase">
+                        Suspended
+                      </span>
+                    ) : (
+                      <span className="inline-block rounded bg-green-100 px-2 py-0.5 text-[11px] font-bold tracking-[1px] text-green-700 uppercase">
+                        Active
+                      </span>
                     )}
-                  </div>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    {deletingId === user.id ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] text-red-600">Delete?</span>
+                        <IconBtn
+                          tooltip="Confirm"
+                          onClick={() => handleDelete(user)}
+                          disabled={pending}
+                          variant="danger"
+                        >
+                          <Check className="size-3.5" />
+                        </IconBtn>
+                        <IconBtn tooltip="Cancel" onClick={() => setDeletingId(null)}>
+                          <X className="size-3.5" />
+                        </IconBtn>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-0.5">
+                        {user.role !== 'admin' && (
+                          <IconBtn
+                            tooltip="Edit"
+                            onClick={() => setModalUser(user)}
+                            disabled={pending}
+                          >
+                            <Pencil className="size-3.5" />
+                          </IconBtn>
+                        )}
+                        <IconBtn
+                          tooltip={user.blocked ? 'Unsuspend' : 'Suspend'}
+                          onClick={() => handleToggleBlocked(user)}
+                          disabled={pending}
+                          variant={user.blocked ? 'default' : 'warning'}
+                        >
+                          {user.blocked ? (
+                            <ShieldCheck className="size-3.5" />
+                          ) : (
+                            <ShieldOff className="size-3.5" />
+                          )}
+                        </IconBtn>
+                        {user.role !== 'admin' && (
+                          <IconBtn
+                            tooltip="Delete"
+                            onClick={() => setDeletingId(user.id)}
+                            disabled={pending}
+                            variant="danger"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </IconBtn>
+                        )}
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Create / Edit modal — key forces re-mount when switching users */}
+      {modalUser !== undefined && (
+        <UserModal
+          key={modalUser?.id ?? 'create'}
+          user={modalUser}
+          onClose={() => setModalUser(undefined)}
+        />
+      )}
+    </>
   )
 }

@@ -124,3 +124,136 @@ export async function changeUserRole(raw: unknown): Promise<{ error: string | nu
   revalidatePath('/admin/users')
   return { error: null }
 }
+
+// ── Create user ────────────────────────────────────────────────────────────
+
+const CreateUserSchema = z.object({
+  email: z.string().email('Invalid email'),
+  fullName: z.string().min(2, 'Name must be at least 2 characters'),
+  role: z.enum(['driver', 'partner', 'garage']),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+})
+
+export async function createUser(raw: unknown): Promise<{ error: string | null }> {
+  const parsed = CreateUserSchema.safeParse(raw)
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' }
+  const { email, fullName, role, password } = parsed.data
+
+  const callerRole = await getCurrentUserRole()
+  if (callerRole !== 'admin') return { error: 'Forbidden' }
+
+  const supabase = createSupabaseAdminClient()
+
+  const { data: authData, error: authErr } = await supabase.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { full_name: fullName },
+  })
+  if (authErr) return { error: authErr.message }
+
+  // Trigger creates profile as 'pending' — update to chosen role + name
+  const { error: roleErr } = await supabase
+    .from('profiles')
+    .update({ role, full_name: fullName })
+    .eq('id', authData.user.id)
+  if (roleErr) return { error: roleErr.message }
+
+  revalidatePath('/admin/users')
+  return { error: null }
+}
+
+// ── Update user (name + role) ──────────────────────────────────────────────
+
+const UpdateUserSchema = z.object({
+  targetId: z.string().uuid(),
+  fullName: z.string().min(2, 'Name must be at least 2 characters').max(100),
+  role: z.enum(['driver', 'partner', 'garage']),
+})
+
+export async function updateUser(raw: unknown): Promise<{ error: string | null }> {
+  const parsed = UpdateUserSchema.safeParse(raw)
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' }
+  const { targetId, fullName, role } = parsed.data
+
+  const callerRole = await getCurrentUserRole()
+  if (callerRole !== 'admin') return { error: 'Forbidden' }
+
+  const supabase = createSupabaseAdminClient()
+  const { error } = await supabase
+    .from('profiles')
+    .update({ full_name: fullName, role })
+    .eq('id', targetId)
+  if (error) return { error: error.message }
+
+  revalidatePath('/admin/users')
+  return { error: null }
+}
+
+// ── Bulk actions ───────────────────────────────────────────────────────────
+
+const BulkIdsSchema = z.object({ ids: z.array(z.string().uuid()).min(1) })
+
+export async function bulkDeleteUsers(
+  raw: unknown,
+): Promise<{ error: string | null; count: number }> {
+  const parsed = BulkIdsSchema.safeParse(raw)
+  if (!parsed.success) return { error: 'Invalid input', count: 0 }
+
+  const callerRole = await getCurrentUserRole()
+  if (callerRole !== 'admin') return { error: 'Forbidden', count: 0 }
+
+  const supabase = createSupabaseAdminClient()
+  let count = 0
+  for (const id of parsed.data.ids) {
+    const { error } = await supabase.auth.admin.deleteUser(id)
+    if (!error) count++
+  }
+  revalidatePath('/admin/users')
+  return { error: null, count }
+}
+
+export async function bulkSetUsersBlocked(
+  raw: unknown,
+): Promise<{ error: string | null; count: number }> {
+  const parsed = BulkIdsSchema.merge(z.object({ blocked: z.boolean() })).safeParse(raw)
+  if (!parsed.success) return { error: 'Invalid input', count: 0 }
+
+  const callerRole = await getCurrentUserRole()
+  if (callerRole !== 'admin') return { error: 'Forbidden', count: 0 }
+
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ blocked: parsed.data.blocked })
+    .in('id', parsed.data.ids)
+    .select('id')
+
+  if (error) return { error: error.message, count: 0 }
+  revalidatePath('/admin/users')
+  return { error: null, count: data?.length ?? parsed.data.ids.length }
+}
+
+export async function bulkChangeRole(
+  raw: unknown,
+): Promise<{ error: string | null; count: number }> {
+  const parsed = BulkIdsSchema.merge(
+    z.object({ role: z.enum(['driver', 'partner', 'garage']) }),
+  ).safeParse(raw)
+  if (!parsed.success) return { error: 'Invalid input', count: 0 }
+
+  const callerRole = await getCurrentUserRole()
+  if (callerRole !== 'admin') return { error: 'Forbidden', count: 0 }
+
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ role: parsed.data.role })
+    .in('id', parsed.data.ids)
+    .not('role', 'eq', 'admin')
+    .select('id')
+
+  if (error) return { error: error.message, count: 0 }
+  revalidatePath('/admin/users')
+  return { error: null, count: data?.length ?? parsed.data.ids.length }
+}
