@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
+import { sendWelcome } from '@/lib/email/send-notifications'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 /**
@@ -31,6 +32,24 @@ export async function GET(request: NextRequest) {
   const { error } = await supabase.auth.exchangeCodeForSession(code)
   if (error) {
     return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error.message)}`)
+  }
+
+  // Send welcome email only for brand-new email signups.
+  // We detect "new" by checking if created_at is within the last 2 minutes
+  // (email confirmation typically happens within seconds of signup).
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (user?.email && user.created_at) {
+      const ageMs = Date.now() - new Date(user.created_at).getTime()
+      if (ageMs < 2 * 60 * 1000) {
+        const name = (user.user_metadata?.full_name as string | undefined) ?? user.email
+        sendWelcome({ email: user.email, name }).catch(() => {})
+      }
+    }
+  } catch {
+    // Non-blocking — welcome email failure must never break auth flow
   }
 
   return NextResponse.redirect(`${origin}${next}`)

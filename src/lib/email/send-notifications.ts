@@ -2,9 +2,9 @@ import 'server-only'
 
 import nodemailer from 'nodemailer'
 
-const FROM_NAME = 'Wheels Earner'
-const FROM_EMAIL = process.env.SMTP_FROM ?? 'noreply@wheelsearner.vn'
-const APP_NAME = 'Wheels Earner'
+const FROM_NAME = 'Vehical Advertise'
+const FROM_EMAIL = process.env.SMTP_FROM ?? 'noreply@kjasnguyen.id.vn'
+const APP_NAME = 'Vehical Advertise'
 
 function createTransport() {
   return nodemailer.createTransport({
@@ -55,6 +55,19 @@ async function send(to: string, subject: string, html: string): Promise<void> {
   } catch (err) {
     console.error('[send-notifications] SMTP error:', err)
   }
+}
+
+// ── Welcome (new signup) ───────────────────────────────────────────────────
+
+export async function sendWelcome({ email, name }: { email: string; name: string }): Promise<void> {
+  const html = baseHtml(
+    'Chào mừng bạn đến với Vehical Advertise',
+    `<h2 style="color:#1a1a1a;margin:0 0 16px">Xin chào ${name},</h2>
+     <p style="color:#444;line-height:1.6">🎉 Tài khoản của bạn đã được tạo thành công trên <strong>${APP_NAME}</strong>.</p>
+     <p style="color:#444;line-height:1.6">Tiếp theo, hãy chọn vai trò của bạn (Driver, Partner hoặc Garage) và hoàn thành xác minh hồ sơ.</p>
+     <a href="https://wheelsearner.vn/onboarding" style="display:inline-block;margin-top:16px;background:#1a1a1a;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:700">Bắt đầu →</a>`,
+  )
+  await send(email, `[${APP_NAME}] Chào mừng bạn đến với Vehical Advertise!`, html)
 }
 
 // ── Driver KYC ─────────────────────────────────────────────────────────────
