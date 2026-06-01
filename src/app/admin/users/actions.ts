@@ -39,6 +39,48 @@ export async function setUserBlocked(raw: unknown): Promise<{ error: string | nu
   return { error: null }
 }
 
+export async function deleteUser(raw: unknown): Promise<{ error: string | null }> {
+  const parsed = z.object({ targetId: z.string().uuid() }).safeParse(raw)
+  if (!parsed.success) return { error: 'Invalid input' }
+  const { targetId } = parsed.data
+
+  const callerRole = await getCurrentUserRole()
+  if (callerRole !== 'admin') return { error: 'Forbidden' }
+
+  const serverClient = await createSupabaseServerClient()
+  const {
+    data: { user },
+  } = await serverClient.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+  if (targetId === user.id) return { error: 'Cannot delete your own account' }
+
+  const supabase = createSupabaseAdminClient()
+
+  const { data: target } = await supabase
+    .from('profiles')
+    .select('role, full_name')
+    .eq('id', targetId)
+    .single()
+
+  if (target?.role === 'admin') return { error: 'Cannot delete another admin account' }
+
+  // Delete auth user — cascades to profiles and all child records
+  const { error: deleteError } = await supabase.auth.admin.deleteUser(targetId)
+  if (deleteError) return { error: deleteError.message }
+
+  const { error: auditError } = await supabase.from('audit_log').insert({
+    actor_id: user.id,
+    action: 'user_deleted',
+    entity_type: 'profiles',
+    entity_id: targetId,
+    diff: { name: target?.full_name ?? null },
+  })
+  if (auditError) console.error('[deleteUser] audit_log insert failed:', auditError.message)
+
+  revalidatePath('/admin/users')
+  return { error: null }
+}
+
 // Role changes are rare and potentially destructive (wrong role locks a user out).
 // UI must show explicit confirmation before calling. Admin promotion deliberately
 // excluded from this action — requires a dedicated promote flow.
