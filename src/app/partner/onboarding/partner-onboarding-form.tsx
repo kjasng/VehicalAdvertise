@@ -14,7 +14,13 @@ import { submitPartnerProfile } from './actions'
 interface Props {
   status: 'none' | 'pending' | 'rejected'
   rejectReason: string | null
-  existingData: { companyName: string; taxCode: string; billingAddress: string } | null
+  existingData: {
+    companyName: string
+    taxCode: string
+    billingAddress: string
+    contactName: string
+    contactPhone: string
+  } | null
 }
 
 export function PartnerOnboardingForm({ status, rejectReason, existingData }: Props) {
@@ -23,11 +29,19 @@ export function PartnerOnboardingForm({ status, rejectReason, existingData }: Pr
   const [companyName, setCompanyName] = useState(existingData?.companyName ?? '')
   const [taxCode, setTaxCode] = useState(existingData?.taxCode ?? '')
   const [billingAddress, setBillingAddress] = useState(existingData?.billingAddress ?? '')
+  const [contactName, setContactName] = useState(existingData?.contactName ?? '')
+  const [contactPhone, setContactPhone] = useState(existingData?.contactPhone ?? '')
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     startTransition(async () => {
-      const result = await submitPartnerProfile({ companyName, taxCode, billingAddress })
+      const result = await submitPartnerProfile({
+        companyName,
+        taxCode,
+        billingAddress,
+        contactName,
+        contactPhone,
+      })
       if (result.error) toast.error(result.error)
       else setSubmitted(true)
     })
@@ -117,7 +131,7 @@ export function PartnerOnboardingForm({ status, rejectReason, existingData }: Pr
         </div>
         <div className="space-y-1.5">
           <label className="block text-[11px] font-bold tracking-[2px] text-[#666666] uppercase">
-            Địa chỉ xuất hóa đơn *
+            Địa chỉ công ty *
           </label>
           <textarea
             value={billingAddress}
@@ -127,6 +141,37 @@ export function PartnerOnboardingForm({ status, rejectReason, existingData }: Pr
             placeholder="Số 1, Đường ABC, Quận Hoàn Kiếm, Hà Nội"
             className="focus:ring-primary w-full rounded border border-[#cbccc9] px-3 py-2.5 text-[13px] text-[#1a1a1a] placeholder:text-[#bbb] focus:ring-2 focus:outline-none"
           />
+        </div>
+
+        {/* Contact info */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-bold tracking-[2px] text-[#666666] uppercase">
+              Người liên hệ *
+            </label>
+            <input
+              type="text"
+              value={contactName}
+              onChange={(e) => setContactName(e.target.value)}
+              required
+              placeholder="Nguyễn Văn A"
+              className="focus:ring-primary h-[42px] w-full rounded border border-[#cbccc9] px-3 text-[13px] text-[#1a1a1a] placeholder:text-[#bbb] focus:ring-2 focus:outline-none"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-bold tracking-[2px] text-[#666666] uppercase">
+              Số điện thoại *
+            </label>
+            <input
+              type="tel"
+              value={contactPhone}
+              onChange={(e) => setContactPhone(e.target.value)}
+              required
+              placeholder="0912345678"
+              maxLength={10}
+              className="focus:ring-primary h-[42px] w-full rounded border border-[#cbccc9] px-3 text-[13px] text-[#1a1a1a] placeholder:text-[#bbb] focus:ring-2 focus:outline-none"
+            />
+          </div>
         </div>
       </div>
 

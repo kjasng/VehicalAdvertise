@@ -18,12 +18,15 @@ export default async function PartnerOnboardingPage() {
 
   if (!user) redirect('/login')
 
-  // Use the RLS-scoped client — partners table allows own-row reads
-  const { data: partner } = await supabase
-    .from('partners')
-    .select('company_name, tax_code, billing_address, status, reject_reason')
-    .eq('id', user.id)
-    .maybeSingle()
+  // Fetch partner + profile (contact info) in parallel
+  const [{ data: partner }, { data: profile }] = await Promise.all([
+    supabase
+      .from('partners')
+      .select('company_name, tax_code, billing_address, status, reject_reason')
+      .eq('id', user.id)
+      .maybeSingle(),
+    supabase.from('profiles').select('full_name, phone_e164').eq('id', user.id).maybeSingle(),
+  ])
 
   // Approved partners should not see this page
   if (partner?.status === 'approved') redirect('/partner/dashboard')
@@ -49,8 +52,16 @@ export default async function PartnerOnboardingPage() {
                   companyName: partner.company_name,
                   taxCode: partner.tax_code ?? '',
                   billingAddress: partner.billing_address ?? '',
+                  contactName: profile?.full_name ?? '',
+                  contactPhone: profile?.phone_e164 ?? '',
                 }
-              : null
+              : {
+                  companyName: '',
+                  taxCode: '',
+                  billingAddress: '',
+                  contactName: profile?.full_name ?? '',
+                  contactPhone: profile?.phone_e164 ?? '',
+                }
           }
         />
       </div>
