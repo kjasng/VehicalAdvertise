@@ -1,6 +1,5 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
@@ -110,6 +109,6 @@ export async function submitKyc(formData: FormData): Promise<{ error: string | n
     .eq('id', uid)
   if (driverErr) return { error: driverErr.message }
 
-  revalidatePath('/driver/verify')
+  // No revalidatePath — page re-render would reset client-side `submitted` state.
   return { error: null }
 }
