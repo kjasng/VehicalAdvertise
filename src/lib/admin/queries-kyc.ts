@@ -71,22 +71,31 @@ export async function getKycQueue(): Promise<KycQueueRow[]> {
     photosByDriver[photo.subject_id] = bucket
   }
 
-  return profiles.map((profile) => {
-    const urls = photosByDriver[profile.id] ?? {}
-    const driverRow = Array.isArray(profile.drivers) ? profile.drivers[0] : profile.drivers
+  return (
+    profiles
+      .map((profile) => {
+        const urls = photosByDriver[profile.id] ?? {}
+        const driverRow = Array.isArray(profile.drivers) ? profile.drivers[0] : profile.drivers
 
-    return {
-      id: profile.id,
-      fullName: profile.full_name,
-      email: profile.email,
-      phone: profile.phone_e164,
-      submittedAt: profile.created_at,
-      kycStatus: profile.kyc_status as KycQueueRow['kycStatus'],
-      district: driverRow?.primary_city ?? null,
-      bodyType: (driverRow as { body_type?: string | null } | null)?.body_type ?? null,
-      signedFront: urls['kyc_cccd_front'] ?? null,
-      signedBack: urls['kyc_cccd_back'] ?? null,
-      signedSelfie: urls['kyc_selfie'] ?? null,
-    }
-  })
+        return {
+          id: profile.id,
+          fullName: profile.full_name,
+          email: profile.email,
+          phone: profile.phone_e164,
+          submittedAt: profile.created_at,
+          kycStatus: profile.kyc_status as KycQueueRow['kycStatus'],
+          district: driverRow?.primary_city ?? null,
+          bodyType: (driverRow as { body_type?: string | null } | null)?.body_type ?? null,
+          signedFront: urls['kyc_cccd_front'] ?? null,
+          signedBack: urls['kyc_cccd_back'] ?? null,
+          signedSelfie: urls['kyc_selfie'] ?? null,
+        }
+      })
+      // Only show drivers who have actually submitted KYC photos.
+      // Drivers who picked the role but haven't filled the form yet have
+      // kyc_status='pending' (default) but no photos — exclude them from the queue.
+      .filter(
+        (row) => row.signedFront !== null || row.signedBack !== null || row.signedSelfie !== null,
+      )
+  )
 }
