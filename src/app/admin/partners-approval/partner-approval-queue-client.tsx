@@ -56,8 +56,10 @@ function PartnerReviewContent({ row, onClose }: { row: PartnerApprovalRow; onClo
             [
               ['Công ty', row.companyName],
               ['MST', row.taxCode ?? '—'],
-              ['Liên hệ', row.partnerName],
               ['Email', row.partnerEmail ?? '—'],
+              ['Người liên hệ', row.partnerName],
+              ['Điện thoại', row.partnerPhone ?? '—'],
+              ['Ngày đăng ký', row.submittedAt.slice(0, 10)],
             ] as [string, string][]
           ).map(([label, value]) => (
             <div key={label}>
@@ -71,7 +73,7 @@ function PartnerReviewContent({ row, onClose }: { row: PartnerApprovalRow; onClo
         {row.billingAddress && (
           <div>
             <dt className="text-[11px] font-bold tracking-[1px] text-[#666666] uppercase">
-              Địa chỉ hóa đơn
+              Địa chỉ công ty
             </dt>
             <dd className="mt-0.5 text-[13px] text-[#1a1a1a]">{row.billingAddress}</dd>
           </div>
