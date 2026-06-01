@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 
-import { Check, Pencil, Plus, ShieldCheck, ShieldOff, Trash2, X } from 'lucide-react'
+import { Check, Pencil, Plus, Search, ShieldCheck, ShieldOff, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { EmptyState } from '@/components/shared/empty-state'
@@ -71,6 +71,8 @@ function IconBtn({
   )
 }
 
+const ROLES = ['driver', 'partner', 'garage', 'admin', 'pending']
+
 export function UsersTableClient({ users }: Props) {
   const [pending, startTransition] = useTransition()
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -81,6 +83,23 @@ export function UsersTableClient({ users }: Props) {
   const [modalUser, setModalUser] = useState<AdminUserRow | null | undefined>(undefined)
   const [kycPhotos, setKycPhotos] = useState<KycPhotos | null>(null)
 
+  // Client-side filter state — no page reload needed
+  const [search, setSearch] = useState('')
+  const [roleFilter, setRoleFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return users.filter((u) => {
+      if (q && !u.fullName.toLowerCase().includes(q) && !u.email?.toLowerCase().includes(q))
+        return false
+      if (roleFilter && u.role !== roleFilter) return false
+      if (statusFilter === 'active' && u.blocked) return false
+      if (statusFilter === 'suspended' && !u.blocked) return false
+      return true
+    })
+  }, [users, search, roleFilter, statusFilter])
+
   async function openEdit(user: AdminUserRow) {
     setModalUser(user)
     setKycPhotos(null)
@@ -90,7 +109,7 @@ export function UsersTableClient({ users }: Props) {
     }
   }
 
-  const allIds = users.filter((u) => u.role !== 'admin').map((u) => u.id)
+  const allIds = filtered.filter((u) => u.role !== 'admin').map((u) => u.id)
   const allChecked = allIds.length > 0 && allIds.every((id) => selected.has(id))
   const toggle = (id: string) =>
     setSelected((prev) => {
@@ -163,17 +182,85 @@ export function UsersTableClient({ users }: Props) {
 
   return (
     <>
-      {/* Section header */}
-      <div className="mb-4 flex items-center justify-between">
+      {/* Filter bar + header */}
+      <div className="mb-4 space-y-3">
+        {/* Top row: search + add */}
+        <div className="flex items-center gap-3">
+          <div className="focus-within:ring-primary flex flex-1 items-center gap-2 rounded-lg border border-[#cbccc9] px-3 py-2 focus-within:ring-2">
+            <Search className="size-4 shrink-0 text-[#999]" aria-hidden="true" />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by name or email…"
+              className="flex-1 bg-transparent text-[13px] text-[#1a1a1a] placeholder:text-[#bbb] focus:outline-none"
+            />
+          </div>
+          <button
+            onClick={() => setModalUser(null)}
+            className="focus-visible:ring-primary flex shrink-0 items-center gap-1.5 rounded bg-[#1a1a1a] px-3 py-2 text-[12px] font-bold text-white hover:bg-[#333] focus-visible:ring-2 focus-visible:outline-none"
+          >
+            <Plus className="size-3.5" aria-hidden="true" /> Add User
+          </button>
+        </div>
+
+        {/* Filter pills */}
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-1">
+            <span className="mr-1 text-[11px] font-bold tracking-[1.5px] text-[#999] uppercase">
+              Role
+            </span>
+            {['', ...ROLES].map((r) => (
+              <button
+                key={r || 'all'}
+                type="button"
+                onClick={() => setRoleFilter(r)}
+                className={`rounded-full px-3 py-1 text-[11px] font-bold tracking-[0.5px] transition-colors ${roleFilter === r ? 'bg-[#1a1a1a] text-white' : 'text-[#666666] hover:bg-[#f0f0ee] hover:text-[#1a1a1a]'}`}
+              >
+                {r === '' ? 'All' : r.charAt(0).toUpperCase() + r.slice(1)}
+              </button>
+            ))}
+          </div>
+          <div className="h-4 w-px bg-[#e0e0de]" />
+          <div className="flex items-center gap-1">
+            <span className="mr-1 text-[11px] font-bold tracking-[1.5px] text-[#999] uppercase">
+              Status
+            </span>
+            {[
+              { v: '', l: 'All' },
+              { v: 'active', l: 'Active' },
+              { v: 'suspended', l: 'Suspended' },
+            ].map(({ v, l }) => (
+              <button
+                key={v || 'all'}
+                type="button"
+                onClick={() => setStatusFilter(v)}
+                className={`rounded-full px-3 py-1 text-[11px] font-bold tracking-[0.5px] transition-colors ${statusFilter === v ? (v === 'suspended' ? 'bg-red-600 text-white' : v === 'active' ? 'bg-green-600 text-white' : 'bg-[#1a1a1a] text-white') : 'text-[#666666] hover:bg-[#f0f0ee] hover:text-[#1a1a1a]'}`}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
+          {(search || roleFilter || statusFilter) && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearch('')
+                setRoleFilter('')
+                setStatusFilter('')
+              }}
+              className="ml-auto text-[11px] font-medium text-[#999] underline underline-offset-2 hover:text-[#1a1a1a]"
+            >
+              Clear all
+            </button>
+          )}
+        </div>
+
         <p className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
-          All Users ({users.length})
+          {filtered.length === users.length
+            ? `All Users (${users.length})`
+            : `${filtered.length} of ${users.length} users`}
         </p>
-        <button
-          onClick={() => setModalUser(null)}
-          className="focus-visible:ring-primary flex items-center gap-1.5 rounded bg-[#1a1a1a] px-3 py-1.5 text-[12px] font-bold text-white transition-colors hover:bg-[#333] focus-visible:ring-2 focus-visible:outline-none"
-        >
-          <Plus className="size-3.5" aria-hidden="true" /> Add User
-        </button>
       </div>
 
       {/* Bulk action bar */}
@@ -257,8 +344,8 @@ export function UsersTableClient({ users }: Props) {
         </div>
       )}
 
-      {users.length === 0 ? (
-        <EmptyState kicker="empty" title="No Users" helper="No users match your search." />
+      {filtered.length === 0 ? (
+        <EmptyState kicker="empty" title="No Users" helper="No users match your filters." />
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
@@ -284,7 +371,7 @@ export function UsersTableClient({ users }: Props) {
               </tr>
             </thead>
             <tbody>
-              {users.map((user, i) => (
+              {filtered.map((user, i) => (
                 <tr
                   key={user.id}
                   className={`border-b border-[#cbccc9] last:border-0 ${i % 2 === 1 ? 'bg-[#f7f8fa]' : ''} ${selected.has(user.id) ? 'bg-primary/5' : ''}`}
