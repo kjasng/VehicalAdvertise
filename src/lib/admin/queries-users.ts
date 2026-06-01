@@ -6,6 +6,7 @@ export type AdminUserRow = {
   id: string
   email: string | null
   fullName: string
+  phone: string | null
   role: string
   kycStatus: string
   joinedAt: string
@@ -24,7 +25,7 @@ export async function getUsers(filters: UserFilters = {}): Promise<AdminUserRow[
 
   let query = supabase
     .from('profiles')
-    .select('id, email, full_name, role, kyc_status, blocked, created_at')
+    .select('id, email, full_name, phone_e164, role, kyc_status, blocked, created_at')
     .order('created_at', { ascending: false })
     .limit(200)
 
@@ -47,6 +48,7 @@ export async function getUsers(filters: UserFilters = {}): Promise<AdminUserRow[
     id: p.id,
     email: p.email,
     fullName: p.full_name,
+    phone: p.phone_e164,
     role: p.role,
     kycStatus: p.kyc_status,
     joinedAt: p.created_at,

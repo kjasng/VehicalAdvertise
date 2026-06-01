@@ -13,9 +13,12 @@ import {
   bulkDeleteUsers,
   bulkSetUsersBlocked,
   deleteUser,
+  fetchUserKycPhotos,
   setUserBlocked,
 } from './actions'
 import { UserModal } from './user-modal'
+
+type KycPhotos = { front: string | null; back: string | null; selfie: string | null }
 
 interface Props {
   users: AdminUserRow[]
@@ -76,6 +79,16 @@ export function UsersTableClient({ users }: Props) {
   const [bulkDeleting, setBulkDeleting] = useState(false)
   // undefined = closed, null = create mode, AdminUserRow = edit mode
   const [modalUser, setModalUser] = useState<AdminUserRow | null | undefined>(undefined)
+  const [kycPhotos, setKycPhotos] = useState<KycPhotos | null>(null)
+
+  async function openEdit(user: AdminUserRow) {
+    setModalUser(user)
+    setKycPhotos(null)
+    if (user.role === 'driver') {
+      const photos = await fetchUserKycPhotos(user.id)
+      setKycPhotos(photos)
+    }
+  }
 
   const allIds = users.filter((u) => u.role !== 'admin').map((u) => u.id)
   const allChecked = allIds.length > 0 && allIds.every((id) => selected.has(id))
@@ -327,11 +340,7 @@ export function UsersTableClient({ users }: Props) {
                     ) : (
                       <div className="flex items-center gap-0.5">
                         {user.role !== 'admin' && (
-                          <IconBtn
-                            tooltip="Edit"
-                            onClick={() => setModalUser(user)}
-                            disabled={pending}
-                          >
+                          <IconBtn tooltip="Edit" onClick={() => openEdit(user)} disabled={pending}>
                             <Pencil className="size-3.5" />
                           </IconBtn>
                         )}
@@ -372,7 +381,11 @@ export function UsersTableClient({ users }: Props) {
         <UserModal
           key={modalUser?.id ?? 'create'}
           user={modalUser}
-          onClose={() => setModalUser(undefined)}
+          kycPhotos={kycPhotos}
+          onClose={() => {
+            setModalUser(undefined)
+            setKycPhotos(null)
+          }}
         />
       )}
     </>

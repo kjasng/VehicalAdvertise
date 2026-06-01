@@ -163,18 +163,55 @@ export async function createUser(raw: unknown): Promise<{ error: string | null }
   return { error: null }
 }
 
-// ── Update user (name + role) ──────────────────────────────────────────────
+// ── Fetch KYC photos for a driver (signed URLs, 15 min TTL) ──────────────
+
+export async function fetchUserKycPhotos(userId: string): Promise<{
+  front: string | null
+  back: string | null
+  selfie: string | null
+}> {
+  const callerRole = await getCurrentUserRole()
+  if (callerRole !== 'admin') return { front: null, back: null, selfie: null }
+
+  const supabase = createSupabaseAdminClient()
+  const { data: photos } = await supabase
+    .from('photos')
+    .select('kind, storage_path')
+    .eq('subject_id', userId)
+    .in('kind', ['kyc_cccd_front', 'kyc_cccd_back', 'kyc_selfie'])
+
+  if (!photos?.length) return { front: null, back: null, selfie: null }
+
+  const { data: signed } = await supabase.storage.from('driver-kyc').createSignedUrls(
+    photos.map((p) => p.storage_path),
+    900,
+  )
+
+  const urlByPath = Object.fromEntries(
+    (signed ?? []).filter((s) => s.signedUrl).map((s) => [s.path, s.signedUrl]),
+  )
+  const byKind = Object.fromEntries(photos.map((p) => [p.kind, urlByPath[p.storage_path] ?? null]))
+
+  return {
+    front: byKind['kyc_cccd_front'] ?? null,
+    back: byKind['kyc_cccd_back'] ?? null,
+    selfie: byKind['kyc_selfie'] ?? null,
+  }
+}
+
+// ── Update user (name + role + phone) ─────────────────────────────────────
 
 const UpdateUserSchema = z.object({
   targetId: z.string().uuid(),
   fullName: z.string().min(2, 'Name must be at least 2 characters').max(100),
+  phone: z.string().max(20).optional(),
   role: z.enum(['driver', 'partner', 'garage']),
 })
 
 export async function updateUser(raw: unknown): Promise<{ error: string | null }> {
   const parsed = UpdateUserSchema.safeParse(raw)
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' }
-  const { targetId, fullName, role } = parsed.data
+  const { targetId, fullName, phone, role } = parsed.data
 
   const callerRole = await getCurrentUserRole()
   if (callerRole !== 'admin') return { error: 'Forbidden' }
@@ -182,7 +219,7 @@ export async function updateUser(raw: unknown): Promise<{ error: string | null }
   const supabase = createSupabaseAdminClient()
   const { error } = await supabase
     .from('profiles')
-    .update({ full_name: fullName, role })
+    .update({ full_name: fullName, role, phone_e164: phone ?? null })
     .eq('id', targetId)
   if (error) return { error: error.message }
 
