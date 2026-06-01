@@ -195,7 +195,7 @@ export function SignUpForm() {
           className="bg-primary hover:bg-primary/90 h-12 w-full rounded-[10px] text-base font-semibold"
           disabled={busy}
         >
-          {busy ? 'Creating account…' : 'Create Auth Account'}
+          {busy ? 'Creating account…' : 'Create Account'}
         </Button>
       </form>
     </Form>

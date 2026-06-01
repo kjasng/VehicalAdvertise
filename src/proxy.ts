@@ -39,6 +39,15 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL('/driver/verify', request.url))
     }
 
+    // Partner gate: partners without an approved profile can only access /partner/onboarding.
+    if (
+      role === 'partner' &&
+      profile?.partnerStatus !== 'approved' &&
+      !pathname.startsWith('/partner/onboarding')
+    ) {
+      return NextResponse.redirect(new URL('/partner/onboarding', request.url))
+    }
+
     if (requiredRole && role !== requiredRole) {
       // Admin bypass: allow an admin to visit non-admin role paths when flag is on.
       if (canAdminBypassPath(role, requiredRole)) return response

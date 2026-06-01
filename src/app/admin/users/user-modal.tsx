@@ -269,13 +269,6 @@ function CreateModal({ onClose }: { onClose: () => void }) {
     <>
       {/* Header */}
       <div className="flex flex-col items-center border-b border-[#cbccc9] px-6 py-5 text-center">
-        {step === 2 && selectedRole && (
-          <span
-            className={`mb-1.5 rounded-full px-3 py-0.5 text-[11px] font-bold tracking-[2px] uppercase ${ROLE_META[selectedRole].badge}`}
-          >
-            {ROLE_META[selectedRole].label}
-          </span>
-        )}
         <h2 className="font-heading text-[22px] leading-none text-[#1a1a1a] uppercase">
           {step === 1 ? 'Add User' : `Add ${selectedRole ? ROLE_META[selectedRole].label : 'User'}`}
         </h2>
@@ -303,7 +296,7 @@ function CreateModal({ onClose }: { onClose: () => void }) {
                   key={r}
                   type="button"
                   onClick={() => setSelectedRole(r)}
-                  className={`flex w-full items-center gap-4 rounded-lg border px-4 py-3 text-left transition-colors ${selectedRole === r ? `${m.header} border-current` : 'border-[#cbccc9] hover:border-[#1a1a1a]'}`}
+                  className={`flex w-full cursor-pointer items-center gap-4 rounded-lg border px-4 py-3 text-left transition-colors ${selectedRole === r ? `${m.header} border-current` : 'border-[#cbccc9] hover:border-[#1a1a1a]'}`}
                 >
                   <span
                     className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${m.badge}`}
@@ -410,7 +403,7 @@ export function UserModal({ user, kycPhotos, onClose }: Props) {
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-lg rounded-xl bg-white shadow-2xl"
+        className="relative w-full max-w-lg rounded-xl bg-white px-6 py-4 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"

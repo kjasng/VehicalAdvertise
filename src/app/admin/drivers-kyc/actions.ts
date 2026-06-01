@@ -3,7 +3,9 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
+import { sendDriverKycApproved, sendDriverKycRejected } from '@/lib/email/send-notifications'
 import { getCurrentUserRole } from '@/lib/auth/role-gate'
+import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 const ReviewSchema = z
@@ -34,6 +36,24 @@ export async function reviewDriverKyc(raw: unknown): Promise<{ error: string | n
     p_reason: reason,
   })
   if (error) return { error: error.message }
+
+  // Fire-and-forget email — never blocks the DB operation
+  const adminClient = createSupabaseAdminClient()
+  const { data: profile } = await adminClient
+    .from('profiles')
+    .select('email, full_name')
+    .eq('id', driverId)
+    .single()
+
+  if (profile?.email) {
+    if (decision === 'approved') {
+      sendDriverKycApproved({ email: profile.email, name: profile.full_name }).catch(() => {})
+    } else {
+      sendDriverKycRejected({ email: profile.email, name: profile.full_name, reason }).catch(
+        () => {},
+      )
+    }
+  }
 
   revalidatePath('/admin/drivers-kyc')
   return { error: null }

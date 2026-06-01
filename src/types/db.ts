@@ -462,24 +462,33 @@ export type Database = {
       }
       partners: {
         Row: {
+          approved_at: string | null
           balance_vnd: number
           billing_address: string | null
           company_name: string
           id: string
+          reject_reason: string | null
+          status: Database['public']['Enums']['partner_status']
           tax_code: string | null
         }
         Insert: {
+          approved_at?: string | null
           balance_vnd?: number
           billing_address?: string | null
           company_name: string
           id: string
+          reject_reason?: string | null
+          status?: Database['public']['Enums']['partner_status']
           tax_code?: string | null
         }
         Update: {
+          approved_at?: string | null
           balance_vnd?: number
           billing_address?: string | null
           company_name?: string
           id?: string
+          reject_reason?: string | null
+          status?: Database['public']['Enums']['partner_status']
           tax_code?: string | null
         }
         Relationships: [
@@ -1902,6 +1911,7 @@ export type Database = {
         | 'terminated'
         | 'disputed'
       kyc_status: 'pending' | 'approved' | 'rejected'
+      partner_status: 'pending' | 'approved' | 'rejected'
       ledger_kind:
         | 'partner_topup'
         | 'partner_charge'
@@ -2088,6 +2098,7 @@ export const Constants = {
         'adjustment',
         'refund',
       ],
+      partner_status: ['pending', 'approved', 'rejected'],
       payout_status: ['pending', 'processing', 'paid', 'failed'],
       photo_kind: [
         'kyc_cccd_front',
@@ -2109,5 +2120,6 @@ export const Constants = {
 // '@/types/db' instead of the long Database['public']['Enums']['…'] path.
 export type UserRole = Database['public']['Enums']['user_role']
 export type KycStatus = Database['public']['Enums']['kyc_status']
+export type PartnerStatus = Database['public']['Enums']['partner_status']
 export type CampaignStatus = Database['public']['Enums']['campaign_status']
 export type ContractStatus = Database['public']['Enums']['contract_status']

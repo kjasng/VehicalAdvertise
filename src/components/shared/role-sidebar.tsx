@@ -52,7 +52,7 @@ export function RoleSidebar({
 }: RoleSidebarProps) {
   return (
     <aside
-      className="hidden h-screen w-[240px] shrink-0 flex-col bg-[#1a1a1a] md:flex"
+      className="sticky hidden min-h-screen w-[240px] shrink-0 flex-col bg-[#1a1a1a] md:flex"
       role="navigation"
       aria-label={`${ROLE_BADGE[role]} navigation`}
     >
@@ -107,7 +107,7 @@ export function RoleSidebar({
       </nav>
 
       {/* Bottom: user menu */}
-      <div className="border-t border-white/10 px-4 py-4">
+      <div className="sticky bottom-0 border-t border-white/10 px-4 py-4">
         <RoleUserMenu email={userEmail} />
       </div>
     </aside>

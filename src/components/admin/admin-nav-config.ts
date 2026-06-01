@@ -8,6 +8,7 @@ import {
   Image,
   Wrench,
   Camera,
+  Building2,
   ShieldCheck,
   Megaphone,
   FileText,
@@ -31,6 +32,7 @@ export const ADMIN_NAV: NavItem[] = [
     icon: ShieldCheck,
     children: [
       { href: '/admin/drivers-kyc', label: 'Drivers KYC', icon: UserCheck },
+      { href: '/admin/partners-approval', label: 'Partners', icon: Building2 },
       { href: '/admin/creatives-review', label: 'Creatives', icon: Image },
       { href: '/admin/install-proofs', label: 'Install Proofs', icon: Wrench },
       { href: '/admin/photo-verifications', label: 'Photo Checks', icon: Camera },
