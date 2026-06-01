@@ -34,16 +34,19 @@ export default async function AdminLayout({ children }: { children: ReactNode })
       userEmail={user?.email ?? null}
       brandLabel="VehicalAdvertise"
     >
-      {/* Mobile nav strip — hidden on md+ where sidebar takes over */}
+      {/* Mobile nav strip — hidden on md+ where sidebar takes over.
+          Groups are flattened: children rendered inline, group header skipped. */}
       <nav
         className="sticky top-0 z-10 -mx-6 -mt-6 mb-6 overflow-x-auto bg-[#1a1a1a] px-4 py-2 md:hidden"
         aria-label="Admin mobile navigation"
       >
         <div className="flex gap-1 whitespace-nowrap">
-          {ADMIN_NAV.map((item) => (
+          {ADMIN_NAV.flatMap((item) =>
+            item.children?.length ? item.children.filter((c) => c.href) : item.href ? [item] : [],
+          ).map((item) => (
             <Link
               key={item.href}
-              href={item.href}
+              href={item.href!}
               className={`rounded px-3 py-1.5 text-[12px] font-bold tracking-[0.5px] uppercase transition-colors ${
                 pathname === item.href || pathname.startsWith(item.href + '/')
                   ? 'bg-white/15 text-white'
