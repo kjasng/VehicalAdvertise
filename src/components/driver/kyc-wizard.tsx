@@ -179,12 +179,14 @@ export function KycWizard() {
             id="cccd-front"
             label="CCCD Front *"
             name="cccdFront"
+            file={cccdFront}
             onChange={setCccdFront}
           />
           <KycPhotoInput
             id="cccd-back"
             label="CCCD Back *"
             name="cccdBack"
+            file={cccdBack}
             onChange={setCccdBack}
           />
           <div className="flex gap-3">
@@ -212,6 +214,7 @@ export function KycWizard() {
             id="selfie"
             label="Selfie with CCCD *"
             name="selfie"
+            file={selfie}
             onChange={setSelfie}
           />
           <div className="flex gap-3">
