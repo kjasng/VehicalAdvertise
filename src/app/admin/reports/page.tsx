@@ -115,6 +115,49 @@ export default async function ReportsPage({ searchParams }: PageProps) {
         )}
       </SectionShell>
 
+      {/* Fraud overview */}
+      <section>
+        <p className="mb-3 text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
+          Fraud Overview — Period
+        </p>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+          {[
+            {
+              label: 'Photos Pending',
+              value: report.fraud.photosPending,
+              warn: report.fraud.photosPending > 0,
+            },
+            { label: 'Photos Approved', value: report.fraud.photosApproved, warn: false },
+            {
+              label: 'Photos Rejected',
+              value: report.fraud.photosRejected,
+              warn: report.fraud.photosRejected > 0,
+            },
+            {
+              label: 'Auto-reject Rate',
+              value: `${report.fraud.autoRejectRatePct}%`,
+              warn: report.fraud.autoRejectRatePct > 20,
+            },
+            {
+              label: 'Photo Completion',
+              value: `${report.fraud.photoCompletionPct}%`,
+              warn: report.fraud.photoCompletionPct < 80,
+            },
+          ].map((stat) => (
+            <div key={stat.label} className="rounded border border-[#cbccc9] bg-white p-4">
+              <p className="text-[11px] font-bold tracking-[1.5px] text-[#666666] uppercase">
+                {stat.label}
+              </p>
+              <p
+                className={`mt-1 text-[22px] leading-none font-extrabold ${stat.warn ? 'text-red-600' : 'text-[#1a1a1a]'}`}
+              >
+                {stat.value}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* CSV download cards */}
       <section>
         <p className="mb-3 text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">

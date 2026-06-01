@@ -8,6 +8,7 @@ import {
   Image,
   Wrench,
   Camera,
+  Megaphone,
   FileText,
   Receipt,
   Wallet,
@@ -26,6 +27,7 @@ export const ADMIN_NAV: NavItem[] = [
   { href: '/admin/creatives-review', label: 'Creatives Review', icon: Image },
   { href: '/admin/install-proofs', label: 'Install Proofs', icon: Wrench },
   { href: '/admin/photo-verifications', label: 'Photo Verifications', icon: Camera },
+  { href: '/admin/campaigns', label: 'Campaigns', icon: Megaphone },
   // Money group
   { href: '/admin/payouts', label: 'Payouts', icon: Wallet },
   { href: '/admin/invoices/driver', label: 'Driver Invoices', icon: FileText },
