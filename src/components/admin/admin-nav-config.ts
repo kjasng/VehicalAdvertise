@@ -10,6 +10,7 @@ import {
   Camera,
   FileText,
   Receipt,
+  Wallet,
   Users,
   BarChart2,
   Map,
@@ -25,6 +26,7 @@ export const ADMIN_NAV: NavItem[] = [
   { href: '/admin/install-proofs', label: 'Install Proofs', icon: Wrench },
   { href: '/admin/photo-verifications', label: 'Photo Verifications', icon: Camera },
   // Money group
+  { href: '/admin/payouts', label: 'Payouts', icon: Wallet },
   { href: '/admin/invoices/driver', label: 'Driver Invoices', icon: FileText },
   { href: '/admin/invoices/partner', label: 'Partner Invoices', icon: Receipt },
   { href: '/admin/invoices/garage', label: 'Garage Invoices', icon: FileText },
