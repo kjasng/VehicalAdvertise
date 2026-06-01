@@ -64,7 +64,16 @@ export async function deleteUser(raw: unknown): Promise<{ error: string | null }
 
   if (target?.role === 'admin') return { error: 'Cannot delete another admin account' }
 
-  // Delete auth user — cascades to profiles and all child records
+  // For partner role: explicitly delete partners row first to avoid FK block
+  // (campaigns.partner_id has no ON DELETE CASCADE, so cascade from profiles would fail
+  // if the partner has existing campaigns)
+  if (target?.role === 'partner') {
+    // Null out partner_id on campaigns before deleting partner row
+    await supabase.from('campaigns').update({ partner_id: null }).eq('partner_id', targetId)
+    await supabase.from('partners').delete().eq('id', targetId)
+  }
+
+  // Delete auth user — cascades to profiles and remaining child records
   const { error: deleteError } = await supabase.auth.admin.deleteUser(targetId)
   if (deleteError) return { error: deleteError.message }
 
