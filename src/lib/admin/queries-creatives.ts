@@ -20,6 +20,7 @@ export async function getCreativesQueue(): Promise<CreativeQueueRow[]> {
     .select('id, name, creative_url, budget_vnd, status, created_at, partner_id')
     .eq('status', 'submitted')
     .order('created_at', { ascending: true })
+    .limit(200)
 
   if (error || !campaigns?.length) return []
 

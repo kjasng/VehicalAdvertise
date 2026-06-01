@@ -26,6 +26,7 @@ export async function getKycQueue(): Promise<KycQueueRow[]> {
     .eq('role', 'driver')
     .eq('kyc_status', 'pending')
     .order('created_at', { ascending: true })
+    .limit(200)
 
   if (error) {
     console.error('[getKycQueue] profiles query error:', error.message)
