@@ -7,6 +7,7 @@ import { CheckCircle, MapPin, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { reviewPhotoVerif } from '@/app/admin/photo-verifications/actions'
+import { RejectReasonModal } from '@/components/admin/reject-reason-modal'
 import type { PhotoVerifRow } from '@/lib/admin/queries-photos'
 
 interface Props {
@@ -22,36 +23,26 @@ const RESULT_LABEL: Record<PhotoVerifRow['dispositionResult'], string> = {
 
 export function PhotoVerifReviewContent({ row, onClose }: Props) {
   const [pending, startTransition] = useTransition()
-  const [rejecting, setRejecting] = useState(false)
-  const [reason, setReason] = useState('')
+  const [showRejectModal, setShowRejectModal] = useState(false)
 
   function handleApprove() {
     startTransition(async () => {
       const result = await reviewPhotoVerif({ photoId: row.id, decision: 'approved' })
-      if (result.error) {
-        toast.error(result.error)
-      } else {
+      if (result.error) toast.error(result.error)
+      else {
         toast.success(`Photo approved for ${row.driverName}`)
         onClose()
       }
     })
   }
 
-  function handleReject() {
-    if (!rejecting) {
-      setRejecting(true)
-      return
-    }
-    if (!reason.trim()) {
-      toast.error('Rejection reason is required')
-      return
-    }
+  function handleRejectConfirm(reason: string) {
     startTransition(async () => {
       const result = await reviewPhotoVerif({ photoId: row.id, decision: 'rejected', reason })
-      if (result.error) {
-        toast.error(result.error)
-      } else {
+      if (result.error) toast.error(result.error)
+      else {
         toast.success(`Photo rejected for ${row.driverName}`)
+        setShowRejectModal(false)
         onClose()
       }
     })
@@ -102,47 +93,34 @@ export function PhotoVerifReviewContent({ row, onClose }: Props) {
         />
       </section>
 
-      {/* Reject reason — shown after first "Reject" click */}
-      {rejecting && (
-        <section className="space-y-2">
-          <label
-            htmlFor="reject-reason"
-            className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase"
-          >
-            Reject reason *
-          </label>
-          <textarea
-            id="reject-reason"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            rows={3}
-            className="focus:ring-primary w-full rounded border border-[#cbccc9] px-3 py-2 text-[13px] text-[#1a1a1a] focus:ring-2 focus:outline-none"
-            placeholder="Describe why this photo is being rejected…"
-          />
-        </section>
-      )}
-
       {/* Actions */}
       <div className="flex gap-3 border-t border-[#cbccc9] pt-2">
         <button
           disabled={pending}
           onClick={handleApprove}
-          className="flex flex-1 items-center justify-center gap-2 rounded bg-green-600 px-4 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-green-700 focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:outline-none disabled:opacity-50"
+          className="flex flex-1 items-center justify-center gap-2 rounded bg-green-600 px-4 py-2.5 text-[13px] font-bold text-white hover:bg-green-700 disabled:opacity-50"
           aria-label={`Approve photo for ${row.driverName}`}
         >
-          <CheckCircle className="size-4" aria-hidden="true" />
-          Approve
+          <CheckCircle className="size-4" aria-hidden="true" /> Approve
         </button>
         <button
           disabled={pending}
-          onClick={handleReject}
-          className="flex flex-1 items-center justify-center gap-2 rounded border border-red-300 bg-white px-4 py-2.5 text-[13px] font-bold text-red-600 transition-colors hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none disabled:opacity-50"
+          onClick={() => setShowRejectModal(true)}
+          className="flex flex-1 items-center justify-center gap-2 rounded border border-red-300 bg-white px-4 py-2.5 text-[13px] font-bold text-red-600 hover:bg-red-50 disabled:opacity-50"
           aria-label={`Reject photo for ${row.driverName}`}
         >
-          <XCircle className="size-4" aria-hidden="true" />
-          {rejecting ? 'Confirm Reject' : 'Reject'}
+          <XCircle className="size-4" aria-hidden="true" /> Reject
         </button>
       </div>
+
+      {showRejectModal && (
+        <RejectReasonModal
+          title={`Từ chối ảnh — ${row.driverName}`}
+          onConfirm={handleRejectConfirm}
+          onClose={() => setShowRejectModal(false)}
+          pending={pending}
+        />
+      )}
     </div>
   )
 }

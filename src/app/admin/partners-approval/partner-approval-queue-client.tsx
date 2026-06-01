@@ -6,6 +6,7 @@ import { CheckCircle, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { DataTable } from '@/components/admin/data-table'
+import { RejectReasonModal } from '@/components/admin/reject-reason-modal'
 import { ReviewDrawer } from '@/components/admin/review-drawer'
 import { EmptyState } from '@/components/shared/empty-state'
 import { SectionShell } from '@/components/shared/section-shell'
@@ -19,8 +20,7 @@ interface Props {
 
 function PartnerReviewContent({ row, onClose }: { row: PartnerApprovalRow; onClose: () => void }) {
   const [pending, startTransition] = useTransition()
-  const [rejecting, setRejecting] = useState(false)
-  const [reason, setReason] = useState('')
+  const [showRejectModal, setShowRejectModal] = useState(false)
 
   function handleApprove() {
     startTransition(async () => {
@@ -33,20 +33,13 @@ function PartnerReviewContent({ row, onClose }: { row: PartnerApprovalRow; onClo
     })
   }
 
-  function handleReject() {
-    if (!rejecting) {
-      setRejecting(true)
-      return
-    }
-    if (!reason.trim()) {
-      toast.error('Rejection reason is required')
-      return
-    }
+  function handleRejectConfirm(reason: string) {
     startTransition(async () => {
       const r = await rejectPartner({ partnerId: row.id, reason })
       if (r.error) toast.error(r.error)
       else {
         toast.success(`${row.companyName} rejected`)
+        setShowRejectModal(false)
         onClose()
       }
     })
@@ -85,25 +78,6 @@ function PartnerReviewContent({ row, onClose }: { row: PartnerApprovalRow; onClo
         )}
       </section>
 
-      {rejecting && (
-        <section className="space-y-2">
-          <label
-            htmlFor="reject-reason"
-            className="block text-[11px] font-bold tracking-[2px] text-[#666666] uppercase"
-          >
-            Lý do từ chối *
-          </label>
-          <textarea
-            id="reject-reason"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            rows={3}
-            className="focus:ring-primary w-full rounded border border-[#cbccc9] px-3 py-2 text-[13px] focus:ring-2 focus:outline-none"
-            placeholder="Mô tả lý do từ chối hồ sơ…"
-          />
-        </section>
-      )}
-
       <div className="flex gap-3 border-t border-[#cbccc9] pt-2">
         <button
           disabled={pending}
@@ -114,13 +88,21 @@ function PartnerReviewContent({ row, onClose }: { row: PartnerApprovalRow; onClo
         </button>
         <button
           disabled={pending}
-          onClick={handleReject}
+          onClick={() => setShowRejectModal(true)}
           className="flex flex-1 items-center justify-center gap-2 rounded border border-red-300 bg-white px-4 py-2.5 text-[13px] font-bold text-red-600 hover:bg-red-50 disabled:opacity-50"
         >
-          <XCircle className="size-4" />
-          {rejecting ? 'Confirm Reject' : 'Reject'}
+          <XCircle className="size-4" /> Reject
         </button>
       </div>
+
+      {showRejectModal && (
+        <RejectReasonModal
+          title={`Từ chối hồ sơ — ${row.companyName}`}
+          onConfirm={handleRejectConfirm}
+          onClose={() => setShowRejectModal(false)}
+          pending={pending}
+        />
+      )}
     </div>
   )
 }

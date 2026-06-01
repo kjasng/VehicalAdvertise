@@ -7,10 +7,11 @@
 import Image from 'next/image'
 
 import { CheckCircle, XCircle } from 'lucide-react'
-import { useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 
 import { reviewDriverKyc } from '@/app/admin/drivers-kyc/actions'
+import { RejectReasonModal } from '@/components/admin/reject-reason-modal'
 import type { KycQueueRow } from '@/lib/admin/queries-kyc'
 
 interface KycReviewContentProps {
@@ -22,14 +23,26 @@ const PLACEHOLDER = '/placeholder-id.png'
 
 export function KycReviewContent({ row, onClose }: KycReviewContentProps) {
   const [pending, startTransition] = useTransition()
+  const [showRejectModal, setShowRejectModal] = useState(false)
 
-  function handleDecision(decision: 'approved' | 'rejected') {
+  function handleApprove() {
     startTransition(async () => {
-      const result = await reviewDriverKyc({ driverId: row.id, decision })
-      if (result.error) {
-        toast.error(result.error)
-      } else {
-        toast.success(`KYC ${decision} for ${row.fullName}`)
+      const result = await reviewDriverKyc({ driverId: row.id, decision: 'approved' })
+      if (result.error) toast.error(result.error)
+      else {
+        toast.success(`KYC approved for ${row.fullName}`)
+        onClose()
+      }
+    })
+  }
+
+  function handleRejectConfirm(reason: string) {
+    startTransition(async () => {
+      const result = await reviewDriverKyc({ driverId: row.id, decision: 'rejected', reason })
+      if (result.error) toast.error(result.error)
+      else {
+        toast.success(`KYC rejected for ${row.fullName}`)
+        setShowRejectModal(false)
         onClose()
       }
     })
@@ -101,23 +114,30 @@ export function KycReviewContent({ row, onClose }: KycReviewContentProps) {
       <div className="flex gap-3 border-t border-[#cbccc9] pt-2">
         <button
           disabled={pending}
-          onClick={() => handleDecision('approved')}
-          className="flex flex-1 items-center justify-center gap-2 rounded bg-green-600 px-4 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-green-700 focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:outline-none disabled:opacity-50"
+          onClick={handleApprove}
+          className="flex flex-1 items-center justify-center gap-2 rounded bg-green-600 px-4 py-2.5 text-[13px] font-bold text-white hover:bg-green-700 disabled:opacity-50"
           aria-label={`Approve KYC for ${row.fullName}`}
         >
-          <CheckCircle className="size-4" aria-hidden="true" />
-          Approve
+          <CheckCircle className="size-4" aria-hidden="true" /> Approve
         </button>
         <button
           disabled={pending}
-          onClick={() => handleDecision('rejected')}
-          className="flex flex-1 items-center justify-center gap-2 rounded border border-red-300 bg-white px-4 py-2.5 text-[13px] font-bold text-red-600 transition-colors hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none disabled:opacity-50"
+          onClick={() => setShowRejectModal(true)}
+          className="flex flex-1 items-center justify-center gap-2 rounded border border-red-300 bg-white px-4 py-2.5 text-[13px] font-bold text-red-600 hover:bg-red-50 disabled:opacity-50"
           aria-label={`Reject KYC for ${row.fullName}`}
         >
-          <XCircle className="size-4" aria-hidden="true" />
-          Reject
+          <XCircle className="size-4" aria-hidden="true" /> Reject
         </button>
       </div>
+
+      {showRejectModal && (
+        <RejectReasonModal
+          title={`Từ chối KYC — ${row.fullName}`}
+          onConfirm={handleRejectConfirm}
+          onClose={() => setShowRejectModal(false)}
+          pending={pending}
+        />
+      )}
     </div>
   )
 }
