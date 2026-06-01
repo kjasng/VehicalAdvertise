@@ -31,7 +31,10 @@ export default async function PartnerOnboardingPage() {
   // Approved partners should not see this page
   if (partner?.status === 'approved') redirect('/partner/dashboard')
 
-  const status = !partner ? 'none' : (partner.status as 'pending' | 'rejected')
+  // Only treat as 'pending' if company_name was actually submitted.
+  // An empty partners row (no company info) = user hasn't filled the form yet.
+  const hasSubmitted = !!partner?.company_name
+  const status = !partner || !hasSubmitted ? 'none' : (partner.status as 'pending' | 'rejected')
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f7f8fa]">
