@@ -53,25 +53,29 @@ function IconBtn({
   variant?: 'default' | 'danger' | 'warning'
   children: React.ReactNode
 }) {
-  const cls = {
-    default: 'text-[#666666] hover:bg-[#f0f0ee] hover:text-[#1a1a1a]',
-    danger: 'text-red-500 hover:bg-red-50 hover:text-red-600',
-    warning: 'text-yellow-600 hover:bg-yellow-50',
-  }
+  // Explicit class strings so Tailwind JIT always includes them
+  const variantCls =
+    variant === 'danger'
+      ? 'text-red-500 hover:bg-red-50 hover:text-red-600'
+      : variant === 'warning'
+        ? 'text-yellow-600 hover:bg-yellow-50'
+        : 'text-[#666666] hover:bg-[#f0f0ee] hover:text-[#1a1a1a]'
+
   return (
-    <div className="group/tip relative">
+    // Unnamed group — avoids Tailwind v4 named-group parsing issues
+    <div className="group relative">
       <button
         type="button"
         disabled={disabled}
         onClick={onClick}
         aria-label={tooltip}
-        className={`focus-visible:ring-primary flex h-8 w-8 cursor-pointer items-center justify-center rounded transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:opacity-40 ${cls[variant]}`}
+        className={`focus-visible:ring-primary flex h-8 w-8 cursor-pointer items-center justify-center rounded transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:opacity-40 ${variantCls}`}
       >
         {children}
       </button>
       <span
         role="tooltip"
-        className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 rounded bg-[#1a1a1a] px-2 py-1 text-[11px] leading-none whitespace-nowrap text-white opacity-0 transition-opacity group-hover/tip:opacity-100"
+        className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 rounded bg-[#1a1a1a] px-2 py-1 text-[11px] leading-none whitespace-nowrap text-white opacity-0 transition-opacity group-hover:opacity-100"
       >
         {tooltip}
       </span>
