@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react'
 
-import { Check, Pencil, Plus, Search, ShieldCheck, ShieldOff, Trash2, X } from 'lucide-react'
+import { Pencil, Plus, Search, ShieldCheck, ShieldOff, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { EmptyState } from '@/components/shared/empty-state'
@@ -16,9 +16,17 @@ import {
   fetchUserKycPhotos,
   setUserBlocked,
 } from './actions'
+import { ConfirmModal } from './confirm-modal'
 import { UserModal } from './user-modal'
 
 type KycPhotos = { front: string | null; back: string | null; selfie: string | null }
+
+type ConfirmAction =
+  | { type: 'delete'; user: AdminUserRow }
+  | { type: 'suspend'; user: AdminUserRow }
+  | { type: 'unsuspend'; user: AdminUserRow }
+  | { type: 'bulk-delete' }
+  | { type: 'bulk-suspend'; blocked: boolean }
 
 interface Props {
   users: AdminUserRow[]
@@ -57,7 +65,7 @@ function IconBtn({
         disabled={disabled}
         onClick={onClick}
         aria-label={tooltip}
-        className={`focus-visible:ring-primary flex h-7 w-7 items-center justify-center rounded transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:opacity-40 ${cls[variant]}`}
+        className={`focus-visible:ring-primary flex h-8 w-8 cursor-pointer items-center justify-center rounded transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:opacity-40 ${cls[variant]}`}
       >
         {children}
       </button>
@@ -76,9 +84,8 @@ const ROLES = ['driver', 'partner', 'garage', 'admin', 'pending']
 export function UsersTableClient({ users }: Props) {
   const [pending, startTransition] = useTransition()
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [bulkRole, setBulkRole] = useState('driver')
-  const [bulkDeleting, setBulkDeleting] = useState(false)
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
   // undefined = closed, null = create mode, AdminUserRow = edit mode
   const [modalUser, setModalUser] = useState<AdminUserRow | null | undefined>(undefined)
   const [kycPhotos, setKycPhotos] = useState<KycPhotos | null>(null)
@@ -120,33 +127,40 @@ export function UsersTableClient({ users }: Props) {
     })
   const toggleAll = () => setSelected(allChecked ? new Set() : new Set(allIds))
 
-  function handleDelete(user: AdminUserRow) {
+  // Execute the confirmed action
+  function executeConfirm() {
+    if (!confirmAction) return
     startTransition(async () => {
-      const r = await deleteUser({ targetId: user.id })
-      if (r.error) toast.error(r.error)
-      else {
-        toast.success(`${user.fullName} deleted`)
-        setDeletingId(null)
-      }
-    })
-  }
+      let error: string | null = null
 
-  function handleToggleBlocked(user: AdminUserRow) {
-    startTransition(async () => {
-      const r = await setUserBlocked({ targetId: user.id, blocked: !user.blocked })
-      if (r.error) toast.error(r.error)
-      else toast.success(`${user.fullName} ${!user.blocked ? 'suspended' : 'unsuspended'}`)
-    })
-  }
-
-  function handleBulkSuspend(blocked: boolean) {
-    startTransition(async () => {
-      const r = await bulkSetUsersBlocked({ ids: [...selected], blocked })
-      if (r.error) toast.error(r.error)
-      else {
-        toast.success(`${r.count} user(s) ${blocked ? 'suspended' : 'unsuspended'}`)
-        setSelected(new Set())
+      if (confirmAction.type === 'delete') {
+        const r = await deleteUser({ targetId: confirmAction.user.id })
+        error = r.error
+        if (!error) toast.success(`${confirmAction.user.fullName} deleted`)
+      } else if (confirmAction.type === 'suspend' || confirmAction.type === 'unsuspend') {
+        const blocked = confirmAction.type === 'suspend'
+        const r = await setUserBlocked({ targetId: confirmAction.user.id, blocked })
+        error = r.error
+        if (!error)
+          toast.success(`${confirmAction.user.fullName} ${blocked ? 'suspended' : 'unsuspended'}`)
+      } else if (confirmAction.type === 'bulk-delete') {
+        const r = await bulkDeleteUsers({ ids: [...selected] })
+        error = r.error
+        if (!error) {
+          toast.success(`${r.count} user(s) deleted`)
+          setSelected(new Set())
+        }
+      } else if (confirmAction.type === 'bulk-suspend') {
+        const r = await bulkSetUsersBlocked({ ids: [...selected], blocked: confirmAction.blocked })
+        error = r.error
+        if (!error) {
+          toast.success(`${r.count} user(s) ${confirmAction.blocked ? 'suspended' : 'unsuspended'}`)
+          setSelected(new Set())
+        }
       }
+
+      if (error) toast.error(error)
+      else setConfirmAction(null)
     })
   }
 
@@ -160,22 +174,6 @@ export function UsersTableClient({ users }: Props) {
       else {
         toast.success(`${r.count} user(s) role changed to ${bulkRole}`)
         setSelected(new Set())
-      }
-    })
-  }
-
-  function handleBulkDelete() {
-    if (!bulkDeleting) {
-      setBulkDeleting(true)
-      return
-    }
-    startTransition(async () => {
-      const r = await bulkDeleteUsers({ ids: [...selected] })
-      if (r.error) toast.error(r.error)
-      else {
-        toast.success(`${r.count} user(s) deleted`)
-        setSelected(new Set())
-        setBulkDeleting(false)
       }
     })
   }
@@ -215,7 +213,7 @@ export function UsersTableClient({ users }: Props) {
           className="focus:ring-primary h-[34px] cursor-pointer appearance-none rounded border border-[#cbccc9] bg-white bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23666%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22M6%209l6%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[right_8px_center] bg-no-repeat px-3 pr-8 text-[13px] text-[#1a1a1a] focus:ring-2 focus:outline-none"
           aria-label="Filter by role"
         >
-          <option value="">Role</option>
+          <option value="">All</option>
           {ROLES.map((r) => (
             <option key={r} value={r}>
               {r.charAt(0).toUpperCase() + r.slice(1)}
@@ -231,9 +229,9 @@ export function UsersTableClient({ users }: Props) {
               setRoleFilter('')
               setStatusFilter('')
             }}
-            className="h-[34px] rounded border border-[#cbccc9] px-3 text-[12px] text-[#666666] hover:border-[#1a1a1a] hover:text-[#1a1a1a]"
+            className="flex h-[34px] cursor-pointer items-center gap-1 rounded border bg-red-400 px-3 text-[12px] text-white"
           >
-            Clear
+            Clear <X size={16} />
           </button>
         )}
 
@@ -243,7 +241,7 @@ export function UsersTableClient({ users }: Props) {
         {/* Add User button */}
         <button
           onClick={() => setModalUser(null)}
-          className="focus-visible:ring-primary flex shrink-0 items-center gap-1.5 rounded bg-[#1a1a1a] px-4 py-[7px] text-[13px] font-bold text-white hover:bg-[#333] focus-visible:ring-2 focus-visible:outline-none"
+          className="focus-visible:ring-primary flex shrink-0 cursor-pointer items-center gap-1.5 rounded bg-[#1a1a1a] px-4 py-[7px] text-[13px] font-bold text-white hover:bg-[#333] focus-visible:ring-2 focus-visible:outline-none"
         >
           <Plus className="size-3.5" aria-hidden="true" /> New User
         </button>
@@ -263,10 +261,7 @@ export function UsersTableClient({ users }: Props) {
         <div className="mb-3 flex flex-wrap items-center gap-3 rounded border border-[#cbccc9] bg-[#f7f8fa] px-4 py-2.5">
           <span className="text-[12px] font-bold text-[#1a1a1a]">{selected.size} selected</span>
           <button
-            onClick={() => {
-              setSelected(new Set())
-              setBulkDeleting(false)
-            }}
+            onClick={() => setSelected(new Set())}
             className="text-[12px] text-[#666666] underline hover:text-[#1a1a1a]"
           >
             Clear
@@ -295,46 +290,25 @@ export function UsersTableClient({ users }: Props) {
             </div>
             <button
               disabled={pending}
-              onClick={() => handleBulkSuspend(true)}
+              onClick={() => setConfirmAction({ type: 'bulk-suspend', blocked: true })}
               className="flex h-7 items-center gap-1 rounded border border-[#cbccc9] px-2 text-[12px] font-medium text-yellow-700 hover:bg-yellow-50 disabled:opacity-50"
             >
               <ShieldOff className="size-3" /> Suspend
             </button>
             <button
               disabled={pending}
-              onClick={() => handleBulkSuspend(false)}
+              onClick={() => setConfirmAction({ type: 'bulk-suspend', blocked: false })}
               className="flex h-7 items-center gap-1 rounded border border-[#cbccc9] px-2 text-[12px] font-medium text-green-700 hover:bg-green-50 disabled:opacity-50"
             >
               <ShieldCheck className="size-3" /> Unsuspend
             </button>
-            {bulkDeleting ? (
-              <div className="flex items-center gap-1">
-                <span className="text-[12px] font-medium text-red-600">
-                  Delete {selected.size}?
-                </span>
-                <button
-                  disabled={pending}
-                  onClick={handleBulkDelete}
-                  className="flex h-7 items-center gap-1 rounded bg-red-600 px-2 text-[12px] font-bold text-white hover:bg-red-700 disabled:opacity-50"
-                >
-                  <Check className="size-3" /> Confirm
-                </button>
-                <button
-                  onClick={() => setBulkDeleting(false)}
-                  className="flex h-7 items-center rounded px-1 text-[#666666] hover:text-[#1a1a1a]"
-                >
-                  <X className="size-3.5" />
-                </button>
-              </div>
-            ) : (
-              <button
-                disabled={pending}
-                onClick={handleBulkDelete}
-                className="flex h-7 items-center gap-1 rounded border border-red-200 px-2 text-[12px] font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
-              >
-                <Trash2 className="size-3" /> Delete
-              </button>
-            )}
+            <button
+              disabled={pending}
+              onClick={() => setConfirmAction({ type: 'bulk-delete' })}
+              className="flex h-7 items-center gap-1 rounded border border-red-200 px-2 text-[12px] font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+            >
+              <Trash2 className="size-3" /> Delete
+            </button>
           </div>
         </div>
       )}
@@ -404,58 +378,87 @@ export function UsersTableClient({ users }: Props) {
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    {deletingId === user.id ? (
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] text-red-600">Delete?</span>
+                    <div className="flex items-center gap-0.5">
+                      {user.role !== 'admin' && (
+                        <IconBtn tooltip="Edit" onClick={() => openEdit(user)} disabled={pending}>
+                          <Pencil className="size-3.5" />
+                        </IconBtn>
+                      )}
+                      <IconBtn
+                        tooltip={user.blocked ? 'Unsuspend' : 'Suspend'}
+                        onClick={() =>
+                          setConfirmAction({ type: user.blocked ? 'unsuspend' : 'suspend', user })
+                        }
+                        disabled={pending}
+                        variant={user.blocked ? 'default' : 'warning'}
+                      >
+                        {user.blocked ? (
+                          <ShieldCheck className="size-3.5" />
+                        ) : (
+                          <ShieldOff className="size-3.5" />
+                        )}
+                      </IconBtn>
+                      {user.role !== 'admin' && (
                         <IconBtn
-                          tooltip="Confirm"
-                          onClick={() => handleDelete(user)}
+                          tooltip="Delete"
+                          onClick={() => setConfirmAction({ type: 'delete', user })}
                           disabled={pending}
                           variant="danger"
                         >
-                          <Check className="size-3.5" />
+                          <Trash2 className="size-3.5" />
                         </IconBtn>
-                        <IconBtn tooltip="Cancel" onClick={() => setDeletingId(null)}>
-                          <X className="size-3.5" />
-                        </IconBtn>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-0.5">
-                        {user.role !== 'admin' && (
-                          <IconBtn tooltip="Edit" onClick={() => openEdit(user)} disabled={pending}>
-                            <Pencil className="size-3.5" />
-                          </IconBtn>
-                        )}
-                        <IconBtn
-                          tooltip={user.blocked ? 'Unsuspend' : 'Suspend'}
-                          onClick={() => handleToggleBlocked(user)}
-                          disabled={pending}
-                          variant={user.blocked ? 'default' : 'warning'}
-                        >
-                          {user.blocked ? (
-                            <ShieldCheck className="size-3.5" />
-                          ) : (
-                            <ShieldOff className="size-3.5" />
-                          )}
-                        </IconBtn>
-                        {user.role !== 'admin' && (
-                          <IconBtn
-                            tooltip="Delete"
-                            onClick={() => setDeletingId(user.id)}
-                            disabled={pending}
-                            variant="danger"
-                          >
-                            <Trash2 className="size-3.5" />
-                          </IconBtn>
-                        )}
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Confirm modal for delete / suspend actions */}
+      {confirmAction && (
+        <ConfirmModal
+          title={
+            confirmAction.type === 'delete'
+              ? `Delete ${confirmAction.user.fullName}?`
+              : confirmAction.type === 'suspend'
+                ? `Suspend ${confirmAction.user.fullName}?`
+                : confirmAction.type === 'unsuspend'
+                  ? `Unsuspend ${confirmAction.user.fullName}?`
+                  : confirmAction.type === 'bulk-delete'
+                    ? `Delete ${selected.size} user(s)?`
+                    : `${confirmAction.blocked ? 'Suspend' : 'Unsuspend'} ${selected.size} user(s)?`
+          }
+          message={
+            confirmAction.type === 'delete'
+              ? `This will permanently delete the account and all associated data. This action cannot be undone.`
+              : confirmAction.type === 'suspend'
+                ? `${confirmAction.user.fullName} will lose access to the platform immediately.`
+                : confirmAction.type === 'unsuspend'
+                  ? `${confirmAction.user.fullName} will regain access to the platform.`
+                  : confirmAction.type === 'bulk-delete'
+                    ? `This will permanently delete ${selected.size} accounts. This action cannot be undone.`
+                    : `${selected.size} users will ${confirmAction.blocked ? 'lose' : 'regain'} access to the platform.`
+          }
+          confirmLabel={
+            confirmAction.type === 'delete' || confirmAction.type === 'bulk-delete'
+              ? 'Delete'
+              : confirmAction.type === 'suspend' ||
+                  (confirmAction.type === 'bulk-suspend' && confirmAction.blocked)
+                ? 'Suspend'
+                : 'Unsuspend'
+          }
+          variant={
+            confirmAction.type === 'delete' || confirmAction.type === 'bulk-delete'
+              ? 'danger'
+              : 'warning'
+          }
+          pending={pending}
+          onConfirm={executeConfirm}
+          onClose={() => setConfirmAction(null)}
+        />
       )}
 
       {/* Create / Edit modal — key forces re-mount when switching users */}
