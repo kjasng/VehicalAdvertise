@@ -56,7 +56,7 @@ export function RoleForm() {
   }
 
   return (
-    <div className="grid flex-1 grid-cols-1 lg:grid-cols-3">
+    <div className="grid flex-1 grid-cols-1 lg:grid-cols-2">
       {ROLES.map(({ id, label, copy, image, alt }, i) => {
         const active = activeIndex === i
         const dimmed = activeIndex !== null && !active
