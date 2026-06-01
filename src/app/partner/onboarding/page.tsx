@@ -31,9 +31,10 @@ export default async function PartnerOnboardingPage() {
   // Approved partners should not see this page
   if (partner?.status === 'approved') redirect('/partner/dashboard')
 
-  // Only treat as 'pending' if company_name was actually submitted.
-  // An empty partners row (no company info) = user hasn't filled the form yet.
-  const hasSubmitted = !!partner?.company_name
+  // choose_role RPC auto-creates partners row with company_name = user's full_name.
+  // billing_address is ONLY set when user submits the onboarding form — use it as
+  // the real "has submitted" indicator instead of company_name.
+  const hasSubmitted = !!partner?.billing_address
   const status = !partner || !hasSubmitted ? 'none' : (partner.status as 'pending' | 'rejected')
 
   return (
