@@ -14,6 +14,7 @@ import {
   FileText,
   Receipt,
   Wallet,
+  Landmark,
   Users,
   BarChart2,
   Map,
@@ -53,6 +54,7 @@ export const ADMIN_NAV: NavItem[] = [
 
   // ── Money ─────────────────────────────────────────────────────
   { href: '/admin/payouts', label: 'Payouts', icon: Wallet },
+  { href: '/admin/partner-balances', label: 'Partner Balances', icon: Landmark },
 
   // ── System ────────────────────────────────────────────────────
   { href: '/admin/users', label: 'Users', icon: Users },
