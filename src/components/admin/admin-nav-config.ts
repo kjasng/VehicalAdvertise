@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Megaphone,
   FileText,
+  GitMerge,
   Receipt,
   Wallet,
   Landmark,
@@ -51,6 +52,7 @@ export const ADMIN_NAV: NavItem[] = [
     ],
   },
   { href: '/admin/campaigns', label: 'Campaigns', icon: Megaphone },
+  { href: '/admin/contracts', label: 'Contracts', icon: GitMerge },
 
   // ── Money ─────────────────────────────────────────────────────
   { href: '/admin/payouts', label: 'Payouts', icon: Wallet },
