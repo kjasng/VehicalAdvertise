@@ -17,6 +17,7 @@ import {
   Wallet,
   Landmark,
   Scale,
+  SlidersHorizontal,
   Users,
   BarChart2,
   Map,
@@ -59,6 +60,7 @@ export const ADMIN_NAV: NavItem[] = [
   { href: '/admin/payouts', label: 'Payouts', icon: Wallet },
   { href: '/admin/partner-balances', label: 'Partner Balances', icon: Landmark },
   { href: '/admin/ledger-adjustments', label: 'Ledger Adjustments', icon: Scale },
+  { href: '/admin/pricing-settings', label: 'Pricing Settings', icon: SlidersHorizontal },
 
   // ── System ────────────────────────────────────────────────────
   { href: '/admin/users', label: 'Users', icon: Users },

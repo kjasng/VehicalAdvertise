@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 
 import { ChevronDown, ChevronRight, Plus, X } from 'lucide-react'
 import { toast } from 'sonner'
@@ -39,6 +39,20 @@ const FUEL_LABEL: Record<string, string> = {
   diesel: 'Dầu',
   electric: 'Điện',
   hybrid: 'Hybrid',
+}
+
+type ContractPartyFilter = 'all' | 'partner_admin' | 'driver_admin' | 'garage_admin'
+
+const PARTY_OPTIONS: { value: ContractPartyFilter; label: string }[] = [
+  { value: 'all', label: 'All contract types' },
+  { value: 'partner_admin', label: 'Partner - Admin/Agency' },
+  { value: 'garage_admin', label: 'Garage - Admin/Agency' },
+  { value: 'driver_admin', label: 'Driver - Admin/Agency' },
+]
+
+function matchesText(parts: Array<string | number | null | undefined>, query: string) {
+  if (!query) return true
+  return parts.filter(Boolean).join(' ').toLowerCase().includes(query)
 }
 
 // ── Add Driver Modal ───────────────────────────────────────────────────────
@@ -315,7 +329,7 @@ function CampaignCard({
             <table className="w-full text-[13px]">
               <thead className="bg-[#f7f8fa]">
                 <tr>
-                  {['Driver', 'Biển số', 'Nhiên liệu', 'KM', 'Status', ''].map((h) => (
+                  {['Driver', 'Biển số', 'Nhiên liệu', 'Garage', 'KM', 'Status', ''].map((h) => (
                     <th
                       key={h}
                       className="px-4 py-2 text-left text-[11px] font-extrabold tracking-[1.5px] text-[#1a1a1a] uppercase"
@@ -333,6 +347,7 @@ function CampaignCard({
                     <td className="px-4 py-2 text-[#666666]">
                       {FUEL_LABEL[c.vehicleFuel] ?? c.vehicleFuel}
                     </td>
+                    <td className="px-4 py-2 text-[#666666]">{c.garageName ?? '—'}</td>
                     <td className="px-4 py-2 font-mono text-[#1a1a1a]">
                       {c.kmTotal.toLocaleString()}
                     </td>
@@ -396,6 +411,71 @@ export function ContractsClient({
   contractsByCampaign: Record<string, ContractRow[]>
   drivers: AvailableDriverRow[]
 }) {
+  const [party, setParty] = useState<ContractPartyFilter>('all')
+  const [status, setStatus] = useState('')
+  const [search, setSearch] = useState('')
+  const normalizedSearch = search.trim().toLowerCase()
+
+  const statusOptions = useMemo(() => {
+    const statuses = new Set<string>()
+    for (const campaign of campaigns) statuses.add(campaign.status)
+    for (const contracts of Object.values(contractsByCampaign)) {
+      for (const contract of contracts) statuses.add(contract.status)
+    }
+    return Array.from(statuses).sort()
+  }, [campaigns, contractsByCampaign])
+
+  const filteredCampaigns = useMemo(() => {
+    return campaigns
+      .map((campaign) => {
+        const contracts = contractsByCampaign[campaign.id] ?? []
+        const campaignMatchesStatus = !status || campaign.status === status
+        const campaignMatchesSearch = matchesText(
+          [
+            campaign.name,
+            campaign.partnerName,
+            campaign.status,
+            campaign.ratePerKmVnd,
+            campaign.dailyCapKm,
+          ],
+          normalizedSearch,
+        )
+        const matchingContracts = contracts.filter((contract) => {
+          const matchesParty =
+            party === 'all' ||
+            party === 'driver_admin' ||
+            (party === 'garage_admin' && Boolean(contract.garageName))
+          const matchesStatus = !status || contract.status === status
+          const matchesSearch = matchesText(
+            [
+              contract.campaignName,
+              contract.driverName,
+              contract.vehiclePlate,
+              contract.vehicleFuel,
+              contract.garageName,
+              contract.status,
+              contract.kmTotal,
+            ],
+            normalizedSearch,
+          )
+          return matchesParty && matchesStatus && matchesSearch
+        })
+
+        if (party === 'partner_admin') {
+          if (!campaignMatchesStatus || !campaignMatchesSearch) return null
+          return { campaign, contracts }
+        }
+
+        const campaignMatches = campaignMatchesStatus && campaignMatchesSearch
+        if (party === 'all' && campaignMatches) return { campaign, contracts }
+        if (matchingContracts.length > 0) return { campaign, contracts: matchingContracts }
+        return null
+      })
+      .filter((row): row is { campaign: CampaignMatchRow; contracts: ContractRow[] } =>
+        Boolean(row),
+      )
+  }, [campaigns, contractsByCampaign, normalizedSearch, party, status])
+
   if (campaigns.length === 0)
     return (
       <EmptyState
@@ -406,17 +486,73 @@ export function ContractsClient({
     )
 
   return (
-    <SectionShell title={`Campaigns (${campaigns.length})`}>
-      <div className="space-y-3">
-        {campaigns.map((c) => (
-          <CampaignCard
-            key={c.id}
-            campaign={c}
-            contracts={contractsByCampaign[c.id] ?? []}
-            drivers={drivers}
+    <SectionShell title={`Campaigns (${filteredCampaigns.length}/${campaigns.length})`}>
+      <div className="mb-4 grid gap-3 md:grid-cols-[180px_180px_minmax(220px,1fr)]">
+        <div>
+          <label className="mb-1 block text-[11px] font-bold tracking-[2px] text-[#666666] uppercase">
+            Contract type
+          </label>
+          <select
+            value={party}
+            onChange={(e) => setParty(e.target.value as ContractPartyFilter)}
+            className="focus:ring-primary h-[40px] w-full rounded border border-[#cbccc9] bg-white px-3 text-[13px] text-[#1a1a1a] focus:ring-2 focus:outline-none"
+          >
+            {PARTY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="mb-1 block text-[11px] font-bold tracking-[2px] text-[#666666] uppercase">
+            Status
+          </label>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className="focus:ring-primary h-[40px] w-full rounded border border-[#cbccc9] bg-white px-3 text-[13px] text-[#1a1a1a] focus:ring-2 focus:outline-none"
+          >
+            <option value="">All statuses</option>
+            {statusOptions.map((option) => (
+              <option key={option} value={option}>
+                {option.replace(/_/g, ' ')}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="mb-1 block text-[11px] font-bold tracking-[2px] text-[#666666] uppercase">
+            Search
+          </label>
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Partner, campaign, driver, plate, garage..."
+            className="focus:ring-primary h-[40px] w-full rounded border border-[#cbccc9] px-3 text-[13px] text-[#1a1a1a] focus:ring-2 focus:outline-none"
           />
-        ))}
+        </div>
       </div>
+
+      {filteredCampaigns.length === 0 ? (
+        <EmptyState
+          kicker="empty"
+          title="No Matching Contracts"
+          helper="Try another contract type, status, or search keyword."
+        />
+      ) : (
+        <div className="space-y-3">
+          {filteredCampaigns.map(({ campaign, contracts }) => (
+            <CampaignCard
+              key={campaign.id}
+              campaign={campaign}
+              contracts={contracts}
+              drivers={drivers}
+            />
+          ))}
+        </div>
+      )}
     </SectionShell>
   )
 }

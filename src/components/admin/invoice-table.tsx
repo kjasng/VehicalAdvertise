@@ -18,6 +18,7 @@ const KIND_STYLES: Record<string, string> = {
   partner_topup: 'bg-purple-100 text-purple-700',
   partner_charge: 'bg-orange-100 text-orange-700',
   platform_fee: 'bg-[#f0f0ee] text-[#666666]',
+  garage_install_payout: 'bg-green-100 text-green-700',
   adjustment: 'bg-yellow-100 text-yellow-700',
   refund: 'bg-red-100 text-red-600',
 }
@@ -30,13 +31,10 @@ export function InvoiceTable({ rows }: InvoiceTableProps) {
   const [filters, setFilters] = useState<InvoiceFilterValues>({
     dateFrom: '',
     dateTo: '',
-    status: '',
     search: '',
   })
 
   const filtered = rows.filter((r) => {
-    // status filter maps to kind for real data
-    if (filters.status && r.kind !== filters.status) return false
     if (filters.dateFrom && r.createdAt < filters.dateFrom) return false
     if (filters.dateTo && r.createdAt > filters.dateTo) return false
     if (filters.search) {

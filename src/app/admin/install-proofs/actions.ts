@@ -35,28 +35,16 @@ export async function reviewInstallProof(raw: unknown): Promise<{ error: string 
 
   const supabase = createSupabaseAdminClient()
 
-  // photos.status is not column-revoked — direct service-role update is safe
-  const { error: updateError } = await supabase
-    .from('photos')
-    .update({
-      status: decision,
-      reviewed_by: user.id,
-      reviewed_at: new Date().toISOString(),
-      reject_reason: decision === 'rejected' ? (reason ?? null) : null,
-    })
-    .eq('id', photoId)
-
-  if (updateError) return { error: updateError.message }
-
-  const { error: auditError } = await supabase.from('audit_log').insert({
-    actor_id: user.id,
-    action: `install_proof_${decision}`,
-    entity_type: 'photos',
-    entity_id: photoId,
-    diff: { reason: reason ?? null },
+  const { error: reviewError } = await supabase.rpc('admin_review_install_proof', {
+    p_actor_id: user.id,
+    p_photo_id: photoId,
+    p_decision: decision,
+    p_reason: reason ?? null,
   })
-  if (auditError) console.error('[reviewInstallProof] audit_log insert failed:', auditError.message)
+  if (reviewError) return { error: reviewError.message }
 
   revalidatePath('/admin/install-proofs')
+  revalidatePath('/admin/invoices/garage')
+  revalidatePath('/admin/audit-log')
   return { error: null }
 }

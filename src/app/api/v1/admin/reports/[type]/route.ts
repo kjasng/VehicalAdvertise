@@ -99,6 +99,7 @@ export async function GET(_req: NextRequest, { params }: { params: Params }) {
     const { data, error } = await supabase
       .from('ledger_entries')
       .select('id, ts, kind, amount_vnd, note, driver_id, partner_id')
+      .in('kind', ['driver_payout', 'partner_topup', 'partner_charge', 'garage_install_payout'])
       .order('ts', { ascending: false })
       .limit(5000)
 

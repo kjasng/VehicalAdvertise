@@ -19,6 +19,12 @@ interface InstallProofsClientProps {
   garages: string[]
 }
 
+const STATUS_STYLES: Record<InstallProofRow['status'], string> = {
+  pending: 'bg-yellow-100 text-yellow-700',
+  approved: 'bg-green-100 text-green-700',
+  rejected: 'bg-red-100 text-red-600',
+}
+
 export function InstallProofsClient({ rows, garages }: InstallProofsClientProps) {
   const [garage, setGarage] = useState('All garages')
   const [selected, setSelected] = useState<InstallProofRow | null>(null)
@@ -87,7 +93,14 @@ export function InstallProofsClient({ rows, garages }: InstallProofsClientProps)
                   />
                   <div className="border-t border-[#cbccc9] bg-white p-2">
                     <p className="text-[12px] font-medium text-[#1a1a1a]">{row.driverName}</p>
-                    <p className="text-[11px] text-[#666666]">{row.garageName}</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[11px] text-[#666666]">{row.garageName}</p>
+                      <span
+                        className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${STATUS_STYLES[row.status]}`}
+                      >
+                        {row.status}
+                      </span>
+                    </div>
                     {row.gpsDeltaM !== null && (
                       <div className="mt-1 flex items-center gap-1">
                         <MapPin className="size-3 text-[#666666]" aria-hidden="true" />
@@ -147,24 +160,30 @@ export function InstallProofsClient({ rows, garages }: InstallProofsClientProps)
                 GPS delta exceeds 100m threshold — verify location manually.
               </div>
             )}
-            <div className="flex gap-3 border-t border-[#cbccc9] pt-2">
-              <button
-                disabled={pending}
-                onClick={() => handleDecision('approved')}
-                className="flex flex-1 items-center justify-center gap-2 rounded bg-green-600 px-4 py-2.5 text-[13px] font-bold text-white hover:bg-green-700 focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:outline-none disabled:opacity-50"
-                aria-label="Approve install proof"
-              >
-                <CheckCircle className="size-4" aria-hidden="true" /> Approve
-              </button>
-              <button
-                disabled={pending}
-                onClick={() => handleDecision('rejected')}
-                className="flex flex-1 items-center justify-center gap-2 rounded border border-red-300 bg-white px-4 py-2.5 text-[13px] font-bold text-red-600 hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none disabled:opacity-50"
-                aria-label="Reject install proof"
-              >
-                <XCircle className="size-4" aria-hidden="true" /> Reject
-              </button>
-            </div>
+            {selected.status === 'pending' ? (
+              <div className="flex gap-3 border-t border-[#cbccc9] pt-2">
+                <button
+                  disabled={pending}
+                  onClick={() => handleDecision('approved')}
+                  className="flex flex-1 items-center justify-center gap-2 rounded bg-green-600 px-4 py-2.5 text-[13px] font-bold text-white hover:bg-green-700 focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:outline-none disabled:opacity-50"
+                  aria-label="Approve install proof"
+                >
+                  <CheckCircle className="size-4" aria-hidden="true" /> Approve
+                </button>
+                <button
+                  disabled={pending}
+                  onClick={() => handleDecision('rejected')}
+                  className="flex flex-1 items-center justify-center gap-2 rounded border border-red-300 bg-white px-4 py-2.5 text-[13px] font-bold text-red-600 hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none disabled:opacity-50"
+                  aria-label="Reject install proof"
+                >
+                  <XCircle className="size-4" aria-hidden="true" /> Reject
+                </button>
+              </div>
+            ) : (
+              <div className="rounded border border-[#cbccc9] bg-[#f7f8fa] px-3 py-2 text-[12px] text-[#666666]">
+                Proof này đã được review, không thể duyệt lại.
+              </div>
+            )}
           </div>
         )}
       </ReviewDrawer>

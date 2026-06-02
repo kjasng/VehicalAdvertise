@@ -43,6 +43,14 @@ const ROLE_META = {
 
 type EditableRole = keyof typeof ROLE_META
 
+const BODY_TYPES = [
+  { value: 'sedan', label: 'Sedan' },
+  { value: 'suv', label: 'SUV' },
+  { value: 'hatchback', label: 'Hatchback' },
+  { value: 'mpv', label: 'MPV' },
+  { value: 'pickup', label: 'Pickup' },
+] as const
+
 interface Props {
   user?: AdminUserRow | null
   kycPhotos?: KycPhotos | null
@@ -64,6 +72,7 @@ function EditModal({
   const [fullName, setFullName] = useState(user.fullName)
   const [phone, setPhone] = useState(user.phone ?? '')
   const [role, setRole] = useState<string>(user.role !== 'admin' ? user.role : 'driver')
+  const [bodyType, setBodyType] = useState(user.bodyType ?? '')
 
   const meta = ROLE_META[role as EditableRole] ?? ROLE_META.driver
 
@@ -75,6 +84,10 @@ function EditModal({
         fullName,
         phone: phone || undefined,
         role,
+        bodyType:
+          role === 'driver' && bodyType
+            ? (bodyType as (typeof BODY_TYPES)[number]['value'])
+            : undefined,
       })
       if (result.error) toast.error(result.error)
       else {
@@ -164,6 +177,26 @@ function EditModal({
                 ))}
               </select>
             </div>
+            {/* Vehicle type — drivers only */}
+            {role === 'driver' && (
+              <div className="space-y-1">
+                <label className="block text-[11px] font-bold tracking-[1.5px] text-[#666666] uppercase">
+                  Vehicle Type
+                </label>
+                <select
+                  value={bodyType}
+                  onChange={(e) => setBodyType(e.target.value)}
+                  className="focus:ring-primary h-[38px] w-full rounded border border-[#cbccc9] bg-white px-3 text-[13px] focus:ring-2 focus:outline-none"
+                >
+                  <option value="">— Not set —</option>
+                  {BODY_TYPES.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         </div>
 
@@ -250,13 +283,23 @@ function CreateModal({ onClose }: { onClose: () => void }) {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [bodyType, setBodyType] = useState('')
   const [pending, startTransition] = useTransition()
 
   function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     if (!selectedRole) return
     startTransition(async () => {
-      const result = await createUser({ email, fullName, role: selectedRole, password })
+      const result = await createUser({
+        email,
+        fullName,
+        role: selectedRole,
+        password,
+        bodyType:
+          selectedRole === 'driver' && bodyType
+            ? (bodyType as (typeof BODY_TYPES)[number]['value'])
+            : undefined,
+      })
       if (result.error) toast.error(result.error)
       else {
         toast.success(`${fullName} created`)
@@ -364,6 +407,26 @@ function CreateModal({ onClose }: { onClose: () => void }) {
                 className="focus:ring-primary h-[38px] w-full rounded border border-[#cbccc9] px-3 text-[13px] focus:ring-2 focus:outline-none"
               />
             </div>
+            {/* Vehicle type — drivers only */}
+            {selectedRole === 'driver' && (
+              <div className="space-y-1">
+                <label className="block text-[11px] font-bold tracking-[1.5px] text-[#666666] uppercase">
+                  Vehicle Type
+                </label>
+                <select
+                  value={bodyType}
+                  onChange={(e) => setBodyType(e.target.value)}
+                  className="focus:ring-primary h-[38px] w-full rounded border border-[#cbccc9] bg-white px-3 text-[13px] focus:ring-2 focus:outline-none"
+                >
+                  <option value="">— Not set —</option>
+                  {BODY_TYPES.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="flex items-start gap-2 rounded bg-blue-50 p-3">
               <Info className="mt-0.5 size-3.5 shrink-0 text-blue-500" aria-hidden="true" />
               <p className="text-[11px] leading-[1.5] text-blue-700">

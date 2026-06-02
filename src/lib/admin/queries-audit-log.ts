@@ -37,6 +37,7 @@ export const AUDIT_ACTIONS = [
   'partner_topup',
   'ledger_adjustment',
   'ledger_refund',
+  'pricing_settings_updated',
   'payout_created',
   'payout_marked_paid',
 ] as const

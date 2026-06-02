@@ -46,7 +46,7 @@ Rule: anything touching money or GPS goes through a service-role API route. Neve
 
 **Admin bypass flag (`ADMIN_PANEL_BYPASS`):** A dev-only env var (explicit opt-in, default false). When set to `"true"`, users whose `profiles.role = 'admin'` may visit `/driver`, `/partner`, and `/garage` routes without being redirected — useful for inspecting role panels during development. The bypass is routing-only and silent: RLS still enforces what data the admin can read/write at the DB level, and all writes continue to carry the admin's real `user_id`. Non-admin users are never affected regardless of flag state. **Critical for production: this flag MUST be unset in deployed environments (env var deleted from Vercel or `.env.local`) — no code change required.**
 
-**Admin security-definer RPCs:** Admin review RPCs in `0010_admin_rpcs.sql` (`approve_driver_kyc`, `approve_campaign`, `set_user_blocked`) and money RPC in `0014_admin_money_ledger_rpc.sql` (`admin_create_money_ledger_entry`) are security-definer functions owned by postgres. Review RPCs guard with `is_admin()`, while the money RPC checks the actor is an active admin, performs ledger/balance/audit writes in one DB transaction, and grants execute only to `service_role`. `is_admin()` also requires `profiles.blocked = false`, so suspended admins lose DB admin-policy access.
+**Admin security-definer RPCs:** Admin review RPCs in `0010_admin_rpcs.sql` (`approve_driver_kyc`, `approve_campaign`, `set_user_blocked`) and money RPCs in `0014_admin_money_ledger_rpc.sql` / `0016_admin_review_install_proof_rpc.sql` are owned by postgres. Money RPCs check the actor is an active admin, perform ledger/balance/audit writes in one DB transaction, and grant execute only to `service_role`. `is_admin()` also requires `profiles.blocked = false`, so suspended admins lose DB admin-policy access.
 
 ## 4. State machines
 
@@ -76,6 +76,8 @@ speed > 130 km/h · teleport (> 500 m gap < 120 s) · accuracy_m > 50 · daily c
 ## 7. Photo verification
 
 Driver PWA → `browser-image-compression` (< 2 MB) → Supabase Storage signed URL → `POST /api/v1/photos/finalize` → EXIF parse → cross-check vs last GPS fix (± 300 m) and server time (< 3 min) → auto-reject or admin queue. Effects: photo approved → day's accrual released; 3 rejects / 7 days → driver auto-suspend.
+
+Garage install proof approval runs through `admin_review_install_proof()`. Approval updates the proof and, if `pricing_rules.install_fee_vnd > 0`, creates one `garage_install_payout` ledger row linked by `contract_id` and `ref_type='install_proof'`. A partial unique index prevents duplicate payouts for the same proof.
 
 ## 8. Vietnam stack wiring
 

@@ -22,9 +22,9 @@ const anton = Anton({
 })
 
 export const metadata: Metadata = {
-  title: 'Wheels Earner',
+  title: 'Vehical Advertise',
   description:
-    'Wheels Earner — vehicle advertising marketplace pairing Vietnamese drivers with partner brands.',
+    'Vehical Advertise — vehicle advertising marketplace pairing Vietnamese drivers with partner brands.',
   manifest: '/manifest.webmanifest',
 }
 

@@ -1,5 +1,5 @@
 /**
- * Driver Invoices — driver accrual and payout ledger entries.
+ * Driver Invoices — payout request ledger entries.
  */
 import { InvoiceTable } from '@/components/admin/invoice-table'
 import { PageHeader } from '@/components/shared/page-header'
@@ -14,7 +14,7 @@ export default async function DriverInvoicesPage() {
   return (
     <div className="space-y-6">
       <PageHeader kicker="Money" title="Driver Invoices" />
-      <SectionShell title="Accruals & Payouts">
+      <SectionShell title="Payout Requests">
         <InvoiceTable rows={rows} />
       </SectionShell>
     </div>

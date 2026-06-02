@@ -622,6 +622,9 @@ export type Database = {
           effective_from: string
           ev_multiplier: number
           id: string
+          install_fee_vnd: number
+          minimum_daily_km: number
+          partner_minimum_cap_vnd: number
           platform_fee_pct: number
         }
         Insert: {
@@ -632,6 +635,9 @@ export type Database = {
           effective_from: string
           ev_multiplier: number
           id?: string
+          install_fee_vnd?: number
+          minimum_daily_km?: number
+          partner_minimum_cap_vnd?: number
           platform_fee_pct: number
         }
         Update: {
@@ -642,6 +648,9 @@ export type Database = {
           effective_from?: string
           ev_multiplier?: number
           id?: string
+          install_fee_vnd?: number
+          minimum_daily_km?: number
+          partner_minimum_cap_vnd?: number
           platform_fee_pct?: number
         }
         Relationships: [
@@ -1029,6 +1038,15 @@ export type Database = {
           p_amount_vnd: number
           p_note: string | null
           p_ref_type?: string | null
+        }
+        Returns: number
+      }
+      admin_review_install_proof: {
+        Args: {
+          p_actor_id: string
+          p_photo_id: string
+          p_decision: Database['public']['Enums']['photo_status']
+          p_reason?: string | null
         }
         Returns: number
       }
@@ -1930,6 +1948,7 @@ export type Database = {
         | 'driver_accrual'
         | 'driver_payout'
         | 'platform_fee'
+        | 'garage_install_payout'
         | 'adjustment'
         | 'refund'
       payout_status: 'pending' | 'processing' | 'paid' | 'failed'
@@ -2107,6 +2126,7 @@ export const Constants = {
         'driver_accrual',
         'driver_payout',
         'platform_fee',
+        'garage_install_payout',
         'adjustment',
         'refund',
       ],

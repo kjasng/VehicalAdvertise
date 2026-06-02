@@ -4,16 +4,16 @@
 
 ## App Routes
 
-| Route                                | Purpose                                                                                                        |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| `/driver`                            | Driver panel — dashboard (today stats, weekly KM chart), KYC verification, weekly invoices, profile & sign-out |
-| `/partner`                           | Partner web — campaign creation, contract management, driver verification, ledger                              |
-| `/garage`                            | Garage web — vehicle inventory, service-area map, availability toggle, team users                              |
-| `/admin`                             | Admin panel — dashboard, verification queues, contracts, money ops, invoices, users, reports, audit log, map   |
-| `/(public)`                          | Landing, OAuth login (Google + GitHub), QR redirect                                                            |
-| `/onboarding`                        | Role selection & CCCD upload (pending users post-signup)                                                       |
-| `/api/v1/*`                          | Route handlers — GPS ingest, photo finalize, webhooks (SePay, Supabase), state transitions                     |
-| `/api/v1/admin/reports/[type]` (GET) | CSV export (drivers, campaigns, invoices, fraud); admin-auth guarded                                           |
+| Route                                | Purpose                                                                                                               |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `/driver`                            | Driver panel — dashboard (today stats, weekly KM chart), KYC verification, weekly invoices, profile & sign-out        |
+| `/partner`                           | Partner web — campaign creation, contract management, driver verification, ledger                                     |
+| `/garage`                            | Garage web — vehicle inventory, service-area map, availability toggle, team users                                     |
+| `/admin`                             | Admin panel — dashboard, verification queues, contracts, money ops, pricing, invoices, users, reports, audit log, map |
+| `/(public)`                          | Landing, OAuth login (Google + GitHub), QR redirect                                                                   |
+| `/onboarding`                        | Role selection & CCCD upload (pending users post-signup)                                                              |
+| `/api/v1/*`                          | Route handlers — GPS ingest, photo finalize, webhooks (SePay, Supabase), state transitions                            |
+| `/api/v1/admin/reports/[type]` (GET) | CSV export (drivers, campaigns, invoices, fraud); admin-auth guarded                                                  |
 
 ## Shared Shell Primitives
 
@@ -43,7 +43,7 @@ Located in `src/components/admin/` and `src/app/admin/*/`. Admin pages wire real
 | `kyc-review-content.tsx`         | **Client component.** KYC review drawer body — CCCD photos, selfie, approve/reject actions                      |
 | `creative-review-content.tsx`    | **Client component.** Creative review drawer body — image preview, spec list, approve/reject actions            |
 | `photo-verif-review-content.tsx` | **Client component.** Photo verification drawer body — verify image, approve/reject with reason                 |
-| `invoice-filters.tsx`            | **Client component.** Date range + status select + search; lifted state via callback                            |
+| `invoice-filters.tsx`            | **Client component.** Date range + search; lifted state via callback                                            |
 | `invoice-table.tsx`              | **Client component.** InvoiceFilters + DataTable with real invoice rows and client-side filtering               |
 | `weekly-km-chart.tsx`            | **Client component.** Recharts line chart accepting real data prop from dashboard                               |
 | `demo-badge.tsx`                 | Inline "DEMO" label; renders only when `NODE_ENV !== 'production'`                                              |
@@ -51,6 +51,9 @@ Located in `src/components/admin/` and `src/app/admin/*/`. Admin pages wire real
 | `creatives-queue-client.tsx`     | **Client component.** Drawer + DataTable for creatives review; handles approval workflow                        |
 | `install-proofs-client.tsx`      | **Client component.** Drawer + DataTable for installation proofs; multi-image gallery + proof verification      |
 | `photo-verif-queue-client.tsx`   | **Client component.** Drawer + DataTable for photo verification queue; interactive review + rejection handling  |
+| `pricing-settings-client.tsx`    | **Client component.** Role-grouped pricing settings for garage, partner, and driver money rules                 |
+| `contracts-client.tsx`           | **Client component.** Campaign contract matching with contract type, status, and party search filters           |
+| `payouts-client.tsx`             | **Client component.** Driver pending balances and payout history with user search plus month/quarter filters    |
 | `users-table-client.tsx`         | **Client component.** DataTable with search params (?q=) for user filtering and status management               |
 | `mock-data.ts`                   | Reference data (not imported in any page; used only for component development and tests)                        |
 
@@ -58,23 +61,24 @@ Located in `src/components/admin/` and `src/app/admin/*/`. Admin pages wire real
 
 Located in `src/lib/admin/`. Server-side query helpers for dashboard, review queues, and reporting.
 
-| Query                         | Purpose                                                                |
-| ----------------------------- | ---------------------------------------------------------------------- |
-| `getDashboardStats`           | KPIs for admin dashboard (users, revenue, active drivers)              |
-| `getKycQueue`                 | Pending KYC reviews with profile + document URLs                       |
-| `getCreativesQueue`           | Campaign creatives awaiting approval                                   |
-| `getInstallProofs`            | Installation verification submissions                                  |
-| `getPhotoVerifications`       | Photo verification queue                                               |
-| `getDriverInvoices`           | Driver invoice ledger filtered by period                               |
-| `getPartnerInvoices`          | Partner invoice ledger filtered by period                              |
-| `getGarageInvoices`           | Garage invoice ledger filtered by period                               |
-| `getRecentAdjustments`        | Recent manual `adjustment` / `refund` ledger entries                   |
-| `getLedgerTargets`            | Partner + driver target list for admin ledger adjustments              |
-| `getUsers`                    | Users list with role + status filtering                                |
-| `getReportsData(period)`      | Fraud/performance reports grouped by week/month/year with period range |
-| `periodRange(period)`         | Helper — returns [startDate, endDate] for week/month/prev_month/year   |
-| `groupByPeriod(rows, period)` | Helper — buckets daily stats into period labels (week/month/year)      |
-| `getActiveGpsTrails`          | Live GPS traces for map view                                           |
+| Query                         | Purpose                                                                    |
+| ----------------------------- | -------------------------------------------------------------------------- |
+| `getDashboardStats`           | KPIs for admin dashboard (users, revenue, active drivers)                  |
+| `getKycQueue`                 | Pending KYC reviews with profile + document URLs                           |
+| `getCreativesQueue`           | Campaign creatives awaiting approval                                       |
+| `getInstallProofs`            | Installation verification submissions                                      |
+| `getPhotoVerifications`       | Photo verification queue                                                   |
+| `getDriverInvoices`           | Driver invoice ledger filtered by period                                   |
+| `getPartnerInvoices`          | Partner invoice ledger filtered by period                                  |
+| `getGarageInvoices`           | Garage invoice ledger filtered by period                                   |
+| `getPricingSettings`          | Current role pricing rule for garage payout, partner cap, and driver rates |
+| `getRecentAdjustments`        | Recent manual `adjustment` / `refund` ledger entries                       |
+| `getLedgerTargets`            | Partner + driver target list for admin ledger adjustments                  |
+| `getUsers`                    | Users list with role + status filtering                                    |
+| `getReportsData(period)`      | Fraud/performance reports grouped by week/month/year with period range     |
+| `periodRange(period)`         | Helper — returns [startDate, endDate] for week/month/prev_month/year       |
+| `groupByPeriod(rows, period)` | Helper — buckets daily stats into period labels (week/month/year)          |
+| `getActiveGpsTrails`          | Live GPS traces for map view                                               |
 
 ## Admin Utilities
 

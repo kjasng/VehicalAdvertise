@@ -5,6 +5,8 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 export type DriverBalance = {
   driverId: string
   driverName: string
+  email: string | null
+  phone: string | null
   bankAccountNumber: string | null
   bankAccountName: string | null
   bankBin: string | null
@@ -17,6 +19,11 @@ export type PayoutRow = {
   id: string
   driverId: string
   driverName: string
+  email: string | null
+  phone: string | null
+  bankAccountNumber: string | null
+  bankAccountName: string | null
+  bankBin: string | null
   periodStart: string
   periodEnd: string
   amountVnd: number
@@ -72,23 +79,26 @@ export async function getDriverBalances(): Promise<DriverBalance[]> {
 
   // Fetch profiles + drivers for name and bank info
   const [profilesRes, driversRes] = await Promise.all([
-    supabase.from('profiles').select('id, full_name').in('id', positiveIds),
+    supabase.from('profiles').select('id, full_name, email, phone_e164').in('id', positiveIds),
     supabase
       .from('drivers')
       .select('id, bank_account_number, bank_account_name, bank_bin')
       .in('id', positiveIds),
   ])
 
-  const nameById = Object.fromEntries((profilesRes.data ?? []).map((p) => [p.id, p.full_name]))
+  const profileById = Object.fromEntries((profilesRes.data ?? []).map((p) => [p.id, p]))
   const driverById = Object.fromEntries((driversRes.data ?? []).map((d) => [d.id, d]))
 
   return positiveIds
     .map((id) => {
       const { accrual, paid } = balanceMap.get(id)!
+      const profile = profileById[id]
       const driver = driverById[id]
       return {
         driverId: id,
-        driverName: nameById[id] ?? 'Unknown',
+        driverName: profile?.full_name ?? 'Unknown',
+        email: profile?.email ?? null,
+        phone: profile?.phone_e164 ?? null,
         bankAccountNumber: driver?.bank_account_number ?? null,
         bankAccountName: driver?.bank_account_name ?? null,
         bankBin: driver?.bank_bin ?? null,
@@ -119,24 +129,42 @@ export async function getPayoutHistory(): Promise<PayoutRow[]> {
   if (!payouts?.length) return []
 
   const driverIds = [...new Set(payouts.map((p) => p.driver_id))]
-  const { data: profiles } = driverIds.length
-    ? await supabase.from('profiles').select('id, full_name').in('id', driverIds)
-    : { data: [] }
+  const [profilesRes, driversRes] = await Promise.all([
+    driverIds.length
+      ? supabase.from('profiles').select('id, full_name, email, phone_e164').in('id', driverIds)
+      : Promise.resolve({ data: [] }),
+    driverIds.length
+      ? supabase
+          .from('drivers')
+          .select('id, bank_account_number, bank_account_name, bank_bin')
+          .in('id', driverIds)
+      : Promise.resolve({ data: [] }),
+  ])
 
-  const nameById = Object.fromEntries((profiles ?? []).map((p) => [p.id, p.full_name]))
+  const profileById = Object.fromEntries((profilesRes.data ?? []).map((p) => [p.id, p]))
+  const driverById = Object.fromEntries((driversRes.data ?? []).map((d) => [d.id, d]))
 
-  return payouts.map((p) => ({
-    id: p.id,
-    driverId: p.driver_id,
-    driverName: nameById[p.driver_id] ?? 'Unknown',
-    periodStart: p.period_start,
-    periodEnd: p.period_end,
-    amountVnd: p.amount_vnd,
-    status: p.status as PayoutRow['status'],
-    paidAt: p.paid_at,
-    failureReason: p.failure_reason,
-    createdAt: p.created_at,
-  }))
+  return payouts.map((p) => {
+    const profile = profileById[p.driver_id]
+    const driver = driverById[p.driver_id]
+    return {
+      id: p.id,
+      driverId: p.driver_id,
+      driverName: profile?.full_name ?? 'Unknown',
+      email: profile?.email ?? null,
+      phone: profile?.phone_e164 ?? null,
+      bankAccountNumber: driver?.bank_account_number ?? null,
+      bankAccountName: driver?.bank_account_name ?? null,
+      bankBin: driver?.bank_bin ?? null,
+      periodStart: p.period_start,
+      periodEnd: p.period_end,
+      amountVnd: p.amount_vnd,
+      status: p.status as PayoutRow['status'],
+      paidAt: p.paid_at,
+      failureReason: p.failure_reason,
+      createdAt: p.created_at,
+    }
+  })
 }
 
 /** Fetches the 50 most recent SePay webhook events. */

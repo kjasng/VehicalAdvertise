@@ -56,31 +56,26 @@ async function fetchLedgerRows(
 }
 
 export async function getDriverInvoices(): Promise<InvoiceRow[]> {
-  return fetchLedgerRows(
-    createSupabaseAdminClient(),
-    ['driver_accrual', 'driver_payout', 'adjustment', 'refund'],
-    'driver_id',
-  )
+  return fetchLedgerRows(createSupabaseAdminClient(), ['driver_payout'], 'driver_id')
 }
 
 export async function getPartnerInvoices(): Promise<InvoiceRow[]> {
   return fetchLedgerRows(
     createSupabaseAdminClient(),
-    ['partner_topup', 'partner_charge', 'adjustment', 'refund'],
+    ['partner_topup', 'partner_charge'],
     'partner_id',
   )
 }
 
-// Garage invoices: ledger_entries has no garage_id — best-effort via contract linkage.
-// Returns platform_fee entries that have a contract_id linking to a garage contract.
-// Empty until P3+ data exists; page shows empty state gracefully.
+// Garage invoices: ledger_entries has no garage_id, so install payouts map through
+// contract_id -> contracts.install_garage_id.
 export async function getGarageInvoices(): Promise<InvoiceRow[]> {
   const supabase = createSupabaseAdminClient()
 
   const { data: entries, error } = await supabase
     .from('ledger_entries')
     .select('id, ts, kind, amount_vnd, note, contract_id')
-    .eq('kind', 'platform_fee')
+    .eq('kind', 'garage_install_payout')
     .not('contract_id', 'is', null)
     .order('ts', { ascending: false })
     .limit(100)
@@ -106,6 +101,8 @@ export async function getGarageInvoices(): Promise<InvoiceRow[]> {
       Object.values(garageIdByContract).filter((id): id is string => typeof id === 'string'),
     ),
   ]
+  if (garageIds.length === 0) return []
+
   const { data: garages } = await supabase
     .from('garages')
     .select('id, shop_name')

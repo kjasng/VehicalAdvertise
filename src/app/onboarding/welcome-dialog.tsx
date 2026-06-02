@@ -68,7 +68,7 @@ export function WelcomeDialog() {
         >
           Pick how you&apos;ll use
           <br />
-          <span className="text-primary">Wheels Earner</span>
+          <span className="text-primary">Vehical Advertise</span>
         </h1>
 
         <Button

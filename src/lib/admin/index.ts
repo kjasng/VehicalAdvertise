@@ -13,6 +13,9 @@ export { getInstallProofs, getPhotoVerifications } from './queries-photos'
 export type { InvoiceRow } from './queries-invoices'
 export { getDriverInvoices, getPartnerInvoices, getGarageInvoices } from './queries-invoices'
 
+export type { PricingSettings } from './queries-pricing-settings'
+export { getPricingSettings } from './queries-pricing-settings'
+
 export type { AdminUserRow } from './queries-users'
 export { getUsers } from './queries-users'
 

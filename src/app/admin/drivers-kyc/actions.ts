@@ -46,11 +46,14 @@ export async function reviewDriverKyc(raw: unknown): Promise<{ error: string | n
     .single()
 
   if (profile?.email) {
+    console.log('[reviewDriverKyc] sending email to', profile.email, 'decision:', decision)
     if (decision === 'approved') {
-      sendDriverKycApproved({ email: profile.email, name: profile.full_name }).catch(() => {})
+      sendDriverKycApproved({ email: profile.email, name: profile.full_name }).catch((e) =>
+        console.error('[reviewDriverKyc] email failed:', e),
+      )
     } else {
-      sendDriverKycRejected({ email: profile.email, name: profile.full_name, reason }).catch(
-        () => {},
+      sendDriverKycRejected({ email: profile.email, name: profile.full_name, reason }).catch((e) =>
+        console.error('[reviewDriverKyc] email failed:', e),
       )
     }
   }

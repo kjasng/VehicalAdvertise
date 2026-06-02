@@ -134,17 +134,20 @@ export async function changeUserRole(raw: unknown): Promise<{ error: string | nu
 
 // ── Create user ────────────────────────────────────────────────────────────
 
+const BODY_TYPES = ['sedan', 'suv', 'hatchback', 'mpv', 'pickup'] as const
+
 const CreateUserSchema = z.object({
   email: z.string().email('Invalid email'),
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
   role: z.enum(['driver', 'partner', 'garage']),
   password: z.string().min(8, 'Password must be at least 8 characters'),
+  bodyType: z.enum(BODY_TYPES).optional(),
 })
 
 export async function createUser(raw: unknown): Promise<{ error: string | null }> {
   const parsed = CreateUserSchema.safeParse(raw)
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' }
-  const { email, fullName, role, password } = parsed.data
+  const { email, fullName, role, password, bodyType } = parsed.data
 
   const callerRole = await getCurrentUserRole()
   if (callerRole !== 'admin') return { error: 'Forbidden' }
@@ -165,6 +168,14 @@ export async function createUser(raw: unknown): Promise<{ error: string | null }
     .update({ role, full_name: fullName })
     .eq('id', authData.user.id)
   if (roleErr) return { error: roleErr.message }
+
+  // For drivers, seed the drivers row (with body_type if provided)
+  if (role === 'driver') {
+    const { error: driverErr } = await supabase
+      .from('drivers')
+      .upsert({ id: authData.user.id, body_type: bodyType ?? null }, { onConflict: 'id' })
+    if (driverErr) return { error: driverErr.message }
+  }
 
   revalidatePath('/admin/users')
   return { error: null }
@@ -213,12 +224,13 @@ const UpdateUserSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters').max(100),
   phone: z.string().max(20).optional(),
   role: z.enum(['driver', 'partner', 'garage']),
+  bodyType: z.enum(BODY_TYPES).optional(),
 })
 
 export async function updateUser(raw: unknown): Promise<{ error: string | null }> {
   const parsed = UpdateUserSchema.safeParse(raw)
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' }
-  const { targetId, fullName, phone, role } = parsed.data
+  const { targetId, fullName, phone, role, bodyType } = parsed.data
 
   const callerRole = await getCurrentUserRole()
   if (callerRole !== 'admin') return { error: 'Forbidden' }
@@ -229,6 +241,14 @@ export async function updateUser(raw: unknown): Promise<{ error: string | null }
     .update({ full_name: fullName, role, phone_e164: phone ?? null })
     .eq('id', targetId)
   if (error) return { error: error.message }
+
+  // For drivers, upsert body_type onto the drivers row
+  if (role === 'driver' && bodyType) {
+    const { error: driverErr } = await supabase
+      .from('drivers')
+      .upsert({ id: targetId, body_type: bodyType }, { onConflict: 'id' })
+    if (driverErr) return { error: driverErr.message }
+  }
 
   revalidatePath('/admin/users')
   return { error: null }

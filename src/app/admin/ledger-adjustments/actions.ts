@@ -21,8 +21,6 @@ const MONEY_PATHS = [
   '/admin/dashboard',
   '/admin/payouts',
   '/admin/partner-balances',
-  '/admin/invoices/driver',
-  '/admin/invoices/partner',
   '/admin/audit-log',
 ]
 

@@ -1,7 +1,7 @@
 /**
- * Garage Invoices — platform fee ledger entries linked to garage contracts.
+ * Garage Invoices — install payout ledger entries linked to garage contracts.
  * Note: ledger_entries has no garage_id; entries derived via contract chain.
- * Shows empty state when no data — acceptable until P4 contracts land.
+ * Shows empty state when no approved install payout exists.
  */
 import { InvoiceTable } from '@/components/admin/invoice-table'
 import { PageHeader } from '@/components/shared/page-header'
@@ -16,7 +16,7 @@ export default async function GarageInvoicesPage() {
   return (
     <div className="space-y-6">
       <PageHeader kicker="Money" title="Garage Invoices" />
-      <SectionShell title="Platform Fees">
+      <SectionShell title="Install Payouts">
         <InvoiceTable rows={rows} />
       </SectionShell>
     </div>

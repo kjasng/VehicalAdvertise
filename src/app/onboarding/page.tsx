@@ -5,7 +5,7 @@ import { getCurrentUserRole, homeForRole } from '@/lib/auth/role-gate'
 import { RoleForm } from './role-form'
 import { WelcomeDialog } from './welcome-dialog'
 
-export const metadata = { title: 'Choose your role · Wheels Earner' }
+export const metadata = { title: 'Choose your role · Vehical Advertise' }
 
 export default async function OnboardingPage() {
   const role = await getCurrentUserRole()
