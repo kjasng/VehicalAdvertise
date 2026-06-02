@@ -41,11 +41,11 @@ export type SepayEventRow = {
 export async function getDriverBalances(): Promise<DriverBalance[]> {
   const supabase = createSupabaseAdminClient()
 
-  // Fetch all driver accrual and payout ledger entries
+  // Fetch all driver balance-affecting ledger entries.
   const { data: entries, error: entriesError } = await supabase
     .from('ledger_entries')
     .select('driver_id, kind, amount_vnd')
-    .in('kind', ['driver_accrual', 'driver_payout'])
+    .in('kind', ['driver_accrual', 'driver_payout', 'adjustment', 'refund'])
     .not('driver_id', 'is', null)
 
   if (entriesError) {
@@ -58,8 +58,8 @@ export async function getDriverBalances(): Promise<DriverBalance[]> {
   for (const entry of entries ?? []) {
     const id = entry.driver_id!
     const cur = balanceMap.get(id) ?? { accrual: 0, paid: 0 }
-    if (entry.kind === 'driver_accrual') cur.accrual += entry.amount_vnd
-    else cur.paid += entry.amount_vnd
+    if (entry.kind === 'driver_payout') cur.paid += entry.amount_vnd
+    else cur.accrual += entry.amount_vnd
     balanceMap.set(id, cur)
   }
 

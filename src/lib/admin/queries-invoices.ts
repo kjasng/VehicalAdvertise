@@ -58,7 +58,7 @@ async function fetchLedgerRows(
 export async function getDriverInvoices(): Promise<InvoiceRow[]> {
   return fetchLedgerRows(
     createSupabaseAdminClient(),
-    ['driver_accrual', 'driver_payout'],
+    ['driver_accrual', 'driver_payout', 'adjustment', 'refund'],
     'driver_id',
   )
 }
@@ -66,7 +66,7 @@ export async function getDriverInvoices(): Promise<InvoiceRow[]> {
 export async function getPartnerInvoices(): Promise<InvoiceRow[]> {
   return fetchLedgerRows(
     createSupabaseAdminClient(),
-    ['partner_topup', 'partner_charge'],
+    ['partner_topup', 'partner_charge', 'adjustment', 'refund'],
     'partner_id',
   )
 }

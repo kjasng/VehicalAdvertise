@@ -2,7 +2,8 @@
 
 import { useMemo, useState, useTransition } from 'react'
 
-import { Pencil, Plus, Search, ShieldCheck, ShieldOff, Trash2, X } from 'lucide-react'
+import { Pencil, Plus, RefreshCw, Search, ShieldCheck, ShieldOff, Trash2, X } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 import { EmptyState } from '@/components/shared/empty-state'
@@ -75,7 +76,7 @@ function IconBtn({
       </button>
       <span
         role="tooltip"
-        className="leftôit-1/2 pointer-events-none absolute bottom-full z-50 mb-1.5 -translate-x-1/2 rounded bg-[#1a1a1a] px-2 py-1 text-[11px] leading-none whitespace-nowrap text-white opacity-0 transition-opacity group-hover:opacity-100"
+        className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 rounded bg-[#1a1a1a] px-2 py-1 text-[11px] leading-none whitespace-nowrap text-white opacity-0 transition-opacity group-hover:opacity-100"
       >
         {tooltip}
       </span>
@@ -86,7 +87,9 @@ function IconBtn({
 const ROLES = ['driver', 'partner', 'garage', 'admin', 'pending']
 
 export function UsersTableClient({ users }: Props) {
+  const router = useRouter()
   const [pending, startTransition] = useTransition()
+  const [refreshing, startRefreshTransition] = useTransition()
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkRole, setBulkRole] = useState('driver')
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
@@ -110,6 +113,13 @@ export function UsersTableClient({ users }: Props) {
       return true
     })
   }, [users, search, roleFilter, statusFilter])
+
+  function handleRefresh() {
+    setSelected(new Set())
+    startRefreshTransition(() => {
+      router.refresh()
+    })
+  }
 
   async function openEdit(user: AdminUserRow) {
     setModalUser(user)
@@ -241,6 +251,13 @@ export function UsersTableClient({ users }: Props) {
 
         {/* Spacer */}
         <div className="flex-1" />
+
+        <IconBtn tooltip="Refresh users" onClick={handleRefresh} disabled={refreshing}>
+          <RefreshCw
+            className={`size-3.5 ${refreshing ? 'animate-spin' : ''}`}
+            aria-hidden="true"
+          />
+        </IconBtn>
 
         {/* Add User button */}
         <button

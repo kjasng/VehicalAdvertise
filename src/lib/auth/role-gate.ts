@@ -1,8 +1,8 @@
 /**
  * Server-side role helpers backing the proxy and route handlers.
  *
- * - `getProfileRole(userId)` reads `profiles.role` via the service-role client
- *   (lookups during middleware can't rely on RLS-scoped session client).
+ * - `getProfileRole(userId)` reads `profiles.role` + `blocked` via the
+ *   service-role client (middleware can't rely on RLS-scoped session client).
  * - `requireRole(role)` for use inside server components / route handlers;
  *   throws a Next redirect-friendly Response if mismatched. Honors the
  *   ADMIN_PANEL_BYPASS env flag so admins can inspect other panels in dev.
@@ -21,11 +21,11 @@ export async function getProfileRole(userId: string): Promise<UserRole | null> {
   const admin = createSupabaseAdminClient()
   const { data, error } = await admin
     .from('profiles')
-    .select('role')
+    .select('role, blocked')
     .eq('id', userId)
-    .maybeSingle<{ role: UserRole }>()
+    .maybeSingle<{ role: UserRole; blocked: boolean }>()
 
-  if (error || !data) return null
+  if (error || !data || data.blocked) return null
   return data.role
 }
 
@@ -33,16 +33,24 @@ export async function getProfileRole(userId: string): Promise<UserRole | null> {
 export async function getProfileData(userId: string): Promise<{
   role: UserRole
   kycStatus: string
+  blocked: boolean
   partnerStatus?: string | null
 } | null> {
   const admin = createSupabaseAdminClient()
   const { data, error } = await admin
     .from('profiles')
-    .select('role, kyc_status')
+    .select('role, kyc_status, blocked')
     .eq('id', userId)
     .maybeSingle()
 
   if (error || !data) return null
+  if (data.blocked) {
+    return {
+      role: data.role as UserRole,
+      kycStatus: data.kyc_status,
+      blocked: true,
+    }
+  }
 
   // For partners, fetch approval status in a second query (only on partner routes)
   if (data.role === 'partner') {
@@ -54,11 +62,12 @@ export async function getProfileData(userId: string): Promise<{
     return {
       role: data.role as UserRole,
       kycStatus: data.kyc_status,
+      blocked: false,
       partnerStatus: partnerRow?.status ?? null,
     }
   }
 
-  return { role: data.role as UserRole, kycStatus: data.kyc_status }
+  return { role: data.role as UserRole, kycStatus: data.kyc_status, blocked: false }
 }
 
 export async function getCurrentUserRole(): Promise<UserRole | null> {

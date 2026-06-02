@@ -32,7 +32,11 @@ export const AUDIT_ACTIONS = [
   'campaign_rejected',
   'install_proof_approved',
   'install_proof_rejected',
-  'set_user_blocked',
+  'user_suspended',
+  'user_unsuspended',
+  'partner_topup',
+  'ledger_adjustment',
+  'ledger_refund',
   'payout_created',
   'payout_marked_paid',
 ] as const

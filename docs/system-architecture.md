@@ -46,7 +46,7 @@ Rule: anything touching money or GPS goes through a service-role API route. Neve
 
 **Admin bypass flag (`ADMIN_PANEL_BYPASS`):** A dev-only env var (explicit opt-in, default false). When set to `"true"`, users whose `profiles.role = 'admin'` may visit `/driver`, `/partner`, and `/garage` routes without being redirected — useful for inspecting role panels during development. The bypass is routing-only and silent: RLS still enforces what data the admin can read/write at the DB level, and all writes continue to carry the admin's real `user_id`. Non-admin users are never affected regardless of flag state. **Critical for production: this flag MUST be unset in deployed environments (env var deleted from Vercel or `.env.local`) — no code change required.**
 
-**Admin security-definer RPCs:** Three RPCs in `0010_admin_rpcs.sql` (`approve_driver_kyc`, `approve_campaign`, `set_user_blocked`) are security-definer functions owned by postgres. Each guards with `is_admin()`, performs a privileged write to columns revoked from authenticated role, logs to `audit_log`, and grants execute only to authenticated users. These are the **only path** to write KYC decisions, campaign review decisions, and user suspension flags.
+**Admin security-definer RPCs:** Admin review RPCs in `0010_admin_rpcs.sql` (`approve_driver_kyc`, `approve_campaign`, `set_user_blocked`) and money RPC in `0014_admin_money_ledger_rpc.sql` (`admin_create_money_ledger_entry`) are security-definer functions owned by postgres. Review RPCs guard with `is_admin()`, while the money RPC checks the actor is an active admin, performs ledger/balance/audit writes in one DB transaction, and grants execute only to `service_role`. `is_admin()` also requires `profiles.blocked = false`, so suspended admins lose DB admin-policy access.
 
 ## 4. State machines
 
@@ -80,7 +80,7 @@ Driver PWA → `browser-image-compression` (< 2 MB) → Supabase Storage signed 
 ## 8. Vietnam stack wiring
 
 - **Auth:** Supabase OAuth (Google + GitHub). No SMS dependency. Role assignment via `choose_role()` RPC post-signup (maps to `auth.users.raw_user_meta_data.role`).
-- **SePay (VietQR):** Top-up uses partner UUID as memo → webhook → `ledger_entries` credit. Payouts: weekly cron → `payouts` row → SePay payout request → webhook flips status. Idempotency: `sepay_webhook_events.txn_id` unique.
+- **SePay (VietQR):** Top-up uses partner UUID as memo → webhook/manual admin RPC → `ledger_entries` credit + partner balance update in one transaction. Payouts: weekly cron → `payouts` row → SePay payout request → webhook flips status. Idempotency: `sepay_webhook_events.txn_id` unique.
 - **CCCD KYC:** Manual review at P1. v2 candidates: VNPT eKYC / TrustingSocial.
 - **Geocoding & Maps:** MapLibre GL + OpenStreetMap tiles + Nominatim. Used for vehicle location display and garage service-area approximation.
 - **E-invoice:** Deferred. Trigger: nightly cron for partner charges > 200k VND → VNPT/Misa.

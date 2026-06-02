@@ -4,16 +4,16 @@
 
 ## App Routes
 
-| Route                                | Purpose                                                                                                                              |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `/driver`                            | Driver panel — dashboard (today stats, weekly KM chart), KYC verification, weekly invoices, profile & sign-out                       |
-| `/partner`                           | Partner web — campaign creation, contract management, driver verification, ledger                                                    |
-| `/garage`                            | Garage web — vehicle inventory, service-area map, availability toggle, team users                                                    |
-| `/admin`                             | Admin panel — 11 pages (Dashboard, KYC review, creative review, install proofs, photo verifs, invoices, users, reports, ledger, map) |
-| `/(public)`                          | Landing, OAuth login (Google + GitHub), QR redirect                                                                                  |
-| `/onboarding`                        | Role selection & CCCD upload (pending users post-signup)                                                                             |
-| `/api/v1/*`                          | Route handlers — GPS ingest, photo finalize, webhooks (SePay, Supabase), state transitions                                           |
-| `/api/v1/admin/reports/[type]` (GET) | CSV export (drivers, campaigns, invoices, fraud); admin-auth guarded                                                                 |
+| Route                                | Purpose                                                                                                        |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `/driver`                            | Driver panel — dashboard (today stats, weekly KM chart), KYC verification, weekly invoices, profile & sign-out |
+| `/partner`                           | Partner web — campaign creation, contract management, driver verification, ledger                              |
+| `/garage`                            | Garage web — vehicle inventory, service-area map, availability toggle, team users                              |
+| `/admin`                             | Admin panel — dashboard, verification queues, contracts, money ops, invoices, users, reports, audit log, map   |
+| `/(public)`                          | Landing, OAuth login (Google + GitHub), QR redirect                                                            |
+| `/onboarding`                        | Role selection & CCCD upload (pending users post-signup)                                                       |
+| `/api/v1/*`                          | Route handlers — GPS ingest, photo finalize, webhooks (SePay, Supabase), state transitions                     |
+| `/api/v1/admin/reports/[type]` (GET) | CSV export (drivers, campaigns, invoices, fraud); admin-auth guarded                                           |
 
 ## Shared Shell Primitives
 
@@ -33,11 +33,11 @@ Located in `src/components/shared/`. All pure server components except noted.
 
 ## Admin Shared Components
 
-Located in `src/components/admin/` and `src/app/admin/*/`. All 11 pages wire real Supabase data via query library; no mock data in pages.
+Located in `src/components/admin/` and `src/app/admin/*/`. Admin pages wire real Supabase data via query library; no mock data in pages.
 
 | Component                        | Purpose                                                                                                         |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `admin-nav-config.ts`            | ADMIN_NAV: 11 sidebar items (Dashboard → Map) with href + label + icon                                          |
+| `admin-nav-config.ts`            | ADMIN_NAV: sidebar groups/items (Dashboard → Map) with href + label + icon                                      |
 | `data-table.tsx`                 | **Client component.** Generic `<DataTable<T>>` — sticky header, zebra rows, click-to-sort, pencil border colors |
 | `review-drawer.tsx`              | **Client component.** Slide-in-from-right with backdrop + Escape close, role=dialog a11y                        |
 | `kyc-review-content.tsx`         | **Client component.** KYC review drawer body — CCCD photos, selfie, approve/reject actions                      |
@@ -68,6 +68,8 @@ Located in `src/lib/admin/`. Server-side query helpers for dashboard, review que
 | `getDriverInvoices`           | Driver invoice ledger filtered by period                               |
 | `getPartnerInvoices`          | Partner invoice ledger filtered by period                              |
 | `getGarageInvoices`           | Garage invoice ledger filtered by period                               |
+| `getRecentAdjustments`        | Recent manual `adjustment` / `refund` ledger entries                   |
+| `getLedgerTargets`            | Partner + driver target list for admin ledger adjustments              |
 | `getUsers`                    | Users list with role + status filtering                                |
 | `getReportsData(period)`      | Fraud/performance reports grouped by week/month/year with period range |
 | `periodRange(period)`         | Helper — returns [startDate, endDate] for week/month/prev_month/year   |

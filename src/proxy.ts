@@ -26,6 +26,10 @@ export async function proxy(request: NextRequest) {
     const profile = await getProfileData(userId)
     const role = profile?.role ?? null
 
+    if (profile?.blocked) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+
     if (role === 'pending') {
       return NextResponse.redirect(new URL('/onboarding', request.url))
     }
@@ -62,6 +66,9 @@ export async function proxy(request: NextRequest) {
     }
     const profile = await getProfileData(userId)
     const role = profile?.role ?? null
+    if (profile?.blocked) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
     if (role !== requiredRole) {
       // Admin bypass: allow an admin to visit non-admin role paths when flag is on.
       if (canAdminBypassPath(role, requiredRole)) return response

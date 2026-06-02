@@ -9,8 +9,8 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 const TopUpSchema = z.object({
   partnerId: z.string().uuid(),
-  amountVnd: z.number().int().positive('Amount must be positive'),
-  note: z.string().max(200).optional(),
+  amountVnd: z.number().int().positive('Amount must be positive').max(999_999_999_999),
+  note: z.string().trim().max(200).optional(),
 })
 
 export async function topUpPartnerBalance(raw: unknown): Promise<{ error: string | null }> {
@@ -28,37 +28,22 @@ export async function topUpPartnerBalance(raw: unknown): Promise<{ error: string
   if (!user) return { error: 'Not authenticated' }
 
   const supabase = createSupabaseAdminClient()
+  const topUpNote = note || 'Manual top-up by admin'
 
-  // Insert ledger entry
-  const { error: ledgerErr } = await supabase.from('ledger_entries').insert({
-    partner_id: partnerId,
-    kind: 'partner_topup',
-    amount_vnd: amountVnd,
-    note: note ?? `Manual top-up by admin`,
+  const { error: topUpErr } = await supabase.rpc('admin_create_money_ledger_entry', {
+    p_actor_id: user.id,
+    p_target_type: 'partner',
+    p_target_id: partnerId,
+    p_kind: 'partner_topup',
+    p_amount_vnd: amountVnd,
+    p_note: topUpNote,
+    p_ref_type: 'manual_topup',
   })
-  if (ledgerErr) return { error: ledgerErr.message }
-
-  // Update partner balance
-  const { data: current } = await supabase
-    .from('partners')
-    .select('balance_vnd')
-    .eq('id', partnerId)
-    .single()
-
-  const { error: balanceErr } = await supabase
-    .from('partners')
-    .update({ balance_vnd: (current?.balance_vnd ?? 0) + amountVnd })
-    .eq('id', partnerId)
-  if (balanceErr) return { error: balanceErr.message }
-
-  await supabase.from('audit_log').insert({
-    actor_id: user.id,
-    action: 'partner_topup',
-    entity_type: 'partners',
-    entity_id: partnerId,
-    diff: { amount_vnd: amountVnd, note: note ?? null },
-  })
+  if (topUpErr) return { error: topUpErr.message }
 
   revalidatePath('/admin/partner-balances')
+  revalidatePath('/admin/dashboard')
+  revalidatePath('/admin/invoices/partner')
+  revalidatePath('/admin/audit-log')
   return { error: null }
 }

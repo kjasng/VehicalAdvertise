@@ -1020,6 +1020,18 @@ export type Database = {
             }
             Returns: string
           }
+      admin_create_money_ledger_entry: {
+        Args: {
+          p_actor_id: string
+          p_target_type: string
+          p_target_id: string
+          p_kind: Database['public']['Enums']['ledger_kind']
+          p_amount_vnd: number
+          p_note: string | null
+          p_ref_type?: string | null
+        }
+        Returns: number
+      }
       approve_campaign: {
         Args: {
           p_campaign_id: string
