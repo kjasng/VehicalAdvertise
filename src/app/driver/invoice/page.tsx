@@ -1,63 +1,87 @@
-/**
- * Driver Invoice — earnings history.
- * Desktop: summary card + DemoBadge above; invoice list in SectionShell.
- * Each row uses <details> for KISS expand/collapse with day breakdown.
- * Server component.
- */
+import Link from 'next/link'
+import { redirect } from 'next/navigation'
+
+import { CreateInvoiceButton } from '@/components/driver/create-invoice-button'
 import { InvoiceListItem } from '@/components/driver/invoice-list-item'
-import { MOCK_DRIVER_WEEKLY_INVOICES } from '@/components/driver/mock-data'
-import { DemoBadge } from '@/components/shared/demo-badge'
 import { EmptyState } from '@/components/shared/empty-state'
 import { PageHeader } from '@/components/shared/page-header'
 import { SectionShell } from '@/components/shared/section-shell'
+import { formatVnd } from '@/lib/driver/monthly-earning'
+import { getDriverInvoicePageData } from '@/lib/driver/queries-invoices'
 
 export const metadata = { title: 'Driver · Invoices' }
 
-export default function DriverInvoicePage() {
-  const invoices = MOCK_DRIVER_WEEKLY_INVOICES
-
-  const totalPaid = invoices
-    .filter((i) => i.status === 'paid')
-    .reduce((acc, i) => acc + i.amountVnd, 0)
+export default async function DriverInvoicePage() {
+  const data = await getDriverInvoicePageData()
+  if (!data) redirect('/login')
 
   return (
     <div className="space-y-6">
-      <PageHeader kicker="EARNINGS" title="Invoices" />
+      <PageHeader
+        kicker="EARNINGS"
+        title="Invoices"
+        cta={<CreateInvoiceButton disabled={!data.canCreateInvoice} />}
+      />
 
-      {/* Summary card */}
-      <div className="flex items-center gap-3 rounded-md border border-[#cbccc9] bg-white px-4 py-3">
-        <div>
-          <p className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
-            Total paid out
-          </p>
-          <p className="font-heading text-[28px] leading-none text-[#1a1a1a]">
-            {totalPaid.toLocaleString('vi-VN')}
-            <span className="font-heading ml-1 text-[14px] text-[#666666]">₫</span>
-          </p>
-        </div>
-        <div className="ml-auto">
-          <DemoBadge />
-        </div>
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Metric label="Total paid out" value={formatVnd(data.totalPaidVnd)} />
+        <Metric
+          label="Current period"
+          value={
+            data.currentPeriod ? `${data.currentPeriod.start} → ${data.currentPeriod.end}` : '—'
+          }
+        />
+        <Metric
+          label="Latest completed"
+          value={
+            data.earningPeriod ? formatVnd(data.earningPeriod.driverNetVnd) : 'Not available yet'
+          }
+        />
       </div>
 
-      {/* Invoice list */}
-      <SectionShell title="Weekly Payouts">
-        {invoices.length === 0 ? (
+      {data.blockedReason && (
+        <section className="rounded-md border border-[#cbccc9] bg-white p-4">
+          <p className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
+            Invoice status
+          </p>
+          <p className="mt-1 text-[14px] text-[#1a1a1a]">{data.blockedReason}</p>
+          {!data.payoutSettingsComplete && (
+            <Link
+              href="/driver/profile"
+              className="mt-3 inline-flex h-10 items-center rounded bg-[#1a1a1a] px-4 text-[12px] font-bold tracking-[1px] text-white uppercase hover:bg-[#333]"
+            >
+              Complete payout settings
+            </Link>
+          )}
+        </section>
+      )}
+
+      <SectionShell title="Monthly withdrawal invoices">
+        {data.invoices.length === 0 ? (
           <EmptyState
             kicker="NO INVOICES"
             title="Nothing here yet"
-            helper="Your weekly payouts will appear here once your first campaign week closes."
+            helper="Your monthly withdrawal invoices will appear here after a completed earning period."
           />
         ) : (
-          <ul className="space-y-3" aria-label="Weekly invoices">
-            {invoices.map((inv) => (
-              <li key={inv.id}>
-                <InvoiceListItem invoice={inv} />
+          <ul className="space-y-3" aria-label="Monthly invoices">
+            {data.invoices.map((invoice) => (
+              <li key={invoice.id}>
+                <InvoiceListItem invoice={invoice} />
               </li>
             ))}
           </ul>
         )}
       </SectionShell>
+    </div>
+  )
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-[#cbccc9] bg-white px-4 py-3">
+      <p className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">{label}</p>
+      <p className="font-heading mt-1 text-[26px] leading-none text-[#1a1a1a] uppercase">{value}</p>
     </div>
   )
 }

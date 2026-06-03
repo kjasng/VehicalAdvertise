@@ -44,7 +44,10 @@ export async function reviewInstallProof(raw: unknown): Promise<{ error: string 
   if (reviewError) return { error: reviewError.message }
 
   revalidatePath('/admin/install-proofs')
+  revalidatePath('/admin/campaigns')
+  revalidatePath('/admin/contracts')
   revalidatePath('/admin/invoices/garage')
+  revalidatePath('/driver/invoice')
   revalidatePath('/admin/audit-log')
   return { error: null }
 }

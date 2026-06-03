@@ -1,0 +1,75 @@
+import 'server-only'
+
+import { createSupabaseAdminClient } from '@/lib/supabase/admin'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
+
+export type DriverProfileData = {
+  userId: string
+  fullName: string
+  email: string | null
+  phone: string
+  bankAccountName: string
+  bankAccountNumber: string
+  bankName: string
+  bankBranch: string
+  bankBin: string
+  bankVerified: boolean
+  vehicleId: string | null
+  vehiclePlate: string
+  vehicleFuel: string
+  vehicleBrand: string
+}
+
+export async function getDriverProfileData(): Promise<DriverProfileData | null> {
+  const serverClient = await createSupabaseServerClient()
+  const {
+    data: { user },
+  } = await serverClient.auth.getUser()
+  if (!user) return null
+
+  const supabase = createSupabaseAdminClient()
+  const [profileRes, driverRes, vehicleRes] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('id, full_name, email, phone_e164')
+      .eq('id', user.id)
+      .eq('role', 'driver')
+      .maybeSingle(),
+    supabase
+      .from('drivers')
+      .select(
+        'id, bank_account_name, bank_account_number, bank_name, bank_branch, bank_bin, bank_verified_at',
+      )
+      .eq('id', user.id)
+      .maybeSingle(),
+    supabase
+      .from('vehicles')
+      .select('id, plate, fuel, brand')
+      .eq('driver_id', user.id)
+      .order('approved', { ascending: false })
+      .order('id', { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+  ])
+
+  if (!profileRes.data || !driverRes.data) return null
+  const driver = driverRes.data
+  const vehicle = vehicleRes.data
+
+  return {
+    userId: user.id,
+    fullName: profileRes.data.full_name,
+    email: profileRes.data.email,
+    phone: profileRes.data.phone_e164 ?? '',
+    bankAccountName: driver.bank_account_name ?? '',
+    bankAccountNumber: driver.bank_account_number ?? '',
+    bankName: driver.bank_name ?? '',
+    bankBranch: driver.bank_branch ?? '',
+    bankBin: driver.bank_bin ?? '',
+    bankVerified: Boolean(driver.bank_verified_at),
+    vehicleId: vehicle?.id ?? null,
+    vehiclePlate: vehicle?.plate ?? '',
+    vehicleFuel: vehicle?.fuel ?? '',
+    vehicleBrand: vehicle?.brand ?? '',
+  }
+}

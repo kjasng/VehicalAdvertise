@@ -6,11 +6,16 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 type LedgerKind = Database['public']['Enums']['ledger_kind']
 
 export type InvoiceRow = {
-  id: number
+  id: number | string
+  invoiceNumber?: string
   recipientName: string
   amountVnd: number
   kind: string
   createdAt: string
+  status?: string
+  periodStart?: string
+  periodEnd?: string
+  printHref?: string
   note: string | null
 }
 
@@ -56,7 +61,54 @@ async function fetchLedgerRows(
 }
 
 export async function getDriverInvoices(): Promise<InvoiceRow[]> {
-  return fetchLedgerRows(createSupabaseAdminClient(), ['driver_payout'], 'driver_id')
+  const supabase = createSupabaseAdminClient()
+
+  const { data: invoices, error } = await supabase
+    .from('driver_invoices')
+    .select(
+      'id, invoice_number, driver_id, campaign_id, amount_vnd, status, period_start, period_end, requested_at, created_at',
+    )
+    .order('requested_at', { ascending: false })
+    .limit(100)
+
+  if (error || !invoices?.length) return []
+
+  const driverIds = [...new Set(invoices.map((invoice) => invoice.driver_id))]
+  const campaignIds = [...new Set(invoices.map((invoice) => invoice.campaign_id))]
+
+  const [profilesRes, campaignsRes] = await Promise.all([
+    driverIds.length
+      ? supabase.from('profiles').select('id, full_name, email, phone_e164').in('id', driverIds)
+      : Promise.resolve({ data: [] }),
+    campaignIds.length
+      ? supabase.from('campaigns').select('id, name').in('id', campaignIds)
+      : Promise.resolve({ data: [] }),
+  ])
+
+  const profileById = Object.fromEntries(
+    (profilesRes.data ?? []).map((profile) => [profile.id, profile]),
+  )
+  const campaignById = Object.fromEntries(
+    (campaignsRes.data ?? []).map((campaign) => [campaign.id, campaign.name]),
+  )
+
+  return invoices.map((invoice) => {
+    const profile = profileById[invoice.driver_id]
+    const period = `${invoice.period_start} → ${invoice.period_end}`
+    return {
+      id: invoice.id,
+      invoiceNumber: invoice.invoice_number,
+      recipientName: profile?.full_name ?? profile?.email ?? 'Unknown driver',
+      amountVnd: invoice.amount_vnd,
+      kind: 'driver_withdrawal',
+      createdAt: invoice.requested_at ?? invoice.created_at,
+      status: invoice.status,
+      periodStart: invoice.period_start,
+      periodEnd: invoice.period_end,
+      printHref: `/admin/invoices/driver/${invoice.id}/print`,
+      note: `${campaignById[invoice.campaign_id] ?? 'Campaign'} · ${period}`,
+    }
+  })
 }
 
 export async function getPartnerInvoices(): Promise<InvoiceRow[]> {

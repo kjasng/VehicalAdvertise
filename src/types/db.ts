@@ -74,15 +74,21 @@ export type Database = {
       campaigns: {
         Row: {
           brief: string | null
+          active_driver_limit: number | null
+          balance_percent: number | null
           budget_vnd: number
           created_at: string
           creative_url: string | null
           daily_cap_km: number
+          driver_net_monthly_vnd: number
           end_date: string
           ev_multiplier: number
+          funding_mode: string
           id: string
+          monthly_budget_vnd: number | null
           name: string
           partner_id: string
+          platform_fee_pct: number
           qr_target_url: string
           rate_per_km_vnd: number
           reject_reason: string | null
@@ -95,16 +101,22 @@ export type Database = {
           target_vehicle_types: Database['public']['Enums']['vehicle_fuel'][] | null
         }
         Insert: {
+          active_driver_limit?: number | null
+          balance_percent?: number | null
           brief?: string | null
           budget_vnd: number
           created_at?: string
           creative_url?: string | null
           daily_cap_km?: number
+          driver_net_monthly_vnd?: number
           end_date: string
           ev_multiplier?: number
+          funding_mode?: string
           id?: string
+          monthly_budget_vnd?: number | null
           name: string
           partner_id: string
+          platform_fee_pct?: number
           qr_target_url: string
           rate_per_km_vnd: number
           reject_reason?: string | null
@@ -117,16 +129,22 @@ export type Database = {
           target_vehicle_types?: Database['public']['Enums']['vehicle_fuel'][] | null
         }
         Update: {
+          active_driver_limit?: number | null
+          balance_percent?: number | null
           brief?: string | null
           budget_vnd?: number
           created_at?: string
           creative_url?: string | null
           daily_cap_km?: number
+          driver_net_monthly_vnd?: number
           end_date?: string
           ev_multiplier?: number
+          funding_mode?: string
           id?: string
+          monthly_budget_vnd?: number | null
           name?: string
           partner_id?: string
+          platform_fee_pct?: number
           qr_target_url?: string
           rate_per_km_vnd?: number
           reject_reason?: string | null
@@ -205,8 +223,13 @@ export type Database = {
           created_at: string
           driver_id: string
           earned_vnd: number
+          earning_approved_at: string | null
+          earning_approved_by: string | null
+          earning_start_date: string | null
+          garage_selected_at: string | null
           id: string
           install_garage_id: string | null
+          install_note: string | null
           installed_at: string | null
           km_total: number
           removed_at: string | null
@@ -218,8 +241,13 @@ export type Database = {
           created_at?: string
           driver_id: string
           earned_vnd?: number
+          earning_approved_at?: string | null
+          earning_approved_by?: string | null
+          earning_start_date?: string | null
+          garage_selected_at?: string | null
           id?: string
           install_garage_id?: string | null
+          install_note?: string | null
           installed_at?: string | null
           km_total?: number
           removed_at?: string | null
@@ -231,8 +259,13 @@ export type Database = {
           created_at?: string
           driver_id?: string
           earned_vnd?: number
+          earning_approved_at?: string | null
+          earning_approved_by?: string | null
+          earning_start_date?: string | null
+          garage_selected_at?: string | null
           id?: string
           install_garage_id?: string | null
+          install_note?: string | null
           installed_at?: string | null
           km_total?: number
           removed_at?: string | null
@@ -275,9 +308,13 @@ export type Database = {
           bank_account_name: string | null
           bank_account_number: string | null
           bank_bin: string | null
+          bank_branch: string | null
+          bank_name: string | null
+          bank_verified_at: string | null
           body_type: string | null
           cccd_number: string | null
           id: string
+          operating_districts: string[] | null
           primary_city: string
           rating: number | null
         }
@@ -285,9 +322,13 @@ export type Database = {
           bank_account_name?: string | null
           bank_account_number?: string | null
           bank_bin?: string | null
+          bank_branch?: string | null
+          bank_name?: string | null
+          bank_verified_at?: string | null
           body_type?: string | null
           cccd_number?: string | null
           id: string
+          operating_districts?: string[] | null
           primary_city?: string
           rating?: number | null
         }
@@ -295,9 +336,13 @@ export type Database = {
           bank_account_name?: string | null
           bank_account_number?: string | null
           bank_bin?: string | null
+          bank_branch?: string | null
+          bank_name?: string | null
+          bank_verified_at?: string | null
           body_type?: string | null
           cccd_number?: string | null
           id?: string
+          operating_districts?: string[] | null
           primary_city?: string
           rating?: number | null
         }
@@ -306,6 +351,179 @@ export type Database = {
             foreignKeyName: 'drivers_id_fkey'
             columns: ['id']
             isOneToOne: true
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      driver_earning_periods: {
+        Row: {
+          campaign_id: string
+          contract_id: string
+          created_at: string
+          driver_id: string
+          driver_net_vnd: number
+          gross_charge_vnd: number
+          id: string
+          period_end: string
+          period_start: string
+          platform_fee_vnd: number
+          status: string
+        }
+        Insert: {
+          campaign_id: string
+          contract_id: string
+          created_at?: string
+          driver_id: string
+          driver_net_vnd: number
+          gross_charge_vnd: number
+          id?: string
+          period_end: string
+          period_start: string
+          platform_fee_vnd: number
+          status?: string
+        }
+        Update: {
+          campaign_id?: string
+          contract_id?: string
+          created_at?: string
+          driver_id?: string
+          driver_net_vnd?: number
+          gross_charge_vnd?: number
+          id?: string
+          period_end?: string
+          period_start?: string
+          platform_fee_vnd?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'driver_earning_periods_campaign_id_fkey'
+            columns: ['campaign_id']
+            isOneToOne: false
+            referencedRelation: 'campaigns'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'driver_earning_periods_contract_id_fkey'
+            columns: ['contract_id']
+            isOneToOne: false
+            referencedRelation: 'contracts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'driver_earning_periods_driver_id_fkey'
+            columns: ['driver_id']
+            isOneToOne: false
+            referencedRelation: 'drivers'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      driver_invoices: {
+        Row: {
+          amount_vnd: number
+          bank_snapshot: Json
+          campaign_id: string
+          contract_id: string
+          created_at: string
+          driver_id: string
+          earning_period_id: string
+          id: string
+          invoice_html: string
+          invoice_number: string
+          paid_at: string | null
+          payout_id: string | null
+          period_end: string
+          period_start: string
+          reject_reason: string | null
+          requested_at: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database['public']['Enums']['driver_invoice_status']
+        }
+        Insert: {
+          amount_vnd: number
+          bank_snapshot?: Json
+          campaign_id: string
+          contract_id: string
+          created_at?: string
+          driver_id: string
+          earning_period_id: string
+          id?: string
+          invoice_html: string
+          invoice_number: string
+          paid_at?: string | null
+          payout_id?: string | null
+          period_end: string
+          period_start: string
+          reject_reason?: string | null
+          requested_at?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database['public']['Enums']['driver_invoice_status']
+        }
+        Update: {
+          amount_vnd?: number
+          bank_snapshot?: Json
+          campaign_id?: string
+          contract_id?: string
+          created_at?: string
+          driver_id?: string
+          earning_period_id?: string
+          id?: string
+          invoice_html?: string
+          invoice_number?: string
+          paid_at?: string | null
+          payout_id?: string | null
+          period_end?: string
+          period_start?: string
+          reject_reason?: string | null
+          requested_at?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database['public']['Enums']['driver_invoice_status']
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'driver_invoices_campaign_id_fkey'
+            columns: ['campaign_id']
+            isOneToOne: false
+            referencedRelation: 'campaigns'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'driver_invoices_contract_id_fkey'
+            columns: ['contract_id']
+            isOneToOne: false
+            referencedRelation: 'contracts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'driver_invoices_driver_id_fkey'
+            columns: ['driver_id']
+            isOneToOne: false
+            referencedRelation: 'drivers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'driver_invoices_earning_period_id_fkey'
+            columns: ['earning_period_id']
+            isOneToOne: false
+            referencedRelation: 'driver_earning_periods'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'driver_invoices_payout_id_fkey'
+            columns: ['payout_id']
+            isOneToOne: false
+            referencedRelation: 'payouts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'driver_invoices_reviewed_by_fkey'
+            columns: ['reviewed_by']
+            isOneToOne: false
             referencedRelation: 'profiles'
             referencedColumns: ['id']
           },
@@ -1049,6 +1267,15 @@ export type Database = {
           p_reason?: string | null
         }
         Returns: number
+      }
+      ensure_driver_monthly_earning_period: {
+        Args: {
+          p_driver_id: string
+          p_contract_id: string
+          p_period_start: string
+          p_period_end: string
+        }
+        Returns: string
       }
       approve_campaign: {
         Args: {
@@ -1940,6 +2167,7 @@ export type Database = {
         | 'completed'
         | 'terminated'
         | 'disputed'
+      driver_invoice_status: 'requested' | 'reviewing' | 'approved' | 'paid' | 'rejected'
       kyc_status: 'pending' | 'approved' | 'rejected'
       partner_status: 'pending' | 'approved' | 'rejected'
       ledger_kind:
@@ -2119,6 +2347,7 @@ export const Constants = {
         'terminated',
         'disputed',
       ],
+      driver_invoice_status: ['requested', 'reviewing', 'approved', 'paid', 'rejected'],
       kyc_status: ['pending', 'approved', 'rejected'],
       ledger_kind: [
         'partner_topup',
