@@ -7,7 +7,7 @@ Authoritative source: `plans/260513-1149-wheels-earner-day1/architecture.md`. Th
 ```
 Next.js 16 monolith (one deploy, segments per role)
   /driver           PWA   /partner  web   /admin  web   /garage  web
-  /api/v1/*         Route Handlers (GPS, photos, webhooks, payouts, transitions)
+  /api/v1/*         Route Handlers (photos, webhooks, payouts, transitions)
   /(public)/        landing, OAuth login (Google + GitHub), QR redirect
   proxy.ts          Supabase session refresh + role gate
 
@@ -23,15 +23,15 @@ Monolith rationale: 1 deploy, 1 auth, shared component library. Split only when 
 
 PostGIS enabled. Tables grouped by domain:
 
-| Group        | Tables                                                               |
-| ------------ | -------------------------------------------------------------------- |
-| Identity     | `profiles`, `partners`, `drivers`, `garages`                         |
-| Inventory    | `vehicles`                                                           |
-| Campaigns    | `campaigns`, `contracts`                                             |
-| GPS          | `gps_logs`, `contract_daily_stats`                                   |
-| Verification | `photos`, `qr_scans`                                                 |
-| Money        | `ledger_entries`, `payouts`, `sepay_webhook_events`, `pricing_rules` |
-| Ops          | `audit_log`                                                          |
+| Group        | Tables                                                                                                            |
+| ------------ | ----------------------------------------------------------------------------------------------------------------- |
+| Identity     | `profiles`, `partners`, `drivers`, `garages`                                                                      |
+| Inventory    | `vehicles`                                                                                                        |
+| Campaigns    | `campaigns`, `contracts`                                                                                          |
+| GPS          | `gps_logs`, `contract_daily_stats` (deferred until mobile/GPS phase)                                              |
+| Verification | `photos`, `qr_scans`                                                                                              |
+| Money        | `ledger_entries`, `driver_earning_periods`, `driver_invoices`, `payouts`, `sepay_webhook_events`, `pricing_rules` |
+| Ops          | `audit_log`                                                                                                       |
 
 Full DDL → `supabase/migrations/0001_schema.sql`. Enums and constraints normalise state and money correctness at the database level.
 
@@ -40,9 +40,9 @@ Full DDL → `supabase/migrations/0001_schema.sql`. Enums and constraints normal
 RLS is **deny-by-default**. Every table enables RLS in `0002_rls.sql`. Two writer modes:
 
 - **RLS-scoped client** (`src/lib/supabase/server.ts`, `client.ts`): UI/API on behalf of the signed-in user. Limited to own rows.
-- **Service-role client** (`src/lib/supabase/admin.ts`, server-only): Privileged writes — GPS ingest, ledger entries, state transitions, payouts. Each callsite enforces its own authz.
+- **Service-role client** (`src/lib/supabase/admin.ts`, server-only): Privileged writes — ledger entries, state transitions, payouts. Each callsite enforces its own authz.
 
-Rule: anything touching money or GPS goes through a service-role API route. Never client → Postgres.
+Rule: anything touching money goes through a service-role API route/action. Never client → Postgres.
 
 **Admin bypass flag (`ADMIN_PANEL_BYPASS`):** A dev-only env var (explicit opt-in, default false). When set to `"true"`, users whose `profiles.role = 'admin'` may visit `/driver`, `/partner`, and `/garage` routes without being redirected — useful for inspecting role panels during development. The bypass is routing-only and silent: RLS still enforces what data the admin can read/write at the DB level, and all writes continue to carry the admin's real `user_id`. Non-admin users are never affected regardless of flag state. **Critical for production: this flag MUST be unset in deployed environments (env var deleted from Vercel or `.env.local`) — no code change required.**
 
@@ -59,30 +59,31 @@ contract : matched → awaiting_install → installed → running → completed
 
 Both enforced by `assert_transition(entity, from, to)` in `0003_functions.sql`, called from RPCs `transition_campaign` / `transition_contract`. UI cannot UPDATE status directly (RLS blocks).
 
-## 5. GPS pipeline (high-level)
+## 5. Driver monthly earning pipeline
 
-Client: 1 fix/5s foreground, drop accuracy > 50 m, batch 6 → POST every 30 s, queue offline.
+GPS/km earning is intentionally skipped for the current web-only phase.
 
-Server (`POST /api/v1/gps/ingest`): verify session + contract running → dedupe `(contract_id, client_seq)` → fraud rules → insert valid rows → publish to Realtime `contract:{id}`.
+Flow: driver profile approved → campaign assigned → driver chooses garage → garage uploads install proof → admin approves decal → contract becomes `running`, `earning_start_date` set.
 
-Daily rollup at 00:15 Asia/Saigon: PostGIS distance with teleport / speed / gap filters → `contract_daily_stats` → ledger triple (`partner_charge` + `driver_accrual` + `platform_fee`).
+After a completed monthly period, `ensure_driver_monthly_earning_period()` creates exactly one `driver_earning_periods` row per contract/period. It checks campaign funding mode (`monthly_cap` or `balance_percent`), partner balance, campaign total budget, and optional active driver limit.
 
-Earnings formula: `min(km_valid, daily_cap_km) × rate_per_km_vnd × (fuel='electric' ? ev_multiplier : 1.0)`.
+Ledger triple per period: `partner_charge` deducts gross campaign charge, `platform_fee` records fee, `driver_accrual` records driver net. Driver net target defaults to 1.1m VND/month after fee.
 
 ## 6. Fraud signals (server-side, no client trust)
 
-speed > 130 km/h · teleport (> 500 m gap < 120 s) · accuracy_m > 50 · daily cap breach · stationary > 30 min during paid window · permission flip · IP country ≠ VN · device fingerprint change · missed photo prompt · EXIF GPS / time mismatch.
+Current phase: earning gate requires approved profile, assigned campaign, selected garage, garage install proof, and admin decal approval. GPS fraud signals move to mobile/GPS phase.
 
 ## 7. Photo verification
 
-Driver PWA → `browser-image-compression` (< 2 MB) → Supabase Storage signed URL → `POST /api/v1/photos/finalize` → EXIF parse → cross-check vs last GPS fix (± 300 m) and server time (< 3 min) → auto-reject or admin queue. Effects: photo approved → day's accrual released; 3 rejects / 7 days → driver auto-suspend.
+Driver PWA / garage panel → compressed image (< 2 MB) → Supabase Storage signed URL → photo finalize → admin queue. Install proof approval is the earning gate.
 
-Garage install proof approval runs through `admin_review_install_proof()`. Approval updates the proof and, if `pricing_rules.install_fee_vnd > 0`, creates one `garage_install_payout` ledger row linked by `contract_id` and `ref_type='install_proof'`. A partial unique index prevents duplicate payouts for the same proof.
+Garage install proof approval runs through `admin_review_install_proof()`. Approval updates the proof, moves the contract to `running`, sets `earning_start_date`, and if `pricing_rules.install_fee_vnd > 0`, creates one `garage_install_payout` ledger row linked by `contract_id` and `ref_type='install_proof'`. A partial unique index prevents duplicate payouts for the same proof.
 
 ## 8. Vietnam stack wiring
 
 - **Auth:** Supabase OAuth (Google + GitHub). No SMS dependency. Role assignment via `choose_role()` RPC post-signup (maps to `auth.users.raw_user_meta_data.role`).
-- **SePay (VietQR):** Top-up uses partner UUID as memo → webhook/manual admin RPC → `ledger_entries` credit + partner balance update in one transaction. Payouts: weekly cron → `payouts` row → SePay payout request → webhook flips status. Idempotency: `sepay_webhook_events.txn_id` unique.
+- **SePay (VietQR):** Top-up uses partner UUID as memo → webhook/manual admin RPC → `ledger_entries` credit + partner balance update in one transaction. Payouts: driver creates monthly withdrawal invoice → admin payout row → SePay payout request → webhook/manual action flips status. Idempotency: `sepay_webhook_events.txn_id` unique.
+- **Driver invoices:** `driver_invoices.invoice_html` stores the printable HTML snapshot. Admin `/admin/invoices/driver/[id]/print` renders that snapshot for print/export.
 - **CCCD KYC:** Manual review at P1. v2 candidates: VNPT eKYC / TrustingSocial.
 - **Geocoding & Maps:** MapLibre GL + OpenStreetMap tiles + Nominatim. Used for vehicle location display and garage service-area approximation.
 - **E-invoice:** Deferred. Trigger: nightly cron for partner charges > 200k VND → VNPT/Misa.
@@ -96,7 +97,7 @@ src/
 ├── components/{ui,driver,partner,admin,garage,shared}/
 │   ├── shared/role-*.tsx         shell primitives: role-shell, role-sidebar, role-bottom-nav, role-topbar, role-user-menu
 │   ├── shared/{page-header,kpi-card,section-shell,empty-state}.tsx
-│   ├── driver/                   driver panel components: driver-nav-config, today-card, weekly-km-chart, kyc-wizard, invoice-list-item, profile-vehicle-photo-input, mock-data
+│   ├── driver/                   driver panel components: driver-nav-config, today-card, kyc-wizard, invoice-list-item, profile forms
 │   ├── partner/                  partner panel components (under development)
 │   ├── garage/                   garage panel components (under development)
 │   └── admin/                    admin panel components: admin-nav-config, data-table, review-drawer, review-content (KYC, creative, photo verif), queue-client (KYC, creatives, install-proofs, photo-verif)

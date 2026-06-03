@@ -1,18 +1,18 @@
 # Codebase Summary
 
-**Overview:** Next.js 16 + TypeScript monolith. Supabase (Postgres, Auth, Storage) + MapLibre + SePay. Four role panels (driver, partner, garage, admin) with shared shell architecture (sidebar + multi-page layout). RLS-enforced security; GPS pipeline with daily rollup; fraud detection server-side.
+**Overview:** Next.js 16 + TypeScript monolith. Supabase (Postgres, Auth, Storage) + MapLibre + SePay. Four role panels (driver, partner, garage, admin) with shared shell architecture (sidebar + multi-page layout). RLS-enforced security; current earning flow is monthly driver accrual after admin-approved decal installation.
 
 ## App Routes
 
 | Route                                | Purpose                                                                                                               |
 | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `/driver`                            | Driver panel — dashboard (today stats, weekly KM chart), KYC verification, weekly invoices, profile & sign-out        |
+| `/driver`                            | Driver panel — dashboard, KYC verification, monthly withdrawal invoices, profile + payout settings                    |
 | `/partner`                           | Partner web — campaign creation, contract management, driver verification, ledger                                     |
 | `/garage`                            | Garage web — vehicle inventory, service-area map, availability toggle, team users                                     |
 | `/admin`                             | Admin panel — dashboard, verification queues, contracts, money ops, pricing, invoices, users, reports, audit log, map |
 | `/(public)`                          | Landing, OAuth login (Google + GitHub), QR redirect                                                                   |
 | `/onboarding`                        | Role selection & CCCD upload (pending users post-signup)                                                              |
-| `/api/v1/*`                          | Route handlers — GPS ingest, photo finalize, webhooks (SePay, Supabase), state transitions                            |
+| `/api/v1/*`                          | Route handlers — photo finalize, webhooks (SePay, Supabase), state transitions                                        |
 | `/api/v1/admin/reports/[type]` (GET) | CSV export (drivers, campaigns, invoices, fraud); admin-auth guarded                                                  |
 
 ## Shared Shell Primitives
@@ -44,7 +44,7 @@ Located in `src/components/admin/` and `src/app/admin/*/`. Admin pages wire real
 | `creative-review-content.tsx`    | **Client component.** Creative review drawer body — image preview, spec list, approve/reject actions            |
 | `photo-verif-review-content.tsx` | **Client component.** Photo verification drawer body — verify image, approve/reject with reason                 |
 | `invoice-filters.tsx`            | **Client component.** Date range + search; lifted state via callback                                            |
-| `invoice-table.tsx`              | **Client component.** InvoiceFilters + DataTable with real invoice rows and client-side filtering               |
+| `invoice-table.tsx`              | **Client component.** InvoiceFilters + DataTable with real invoice rows, print links, and client-side filtering |
 | `weekly-km-chart.tsx`            | **Client component.** Recharts line chart accepting real data prop from dashboard                               |
 | `demo-badge.tsx`                 | Inline "DEMO" label; renders only when `NODE_ENV !== 'production'`                                              |
 | `kyc-queue-client.tsx`           | **Client component.** Drawer + DataTable for KYC queue; handles row selection and reviewer actions              |
@@ -68,7 +68,7 @@ Located in `src/lib/admin/`. Server-side query helpers for dashboard, review que
 | `getCreativesQueue`           | Campaign creatives awaiting approval                                       |
 | `getInstallProofs`            | Installation verification submissions                                      |
 | `getPhotoVerifications`       | Photo verification queue                                                   |
-| `getDriverInvoices`           | Driver invoice ledger filtered by period                                   |
+| `getDriverInvoices`           | Driver withdrawal invoices from `driver_invoices` with print href          |
 | `getPartnerInvoices`          | Partner invoice ledger filtered by period                                  |
 | `getGarageInvoices`           | Garage invoice ledger filtered by period                                   |
 | `getPricingSettings`          | Current role pricing rule for garage payout, partner cap, and driver rates |
@@ -78,7 +78,7 @@ Located in `src/lib/admin/`. Server-side query helpers for dashboard, review que
 | `getReportsData(period)`      | Fraud/performance reports grouped by week/month/year with period range     |
 | `periodRange(period)`         | Helper — returns [startDate, endDate] for week/month/prev_month/year       |
 | `groupByPeriod(rows, period)` | Helper — buckets daily stats into period labels (week/month/year)          |
-| `getActiveGpsTrails`          | Live GPS traces for map view                                               |
+| `getActiveGpsTrails`          | Live GPS traces for map view (deferred until GPS/mobile phase)             |
 
 ## Admin Utilities
 
@@ -98,7 +98,7 @@ Located in `src/components/driver/`. Support the driver panel (dashboard, KYC, i
 | `today-card.tsx`                  | Dark SectionShell — km numeral (Anton 72px), earnings, campaign badge, "Go online" CTA     |
 | `weekly-km-chart.tsx`             | Recharts AreaChart, 7-day mock data, primary fill + stroke                                 |
 | `kyc-wizard.tsx`                  | 3-step state machine, StepIndicator, FileInput w/ camera capture, sonner toast stub        |
-| `invoice-list-item.tsx`           | Expand/collapse `<details>` — status pill, day breakdown table                             |
+| `invoice-list-item.tsx`           | Expand/collapse `<details>` — monthly invoice number, period, amount, status pill          |
 | `profile-vehicle-photo-input.tsx` | Isolated client component for camera file input (extracted to keep profile page ≤200)      |
 | `mock-data.ts`                    | TodayStats, DailyKmPoint, VerificationPrompt, DriverInvoiceRow — VN realistic data         |
 

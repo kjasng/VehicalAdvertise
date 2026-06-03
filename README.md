@@ -1,6 +1,6 @@
 # Vehical Advertise
 
-Vehicle advertising marketplace for the Hanoi pilot. Drivers wrap cars in partner campaigns, drive normal routes, get paid weekly via SePay (VietQR).
+Vehicle advertising marketplace for the Hanoi pilot. Drivers wrap cars in partner campaigns, choose an install garage, then create monthly withdrawal invoices after admin-approved decal installation.
 
 **Stack:** Next.js 16 (App Router) · Supabase (Postgres + Auth + Storage + Realtime) · shadcn/ui · Tailwind v4 · TanStack Query · pnpm
 
@@ -19,7 +19,7 @@ src/
 ├── app/
 │   ├── (admin)/   sidebar shell, approvals/payouts/fraud/pricing/audit
 │   ├── (public)/  landing, login (phone OTP), QR redirect
-│   └── api/v1/    GPS ingest, photo finalize, webhooks, cron, transitions
+│   └── api/v1/    photo finalize, webhooks, cron, transitions
 ├── lib/
 │   ├── supabase/  browser, server (RLS-scoped), admin (service-role, server-only)
 │   └── auth/      role-gate helpers
@@ -49,7 +49,7 @@ Region: `ap-southeast-1` (Singapore). Extensions: `postgis`, `pgcrypto`.
 - **Package manager:** pnpm only (enforced by `npx only-allow pnpm`). Never npm/yarn.
 - **UI:** shadcn/ui components in `src/components/ui/*`. Add via `pnpm dlx shadcn@latest add <name>`. No alternative libraries.
 - **Service-role key:** `SUPABASE_SERVICE_ROLE_KEY` is server-only. Never import `src/lib/supabase/admin.ts` from a `'use client'` file.
-- **RLS:** Deny by default. Every table has explicit policies; money / GPS writes go through service-role API routes only.
+- **RLS:** Deny by default. Every table has explicit policies; money writes go through service-role API routes/actions only.
 - **Files:** kebab-case TS/TSX, under 200 LOC per file.
 
 ## Documentation
