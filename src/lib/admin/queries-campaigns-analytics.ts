@@ -11,6 +11,12 @@ export type CampaignAnalyticsRow = {
   endDate: string
   budgetVnd: number
   spentVnd: number
+  fundingMode: string
+  monthlyBudgetVnd: number | null
+  balancePercent: number | null
+  driverNetMonthlyVnd: number
+  platformFeePct: number
+  activeDriverLimit: number | null
   burnPct: number
   kmTotal: number
   activeDrivers: number
@@ -24,7 +30,9 @@ export async function getCampaignAnalytics(): Promise<CampaignAnalyticsRow[]> {
   const [campaignsRes, contractsRes] = await Promise.all([
     supabase
       .from('campaigns')
-      .select('id, name, partner_id, status, start_date, end_date, budget_vnd, spent_vnd')
+      .select(
+        'id, name, partner_id, status, start_date, end_date, budget_vnd, spent_vnd, funding_mode, monthly_budget_vnd, balance_percent, driver_net_monthly_vnd, platform_fee_pct, active_driver_limit',
+      )
       .order('created_at', { ascending: false })
       .limit(500),
     supabase.from('contracts').select('id, campaign_id, driver_id, km_total, status'),
@@ -91,6 +99,12 @@ export async function getCampaignAnalytics(): Promise<CampaignAnalyticsRow[]> {
       endDate: c.end_date,
       budgetVnd: c.budget_vnd,
       spentVnd: c.spent_vnd,
+      fundingMode: c.funding_mode ?? 'monthly_cap',
+      monthlyBudgetVnd: c.monthly_budget_vnd,
+      balancePercent: c.balance_percent,
+      driverNetMonthlyVnd: c.driver_net_monthly_vnd ?? 1_100_000,
+      platformFeePct: Number(c.platform_fee_pct ?? 20),
+      activeDriverLimit: c.active_driver_limit,
       burnPct,
       kmTotal: Math.round(agg?.kmTotal ?? 0),
       activeDrivers: agg?.drivers.size ?? 0,

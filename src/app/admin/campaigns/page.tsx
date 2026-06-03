@@ -8,6 +8,8 @@ import { SectionShell } from '@/components/shared/section-shell'
 import { EmptyState } from '@/components/shared/empty-state'
 import { getCampaignAnalytics } from '@/lib/admin/queries-campaigns-analytics'
 
+import { CampaignFundingForm } from './campaign-funding-form'
+
 export const metadata = { title: 'Admin · Campaigns' }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -83,6 +85,7 @@ export default async function CampaignsPage({ searchParams }: PageProps) {
                     'Status',
                     'Dates',
                     'Budget Burn',
+                    'Funding',
                     'KM',
                     'Drivers',
                     'QR Scans',
@@ -136,6 +139,17 @@ export default async function CampaignsPage({ searchParams }: PageProps) {
                           of {c.budgetVnd.toLocaleString('vi-VN')} ₫
                         </p>
                       </div>
+                    </td>
+                    <td className="px-4 py-3 align-top">
+                      <CampaignFundingForm
+                        campaignId={c.id}
+                        fundingMode={c.fundingMode}
+                        monthlyBudgetVnd={c.monthlyBudgetVnd}
+                        balancePercent={c.balancePercent}
+                        driverNetMonthlyVnd={c.driverNetMonthlyVnd}
+                        platformFeePct={c.platformFeePct}
+                        activeDriverLimit={c.activeDriverLimit}
+                      />
                     </td>
                     <td className="px-4 py-3 font-mono text-[12px] font-bold text-[#1a1a1a]">
                       {c.kmTotal.toLocaleString()} km
