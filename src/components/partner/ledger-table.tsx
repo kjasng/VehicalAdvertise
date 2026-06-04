@@ -3,8 +3,7 @@
  * Sortable by timestamp. Server component (no interactivity needed).
  */
 import { cn } from '@/lib/utils'
-
-import type { PartnerLedgerRow } from './mock-data'
+import type { PartnerLedgerRow } from '@/lib/partner/queries'
 
 interface LedgerTableProps {
   rows: PartnerLedgerRow[]

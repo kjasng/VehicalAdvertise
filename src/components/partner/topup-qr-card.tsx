@@ -1,10 +1,5 @@
 'use client'
 
-/**
- * TopupQrCard — amount selector + VietQR renderer.
- * Uses qrcode.react. Bank info + memo derived from partner UUID.
- * Submit is stubbed (console.log + toast).
- */
 import { useState } from 'react'
 
 import { QRCodeSVG } from 'qrcode.react'
@@ -12,31 +7,54 @@ import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PARTNER_MIN_DEPOSIT_VND } from '@/lib/partner/constants'
 import { cn } from '@/lib/utils'
 
-import { MOCK_WALLET } from './mock-data'
-
 const PRESETS = [
-  { label: '50K', value: 50_000 },
-  { label: '100K', value: 100_000 },
-  { label: '500K', value: 500_000 },
-  { label: '1M', value: 1_000_000 },
+  { label: '10M', value: 10_000_000 },
+  { label: '30M', value: 30_000_000 },
+  { label: '50M', value: 50_000_000 },
+  { label: '100M', value: 100_000_000 },
 ]
 
-function buildVietQrPayload(amountVnd: number, partnerUuid: string): string {
+type TopupQrCardProps = {
+  partnerId: string
+  bankName?: string
+  bankAccount?: string
+  accountName?: string
+}
+
+function buildVietQrPayload({
+  amountVnd,
+  partnerId,
+  bankName,
+  bankAccount,
+  accountName,
+}: {
+  amountVnd: number
+  partnerId: string
+  bankName: string
+  bankAccount: string
+  accountName: string
+}): string {
   // VietQR EMV-like string (simplified memo payload for QR display)
-  const memo = `TOPUP ${partnerUuid} ${amountVnd}`
+  const memo = `TOPUP ${partnerId} ${amountVnd}`
   return [
-    `Bank: ${MOCK_WALLET.bankName}`,
-    `Account: ${MOCK_WALLET.bankAccount}`,
-    `Name: ${MOCK_WALLET.accountName}`,
+    `Bank: ${bankName}`,
+    `Account: ${bankAccount}`,
+    `Name: ${accountName}`,
     `Amount: ${amountVnd}`,
     `Memo: ${memo}`,
   ].join('\n')
 }
 
-export function TopupQrCard() {
-  const [selectedPreset, setSelectedPreset] = useState<number | null>(100_000)
+export function TopupQrCard({
+  partnerId,
+  bankName = 'VCB',
+  bankAccount = '0123456789',
+  accountName = 'VEHICAL ADVERTISE JSC',
+}: TopupQrCardProps) {
+  const [selectedPreset, setSelectedPreset] = useState<number | null>(PARTNER_MIN_DEPOSIT_VND)
   const [customAmount, setCustomAmount] = useState('')
   const [isCustom, setIsCustom] = useState(false)
 
@@ -44,17 +62,19 @@ export function TopupQrCard() {
     ? Math.max(0, parseInt(customAmount.replace(/\D/g, ''), 10) || 0)
     : (selectedPreset ?? 0)
 
-  const qrValue = buildVietQrPayload(effectiveAmount, MOCK_WALLET.partnerUuid)
+  const qrValue = buildVietQrPayload({
+    amountVnd: effectiveAmount,
+    partnerId,
+    bankName,
+    bankAccount,
+    accountName,
+  })
 
   function handleConfirm() {
-    if (effectiveAmount < 50_000) {
-      toast.error('Minimum top-up is ₫50,000')
+    if (effectiveAmount < PARTNER_MIN_DEPOSIT_VND) {
+      toast.error('Số tiền nạp tối thiểu là 10.000.000 VNĐ')
       return
     }
-    console.log('[TopupQrCard] stub top-up confirm:', {
-      effectiveAmount,
-      partnerUuid: MOCK_WALLET.partnerUuid,
-    })
     toast.success(
       `QR generated for ₫${effectiveAmount.toLocaleString('vi-VN')} — scan to complete transfer`,
     )
@@ -62,7 +82,6 @@ export function TopupQrCard() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      {/* Left: amount selector */}
       <div className="space-y-5">
         <div>
           <p className="mb-3 text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
@@ -118,19 +137,17 @@ export function TopupQrCard() {
           Generate QR — ₫{effectiveAmount.toLocaleString('vi-VN')}
         </Button>
 
-        {/* Ledger explainer */}
         <div className="space-y-1 rounded-md border border-[#cbccc9] bg-[#f7f8fa] p-4 text-[12px] text-[#666666]">
           <p className="text-[11px] font-bold tracking-[1.5px] text-[#1a1a1a] uppercase">
             How it works
           </p>
-          <p>1. Scan the QR with your banking app.</p>
-          <p>2. Transfer the exact amount shown — memo is pre-filled.</p>
-          <p>3. Credits appear in your wallet within 5 minutes via SePay webhook.</p>
-          <p>4. Campaign charges are deducted automatically per km driven.</p>
+          <p>
+            Scan with your banking app, transfer the exact amount, and keep the memo. Credits appear
+            after SePay/admin confirms the transfer.
+          </p>
         </div>
       </div>
 
-      {/* Right: QR display */}
       <div className="flex flex-col items-center gap-4 rounded-md border border-[#cbccc9] bg-white p-6">
         <p className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
           Scan to pay
@@ -153,23 +170,21 @@ export function TopupQrCard() {
         <div className="w-full space-y-1 text-[12px]">
           <div className="flex justify-between">
             <span className="text-[#666666]">Bank</span>
-            <span className="font-mono font-bold text-[#1a1a1a]">{MOCK_WALLET.bankName}</span>
+            <span className="font-mono font-bold text-[#1a1a1a]">{bankName}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-[#666666]">Account</span>
-            <span className="font-mono font-bold text-[#1a1a1a]">{MOCK_WALLET.bankAccount}</span>
+            <span className="font-mono font-bold text-[#1a1a1a]">{bankAccount}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-[#666666]">Name</span>
             <span className="max-w-[180px] text-right font-mono font-bold text-[#1a1a1a]">
-              {MOCK_WALLET.accountName}
+              {accountName}
             </span>
           </div>
           <div className="flex justify-between">
             <span className="text-[#666666]">Memo</span>
-            <span className="font-mono font-bold text-[#ff5c00]">
-              TOPUP {MOCK_WALLET.partnerUuid}
-            </span>
+            <span className="font-mono font-bold text-[#ff5c00]">TOPUP {partnerId}</span>
           </div>
           <div className="flex justify-between border-t border-[#cbccc9] pt-2">
             <span className="text-[#666666]">Amount</span>

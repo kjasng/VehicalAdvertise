@@ -157,3 +157,27 @@ export async function sendPartnerRejected({
   )
   await send(email, `[${APP_NAME}] Hồ sơ đối tác cần bổ sung`, html)
 }
+
+export async function sendPartnerDepositSuccess({
+  email,
+  name,
+  amountVnd,
+  currentBalanceVnd,
+}: {
+  email: string
+  name: string
+  amountVnd: number
+  currentBalanceVnd: number
+}): Promise<void> {
+  const html = baseHtml(
+    'Deposit Successful',
+    `<h2 style="color:#1a1a1a;margin:0 0 16px">Xin chào ${name},</h2>
+     <p style="color:#444;line-height:1.6">Khoản nạp của bạn đã được ghi nhận thành công.</p>
+     <table style="width:100%;border-collapse:collapse;margin:16px 0">
+       <tr><td style="padding:8px;border:1px solid #e0e0de">Amount</td><td style="padding:8px;border:1px solid #e0e0de"><strong>${amountVnd.toLocaleString('vi-VN')} VNĐ</strong></td></tr>
+       <tr><td style="padding:8px;border:1px solid #e0e0de">Current Balance</td><td style="padding:8px;border:1px solid #e0e0de"><strong>${currentBalanceVnd.toLocaleString('vi-VN')} VNĐ</strong></td></tr>
+     </table>
+     <a href="https://wheelsearner.vn/partner/billing" style="display:inline-block;margin-top:16px;background:#1a1a1a;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:700">View Billing →</a>`,
+  )
+  await send(email, `[${APP_NAME}] Deposit Successful`, html)
+}

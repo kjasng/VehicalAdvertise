@@ -11,12 +11,14 @@ import { Input } from '@/components/ui/input'
 
 export interface WizardFormValues {
   name: string
+  description: string
   districts: string
   startDate: string
   endDate: string
-  creativeId: string
-  targetKm: string
-  budgetVnd: string
+  creativeUrls: string
+  driverCount: string
+  monthlyCapVnd: string
+  qrTargetUrl: string
 }
 
 interface StepFieldsProps {
@@ -38,6 +40,19 @@ export function WizardStepFields({ step, control, getValues }: StepFieldsProps) 
               <FormLabel>Campaign name</FormLabel>
               <FormControl>
                 <Input placeholder="e.g. Grab Summer 2026" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Input placeholder="Campaign objective, offer, target audience..." {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -94,16 +109,21 @@ export function WizardStepFields({ step, control, getValues }: StepFieldsProps) 
         <legend className="sr-only">Select creative</legend>
         <FormField
           control={control}
-          name="creativeId"
+          name="creativeUrls"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Creative asset ID</FormLabel>
+              <FormLabel>Creative URLs</FormLabel>
               <FormControl>
-                <Input placeholder="e.g. asset-001" {...field} />
+                <textarea
+                  rows={5}
+                  placeholder="https://.../creative-a.png&#10;https://.../creative-b.png"
+                  className="focus-visible:ring-ring min-h-[120px] w-full rounded-md border border-[#cbccc9] bg-white px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
               <p className="text-[11px] text-[#666666]">
-                Enter the ID of an approved creative from your Creatives library.
+                Add one or more decal creative URLs. Each line is one creative.
               </p>
             </FormItem>
           )}
@@ -118,12 +138,12 @@ export function WizardStepFields({ step, control, getValues }: StepFieldsProps) 
         <legend className="sr-only">Campaign budget</legend>
         <FormField
           control={control}
-          name="targetKm"
+          name="driverCount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Target km</FormLabel>
+              <FormLabel>Number of Drivers</FormLabel>
               <FormControl>
-                <Input type="number" min={1000} step={1000} {...field} />
+                <Input type="number" min={1} step={1} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -131,12 +151,25 @@ export function WizardStepFields({ step, control, getValues }: StepFieldsProps) 
         />
         <FormField
           control={control}
-          name="budgetVnd"
+          name="monthlyCapVnd"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Budget (₫)</FormLabel>
+              <FormLabel>Monthly Cap (₫)</FormLabel>
               <FormControl>
-                <Input type="number" min={1_000_000} step={500_000} {...field} />
+                <Input type="number" min={1_100_000} step={100_000} {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={control}
+          name="qrTargetUrl"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>QR Target URL</FormLabel>
+              <FormControl>
+                <Input type="url" placeholder="https://your-brand.vn/campaign" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -149,11 +182,13 @@ export function WizardStepFields({ step, control, getValues }: StepFieldsProps) 
   // Step 3: Review
   const rows: [string, string][] = [
     ['Name', getValues('name')],
+    ['Description', getValues('description')],
     ['Districts', getValues('districts')],
     ['Dates', `${getValues('startDate')} → ${getValues('endDate')}`],
-    ['Creative', getValues('creativeId')],
-    ['Target km', Number(getValues('targetKm')).toLocaleString('vi-VN')],
-    ['Budget', `₫${Number(getValues('budgetVnd')).toLocaleString('vi-VN')}`],
+    ['Creatives', `${getValues('creativeUrls').split(/\n|,/).filter(Boolean).length}`],
+    ['Drivers', Number(getValues('driverCount')).toLocaleString('vi-VN')],
+    ['Monthly Cap', `₫${Number(getValues('monthlyCapVnd')).toLocaleString('vi-VN')}`],
+    ['QR URL', getValues('qrTargetUrl')],
   ]
 
   return (
