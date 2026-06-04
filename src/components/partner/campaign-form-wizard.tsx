@@ -32,7 +32,7 @@ const campaignSchema = z
     districts: z.string().min(1, 'Enter at least one district'),
     startDate: z.string().min(1, 'Start date is required'),
     endDate: z.string().min(1, 'End date is required'),
-    creativeUrls: z.string().min(1, 'Add at least one creative URL'),
+    creativeUrls: z.string().min(1, 'Upload at least one creative image'),
     driverCount: z
       .string()
       .min(1, 'Number of drivers is required')
@@ -112,10 +112,10 @@ export function CampaignFormWizard({ onSuccess }: Props) {
     <div className="space-y-6">
       {/* Step indicator */}
       <nav aria-label="Campaign wizard steps">
-        <ol className="flex items-center gap-0">
+        <ol className="flex w-full items-center gap-0">
           {STEPS.map((label, i) => (
-            <li key={label} className="flex items-center">
-              <div className="flex items-center gap-2">
+            <li key={label} className={cn('flex items-center', i < STEPS.length - 1 && 'flex-1')}>
+              <div className="flex shrink-0 items-center gap-2">
                 <span
                   className={cn(
                     'flex size-7 items-center justify-center rounded-full text-[11px] font-bold',
@@ -141,7 +141,7 @@ export function CampaignFormWizard({ onSuccess }: Props) {
               {i < STEPS.length - 1 && (
                 <div
                   className={cn(
-                    'mx-3 h-px w-8 sm:w-12',
+                    'mx-2 h-px min-w-3 flex-1 sm:mx-3',
                     i < step ? 'bg-[#1a1a1a]' : 'bg-[#cbccc9]',
                   )}
                   aria-hidden="true"

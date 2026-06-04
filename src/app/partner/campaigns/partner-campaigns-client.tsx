@@ -60,15 +60,17 @@ export function PartnerCampaignsClient({ campaigns }: { campaigns: PartnerCampai
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side="right"
-          className="w-full overflow-y-auto sm:max-w-xl"
+          className="w-full overflow-x-hidden overflow-y-auto sm:max-w-xl"
           aria-label="New campaign form"
         >
-          <SheetHeader className="mb-6">
+          <SheetHeader className="pb-2">
             <SheetTitle className="font-heading text-[28px] text-[#1a1a1a] uppercase">
               New Campaign
             </SheetTitle>
           </SheetHeader>
-          <CampaignFormWizard onSuccess={() => setOpen(false)} />
+          <div className="px-4 pb-6">
+            <CampaignFormWizard onSuccess={() => setOpen(false)} />
+          </div>
         </SheetContent>
       </Sheet>
     </div>

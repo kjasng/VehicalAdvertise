@@ -6,6 +6,7 @@
  */
 import type { Control } from 'react-hook-form'
 
+import { CampaignCreativeUpload } from '@/components/partner/campaign-creative-upload'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 
@@ -112,18 +113,13 @@ export function WizardStepFields({ step, control, getValues }: StepFieldsProps) 
           name="creativeUrls"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Creative URLs</FormLabel>
+              <FormLabel>Creatives</FormLabel>
               <FormControl>
-                <textarea
-                  rows={5}
-                  placeholder="https://.../creative-a.png&#10;https://.../creative-b.png"
-                  className="focus-visible:ring-ring min-h-[120px] w-full rounded-md border border-[#cbccc9] bg-white px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
-                  {...field}
-                />
+                <CampaignCreativeUpload value={field.value} onChange={field.onChange} />
               </FormControl>
               <FormMessage />
               <p className="text-[11px] text-[#666666]">
-                Add one or more decal creative URLs. Each line is one creative.
+                Upload one or more decal creative images. Each image is one creative.
               </p>
             </FormItem>
           )}
