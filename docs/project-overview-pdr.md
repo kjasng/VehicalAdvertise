@@ -17,16 +17,18 @@ Vietnamese commuter drivers underutilise their cars as an advertising surface. B
 
 ## 3. Locked product decisions
 
-| Decision        | Value                                                                 |
-| --------------- | --------------------------------------------------------------------- |
-| Driver client   | PWA (Next.js web, mobile-first)                                       |
-| Vehicle types   | Cars only (motorbike support → v2)                                    |
-| Auth            | Supabase OAuth (Google + GitHub only)                                 |
-| Money rail      | SePay (VietQR) — top-up + payout                                      |
-| KYC             | Manual CCCD upload review (eKYC OCR → v2)                             |
-| E-invoice       | Deferred (trigger at partner volume > 200k VND/month)                 |
-| Payout formula  | Monthly driver net target per campaign after platform fee             |
-| Default pricing | Driver net 1.1m VND/month · platform fee 20% · campaign cap/% balance |
+| Decision        | Value                                                                                            |
+| --------------- | ------------------------------------------------------------------------------------------------ |
+| Driver client   | PWA (Next.js web, mobile-first)                                                                  |
+| Vehicle types   | Cars only (motorbike support → v2)                                                               |
+| Auth            | Supabase OAuth (Google + GitHub only)                                                            |
+| Money rail      | SePay (VietQR) for top-up; driver/garage payouts are admin-approved manual bank transfers        |
+| KYC             | Manual CCCD upload review (eKYC OCR → v2)                                                        |
+| E-invoice       | Deferred (trigger at partner volume > 200k VND/month)                                            |
+| Payout formula  | Monthly driver net target per campaign after platform fee                                        |
+| Partner deposit | Minimum 10m VND                                                                                  |
+| Default pricing | Driver gross 1.1m VND/month · campaign monthly cap                                               |
+| Garage payout   | Credit garage balance on approved install proof; minimum withdrawal configurable, default 2m VND |
 
 ## 4. MVP scope
 
@@ -65,17 +67,17 @@ Driver app + Partner dashboard + minimal Admin + Garage v0. Deferred to post-pil
 
 ## 8. Phase roadmap (overview — details in `plans/`)
 
-| Phase                            | Weeks | Output                                              |
-| -------------------------------- | ----- | --------------------------------------------------- |
-| P0 Foundation                    | 1     | Supabase schema, RLS, auth, role gate, admin shell  |
-| P1 Driver onboarding             | 2     | KYC flow, vehicle registration, profile             |
-| P2 Partner + Campaign            | 2     | Top-up, campaign CRUD, review queue                 |
-| P3 Garage v0 + Contract matching | 2     | Install/removal workflow, matching engine           |
-| P4 Driver earning                | 2     | Monthly accrual, funding checks, withdrawal invoice |
-| P5 Photo verification            | 1     | Install proof + admin photo review                  |
-| P6 Payouts (SePay)               | 1     | Monthly payout + webhook                            |
-| P7 Analytics + QR                | 1     | Partner analytics, QR redirect tracking             |
-| P8 Hardening + pilot             | 1     | Lighthouse, load tests, pilot kickoff               |
+| Phase                            | Weeks | Output                                                                   |
+| -------------------------------- | ----- | ------------------------------------------------------------------------ |
+| P0 Foundation                    | 1     | Supabase schema, RLS, auth, role gate, admin shell                       |
+| P1 Driver onboarding             | 2     | KYC flow, vehicle registration, profile                                  |
+| P2 Partner + Campaign            | 2     | Top-up, campaign CRUD, review queue                                      |
+| P3 Garage v0 + Contract matching | 2     | Driver garage selection, install proof upload, garage balance/withdrawal |
+| P4 Driver earning                | 2     | Monthly accrual, funding checks, withdrawal invoice                      |
+| P5 Photo verification            | 1     | Install proof + admin photo review                                       |
+| P6 Payouts                       | 1     | Admin-approved manual driver + garage payout tracking                    |
+| P7 Analytics + QR                | 1     | Partner analytics, QR redirect tracking                                  |
+| P8 Hardening + pilot             | 1     | Lighthouse, load tests, pilot kickoff                                    |
 
 ## 9. Open questions (resolve as they unblock work)
 

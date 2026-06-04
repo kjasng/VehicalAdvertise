@@ -6,9 +6,9 @@
 
 | Route                                | Purpose                                                                                                               |
 | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `/driver`                            | Driver panel — dashboard, KYC verification, monthly withdrawal invoices, profile + payout settings                    |
-| `/partner`                           | Partner web — campaign creation, contract management, driver verification, ledger                                     |
-| `/garage`                            | Garage web — vehicle inventory, service-area map, availability toggle, team users                                     |
+| `/driver`                            | Driver panel — dashboard, KYC verification, garage selection, monthly withdrawal invoices, profile + payout settings  |
+| `/partner`                           | Partner web — approved-only dashboard, billing/top-up QR, real campaign publish flow, ledger                          |
+| `/garage`                            | Garage web — real install jobs, install proof upload, balance, payout settings, withdrawal history                    |
 | `/admin`                             | Admin panel — dashboard, verification queues, contracts, money ops, pricing, invoices, users, reports, audit log, map |
 | `/(public)`                          | Landing, OAuth login (Google + GitHub), QR redirect                                                                   |
 | `/onboarding`                        | Role selection & CCCD upload (pending users post-signup)                                                              |
@@ -53,7 +53,8 @@ Located in `src/components/admin/` and `src/app/admin/*/`. Admin pages wire real
 | `photo-verif-queue-client.tsx`   | **Client component.** Drawer + DataTable for photo verification queue; interactive review + rejection handling  |
 | `pricing-settings-client.tsx`    | **Client component.** Role-grouped pricing settings for garage, partner, and driver money rules                 |
 | `contracts-client.tsx`           | **Client component.** Campaign contract matching with contract type, status, and party search filters           |
-| `payouts-client.tsx`             | **Client component.** Driver pending balances and payout history with user search plus month/quarter filters    |
+| `payouts-client.tsx`             | **Client component.** Driver manual payout approval and payout history with user search plus period filters     |
+| `garage-withdrawals-table.tsx`   | **Client component.** Garage withdrawal queue: approve, mark paid, or reject and refund balance                 |
 | `users-table-client.tsx`         | **Client component.** DataTable with search params (?q=) for user filtering and status management               |
 | `mock-data.ts`                   | Reference data (not imported in any page; used only for component development and tests)                        |
 
@@ -70,7 +71,8 @@ Located in `src/lib/admin/`. Server-side query helpers for dashboard, review que
 | `getPhotoVerifications`       | Photo verification queue                                                   |
 | `getDriverInvoices`           | Driver withdrawal invoices from `driver_invoices` with print href          |
 | `getPartnerInvoices`          | Partner invoice ledger filtered by period                                  |
-| `getGarageInvoices`           | Garage invoice ledger filtered by period                                   |
+| `getGarageInvoices`           | Garage withdrawal invoices from `garage_withdrawals` with print href       |
+| `getGarageWithdrawalHistory`  | Garage withdrawal requests for manual admin payout review                  |
 | `getPricingSettings`          | Current role pricing rule for garage payout, partner cap, and driver rates |
 | `getRecentAdjustments`        | Recent manual `adjustment` / `refund` ledger entries                       |
 | `getLedgerTargets`            | Partner + driver target list for admin ledger adjustments                  |
@@ -92,33 +94,41 @@ CSV export and report helpers in `src/lib/admin/`.
 
 Located in `src/components/driver/`. Support the driver panel (dashboard, KYC, invoices, profile).
 
-| Component                         | Purpose                                                                                    |
-| --------------------------------- | ------------------------------------------------------------------------------------------ |
-| `driver-nav-config.ts`            | DRIVER_NAV: 4 sidebar items (Dashboard, Verify, Invoice, Profile) with href + label + icon |
-| `today-card.tsx`                  | Dark SectionShell — km numeral (Anton 72px), earnings, campaign badge, "Go online" CTA     |
-| `weekly-km-chart.tsx`             | Recharts AreaChart, 7-day mock data, primary fill + stroke                                 |
-| `kyc-wizard.tsx`                  | 3-step state machine, StepIndicator, FileInput w/ camera capture, sonner toast stub        |
-| `invoice-list-item.tsx`           | Expand/collapse `<details>` — monthly invoice number, period, amount, status pill          |
-| `profile-vehicle-photo-input.tsx` | Isolated client component for camera file input (extracted to keep profile page ≤200)      |
-| `mock-data.ts`                    | TodayStats, DailyKmPoint, VerificationPrompt, DriverInvoiceRow — VN realistic data         |
+| Component                         | Purpose                                                                                |
+| --------------------------------- | -------------------------------------------------------------------------------------- |
+| `driver-nav-config.ts`            | DRIVER_NAV: Dashboard, Verify, Garage, Invoice, Profile with href + label + icon       |
+| `today-card.tsx`                  | Dark SectionShell — km numeral (Anton 72px), earnings, campaign badge, "Go online" CTA |
+| `weekly-km-chart.tsx`             | Recharts AreaChart, 7-day mock data, primary fill + stroke                             |
+| `kyc-wizard.tsx`                  | 3-step state machine, StepIndicator, FileInput w/ camera capture, sonner toast stub    |
+| `invoice-list-item.tsx`           | Expand/collapse `<details>` — monthly invoice number, period, amount, status pill      |
+| `profile-vehicle-photo-input.tsx` | Isolated client component for camera file input (extracted to keep profile page ≤200)  |
+| `mock-data.ts`                    | TodayStats, DailyKmPoint, VerificationPrompt, DriverInvoiceRow — VN realistic data     |
 
 ## Partner Shared Components
 
 Located in `src/components/partner/`. Support the partner panel (campaigns, contracts, verification, ledger).
 
-| Component                          | Purpose                                                                                |
-| ---------------------------------- | -------------------------------------------------------------------------------------- |
-| `partner-nav-config.ts`            | PARTNER_NAV: sidebar items for partner workflows (Campaigns, Drivers, Reports, Ledger) |
-| _[to be added as phases continue]_ | Partner-specific forms, charts, and review components                                  |
+| Component                  | Purpose                                                                                  |
+| -------------------------- | ---------------------------------------------------------------------------------------- |
+| `partner-nav-config.ts`    | PARTNER_NAV: sidebar items for partner workflows                                         |
+| `campaign-form-wizard.tsx` | Real publish wizard: 3-month min, creative URLs, driver count, monthly cap validation    |
+| `campaign-card.tsx`        | Real campaign card with status mapping, requested drivers, monthly cap, and budget usage |
+| `topup-qr-card.tsx`        | VietQR-style top-up QR with 10m VND minimum deposit                                      |
+| `ledger-table.tsx`         | Real partner ledger rows from `ledger_entries`                                           |
 
 ## Garage Shared Components
 
-Located in `src/components/garage/`. Support the garage panel (inventory, service area, team users).
+Located in `src/components/garage/`. Support real garage install and payout workflows.
 
-| Component                          | Purpose                                                                                |
-| ---------------------------------- | -------------------------------------------------------------------------------------- |
-| `garage-nav-config.ts`             | GARAGE_NAV: sidebar items for garage workflows (Vehicles, Service Area, Team, Reports) |
-| _[to be added as phases continue]_ | Garage-specific maps, inventory, and team management components                        |
+| Component                         | Purpose                                                                           |
+| --------------------------------- | --------------------------------------------------------------------------------- |
+| `garage-nav-config.ts`            | GARAGE_NAV: Dashboard, Installs, Proof Upload, Payout                             |
+| `install-card.tsx`                | Real install job summary card                                                     |
+| `install-detail-drawer.tsx`       | Install job detail drawer with driver, vehicle, campaign, proof state, upload CTA |
+| `photo-capture-grid.tsx`          | 5-photo install proof uploader wired to Supabase Storage + `photos`               |
+| `garage-payout-settings-form.tsx` | Garage profile + payout settings after admin approval                             |
+| `garage-withdrawal-form.tsx`      | Minimum-withdrawal guarded request form for garage balance                        |
+| `payout-row.tsx`                  | Garage withdrawal history row                                                     |
 
 ## Auth & Gating
 
@@ -142,7 +152,7 @@ All components use:
 ## Key Conventions
 
 1. **`x-pathname` header:** Set early in `proxy.ts`. Server layouts read via `headers().get('x-pathname')` to determine active nav item without client-side hooks.
-2. **File size:** All code files ≤ 200 lines; largest is `mock-data.ts` (179 LOC).
+2. **File size:** New garage flow files stay ≤ 200 lines.
 3. **Real data wiring:** All admin pages fetch via `src/lib/admin/` query library (getKycQueue, getCreativesQueue, getInstallProofs, etc.). Mock-data.ts retained for reference only.
 4. **Server/client boundary:** Pages are server components that fetch data; client wrapper components (e.g., kyc-queue-client) handle interactivity (drawers, state, actions).
 5. **Action handlers:** Approve/reject/suspend now call real server actions (reviewDriverKyc, reviewCampaign, etc.) wired to Supabase security-definer RPCs.

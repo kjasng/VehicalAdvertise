@@ -23,15 +23,15 @@ Monolith rationale: 1 deploy, 1 auth, shared component library. Split only when 
 
 PostGIS enabled. Tables grouped by domain:
 
-| Group        | Tables                                                                                                            |
-| ------------ | ----------------------------------------------------------------------------------------------------------------- |
-| Identity     | `profiles`, `partners`, `drivers`, `garages`                                                                      |
-| Inventory    | `vehicles`                                                                                                        |
-| Campaigns    | `campaigns`, `contracts`                                                                                          |
-| GPS          | `gps_logs`, `contract_daily_stats` (deferred until mobile/GPS phase)                                              |
-| Verification | `photos`, `qr_scans`                                                                                              |
-| Money        | `ledger_entries`, `driver_earning_periods`, `driver_invoices`, `payouts`, `sepay_webhook_events`, `pricing_rules` |
-| Ops          | `audit_log`                                                                                                       |
+| Group        | Tables                                                                                                                                                     |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Identity     | `profiles`, `partners`, `drivers`, `garages`                                                                                                               |
+| Inventory    | `vehicles`                                                                                                                                                 |
+| Campaigns    | `campaigns`, `contracts`                                                                                                                                   |
+| GPS          | `gps_logs`, `contract_daily_stats` (deferred until mobile/GPS phase)                                                                                       |
+| Verification | `photos`, `qr_scans`                                                                                                                                       |
+| Money        | `ledger_entries`, `driver_earning_periods`, `driver_invoices`, `garage_earnings`, `garage_withdrawals`, `payouts`, `sepay_webhook_events`, `pricing_rules` |
+| Ops          | `audit_log`                                                                                                                                                |
 
 Full DDL → `supabase/migrations/0001_schema.sql`. Enums and constraints normalise state and money correctness at the database level.
 
@@ -46,7 +46,7 @@ Rule: anything touching money goes through a service-role API route/action. Neve
 
 **Admin bypass flag (`ADMIN_PANEL_BYPASS`):** A dev-only env var (explicit opt-in, default false). When set to `"true"`, users whose `profiles.role = 'admin'` may visit `/driver`, `/partner`, and `/garage` routes without being redirected — useful for inspecting role panels during development. The bypass is routing-only and silent: RLS still enforces what data the admin can read/write at the DB level, and all writes continue to carry the admin's real `user_id`. Non-admin users are never affected regardless of flag state. **Critical for production: this flag MUST be unset in deployed environments (env var deleted from Vercel or `.env.local`) — no code change required.**
 
-**Admin security-definer RPCs:** Admin review RPCs in `0010_admin_rpcs.sql` (`approve_driver_kyc`, `approve_campaign`, `set_user_blocked`) and money RPCs in `0014_admin_money_ledger_rpc.sql` / `0016_admin_review_install_proof_rpc.sql` are owned by postgres. Money RPCs check the actor is an active admin, perform ledger/balance/audit writes in one DB transaction, and grant execute only to `service_role`. `is_admin()` also requires `profiles.blocked = false`, so suspended admins lose DB admin-policy access.
+**Admin security-definer RPCs:** Admin review RPCs in `0010_admin_rpcs.sql` (`approve_driver_kyc`, `approve_campaign`, `set_user_blocked`) and money RPCs in `0014_admin_money_ledger_rpc.sql` / `0021_manual_payout_review.sql` are owned by postgres. Money RPCs check the actor is valid, perform balance/audit writes in one DB transaction, and grant execute only to `service_role`. `is_admin()` also requires `profiles.blocked = false`, so suspended admins lose DB admin-policy access.
 
 ## 4. State machines
 
@@ -77,13 +77,15 @@ Current phase: earning gate requires approved profile, assigned campaign, select
 
 Driver PWA / garage panel → compressed image (< 2 MB) → Supabase Storage signed URL → photo finalize → admin queue. Install proof approval is the earning gate.
 
-Garage install proof approval runs through `admin_review_install_proof()`. Approval updates the proof, moves the contract to `running`, sets `earning_start_date`, and if `pricing_rules.install_fee_vnd > 0`, creates one `garage_install_payout` ledger row linked by `contract_id` and `ref_type='install_proof'`. A partial unique index prevents duplicate payouts for the same proof.
+Garage install proof approval runs through `admin_review_install_proof()`. Approval updates the proof, moves the contract to `running`, sets `earning_start_date`, and if `pricing_rules.install_fee_vnd > 0`, creates one `garage_earnings` row per contract and credits `garages.balance_vnd`. `garage_earnings.contract_id` is unique, so approving multiple proof photos cannot duplicate garage payout.
 
 ## 8. Vietnam stack wiring
 
 - **Auth:** Supabase OAuth (Google + GitHub). No SMS dependency. Role assignment via `choose_role()` RPC post-signup (maps to `auth.users.raw_user_meta_data.role`).
-- **SePay (VietQR):** Top-up uses partner UUID as memo → webhook/manual admin RPC → `ledger_entries` credit + partner balance update in one transaction. Payouts: driver creates monthly withdrawal invoice → admin payout row → SePay payout request → webhook/manual action flips status. Idempotency: `sepay_webhook_events.txn_id` unique.
-- **Driver invoices:** `driver_invoices.invoice_html` stores the printable HTML snapshot. Admin `/admin/invoices/driver/[id]/print` renders that snapshot for print/export.
+- **Partner flow:** Pending partners are gated to onboarding until admin approval. Approved partners can generate VietQR top-up instructions, publish campaigns to `submitted`, and must pass 3-month duration, creative, monthly cap, and balance checks.
+- **SePay (VietQR):** Top-up uses partner UUID as memo → webhook/manual admin RPC → `ledger_entries` credit + partner balance update in one transaction. Minimum deposit is 10m VND. Driver and garage payouts are manual bank transfers: admin approves the withdrawal, transfers externally, then marks the record paid.
+- **Driver invoices:** `driver_invoices.invoice_html` stores the printable HTML snapshot. Admin `/admin/invoices/driver/[id]/print` renders that snapshot for print/export. `admin_approve_driver_withdrawal()` atomically reserves the driver balance and creates a processing payout; `admin_mark_driver_payout_paid()` finalises it only after the external bank transfer succeeds.
+- **Garage withdrawals:** Approved install proof credits garage balance immediately. Garage withdrawal uses `request_garage_withdrawal()` to lock the garage row, validate payout settings + minimum withdrawal, reserve balance, and create a printable pending request. `admin_review_garage_withdrawal()` moves pending → processing → paid or refunds balance on failure.
 - **CCCD KYC:** Manual review at P1. v2 candidates: VNPT eKYC / TrustingSocial.
 - **Geocoding & Maps:** MapLibre GL + OpenStreetMap tiles + Nominatim. Used for vehicle location display and garage service-area approximation.
 - **E-invoice:** Deferred. Trigger: nightly cron for partner charges > 200k VND → VNPT/Misa.
@@ -101,7 +103,7 @@ src/
 │   ├── partner/                  partner panel components (under development)
 │   ├── garage/                   garage panel components (under development)
 │   └── admin/                    admin panel components: admin-nav-config, data-table, review-drawer, review-content (KYC, creative, photo verif), queue-client (KYC, creatives, install-proofs, photo-verif)
-├── lib/{supabase,geo,money,photo,qr,sepay,fraud,auth}/
+├── lib/{supabase,geo,money,photo,qr,sepay,fraud,auth,driver,garage}/
 │   └── admin/                    query library (getKycQueue, getCreativesQueue, getPhotoVerifications, getReportsData w/ period), csv-helpers (toCsv, csvResponse)
 ├── server/{distance,payout,state-machine}/  # server-only, never bundled
 ├── providers/  hooks/  types/  proxy.ts
