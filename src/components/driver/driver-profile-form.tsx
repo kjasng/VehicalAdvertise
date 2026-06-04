@@ -112,7 +112,7 @@ export function DriverProfileForm({ profile }: { profile: DriverProfileData }) {
           <p className="text-[12px] text-[#666666]">
             {profile.bankVerified
               ? 'Tài khoản đã được xác minh.'
-              : 'Thay đổi payout settings sẽ cần admin xác minh trước auto payout.'}
+              : 'Thay đổi payout settings sẽ cần admin xác minh trước khi duyệt rút tiền.'}
           </p>
         </Panel>
       </div>
