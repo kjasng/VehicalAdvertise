@@ -16,7 +16,7 @@ import { signOutAction } from '@/app/(public)/login/actions'
 
 interface RoleUserMenuProps {
   email: string | null
-  profileHref?: string
+  profileHref?: string | null
 }
 
 function initials(email: string | null): string {
@@ -29,7 +29,7 @@ function initials(email: string | null): string {
   return (local.slice(0, 2) || '?').toUpperCase()
 }
 
-export function RoleUserMenu({ email, profileHref = '/profile' }: RoleUserMenuProps) {
+export function RoleUserMenu({ email, profileHref = null }: RoleUserMenuProps) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -65,15 +65,17 @@ export function RoleUserMenu({ email, profileHref = '/profile' }: RoleUserMenuPr
             </div>
           )}
 
-          <Link
-            href={profileHref}
-            role="menuitem"
-            className="flex items-center gap-2 px-3 py-2.5 text-[13px] text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-white/40 focus-visible:outline-none focus-visible:ring-inset"
-            onClick={() => setOpen(false)}
-          >
-            <User className="size-4 shrink-0" aria-hidden="true" />
-            Profile
-          </Link>
+          {profileHref && (
+            <Link
+              href={profileHref}
+              role="menuitem"
+              className="flex items-center gap-2 px-3 py-2.5 text-[13px] text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-white/40 focus-visible:outline-none focus-visible:ring-inset"
+              onClick={() => setOpen(false)}
+            >
+              <User className="size-4 shrink-0" aria-hidden="true" />
+              Profile
+            </Link>
+          )}
 
           <form action={signOutAction}>
             <button

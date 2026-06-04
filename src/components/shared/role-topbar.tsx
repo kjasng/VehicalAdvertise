@@ -15,9 +15,15 @@ interface RoleTopbarProps {
   /** Brand wordmark fallback when title is omitted */
   brandLabel?: string
   userEmail: string | null
+  profileHref?: string | null
 }
 
-export function RoleTopbar({ title, brandLabel = 'VehicalAdvertise', userEmail }: RoleTopbarProps) {
+export function RoleTopbar({
+  title,
+  brandLabel = 'VehicalAdvertise',
+  userEmail,
+  profileHref = null,
+}: RoleTopbarProps) {
   return (
     <header className="flex h-[64px] shrink-0 items-center justify-between border-b border-white/10 bg-[#1a1a1a] px-6">
       {/* Left */}
@@ -30,7 +36,7 @@ export function RoleTopbar({ title, brandLabel = 'VehicalAdvertise', userEmail }
       </div>
 
       {/* Right: user menu */}
-      <RoleUserMenu email={userEmail} />
+      <RoleUserMenu email={userEmail} profileHref={profileHref} />
     </header>
   )
 }

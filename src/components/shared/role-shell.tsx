@@ -35,6 +35,7 @@ type RoleShellProps = {
   brandLabel?: string
   pathname: string
   userEmail: string | null
+  profileHref?: string | null
   children: ReactNode
 } & (RoleShellSidebarProps | RoleShellBottomNavProps)
 
@@ -45,6 +46,7 @@ export function RoleShell({
   brandLabel,
   pathname,
   userEmail,
+  profileHref,
   children,
   ...rest
 }: RoleShellProps) {
@@ -58,6 +60,7 @@ export function RoleShell({
           brandLabel={brandLabel}
           pathname={pathname}
           userEmail={userEmail}
+          profileHref={profileHref}
           navContent={navContent}
         />
         <div className="flex min-w-0 flex-1 flex-col">
@@ -70,7 +73,7 @@ export function RoleShell({
   // bottom-nav variant (mobile driver layout)
   return (
     <div className="flex min-h-screen flex-col bg-[#f7f8fa]">
-      <RoleTopbar brandLabel={brandLabel} userEmail={userEmail} />
+      <RoleTopbar brandLabel={brandLabel} userEmail={userEmail} profileHref={profileHref} />
       {/* pb-[80px] so content never hides behind the fixed bottom nav */}
       <main className="flex-1 px-4 pt-4 pb-[80px]">{children}</main>
       <RoleBottomNav items={navItems as BottomNavItem[]} pathname={pathname} />

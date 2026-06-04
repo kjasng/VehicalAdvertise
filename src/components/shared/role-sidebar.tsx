@@ -29,6 +29,7 @@ interface RoleSidebarProps {
   brandLabel?: string
   pathname: string
   userEmail: string | null
+  profileHref?: string | null
   /** Optional client-rendered nav override. When provided, replaces the
    *  server-rendered navItems loop (avoids stale pathname on client nav). */
   navContent?: React.ReactNode
@@ -48,8 +49,11 @@ export function RoleSidebar({
   brandLabel = 'VehicalAdvertise',
   pathname,
   userEmail,
+  profileHref,
   navContent,
 }: RoleSidebarProps) {
+  const roleProfileHref = profileHref ?? (role === 'driver' ? '/driver/profile' : null)
+
   return (
     <aside
       className="sticky hidden min-h-screen w-[240px] shrink-0 flex-col bg-[#1a1a1a] md:flex"
@@ -108,7 +112,7 @@ export function RoleSidebar({
 
       {/* Bottom: user menu */}
       <div className="sticky bottom-0 border-t border-white/10 px-4 py-4">
-        <RoleUserMenu email={userEmail} />
+        <RoleUserMenu email={userEmail} profileHref={roleProfileHref} />
       </div>
     </aside>
   )
