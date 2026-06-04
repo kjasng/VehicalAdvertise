@@ -78,6 +78,7 @@ export type Database = {
           balance_percent: number | null
           budget_vnd: number
           created_at: string
+          creative_urls: string[]
           creative_url: string | null
           daily_cap_km: number
           driver_net_monthly_vnd: number
@@ -92,6 +93,7 @@ export type Database = {
           qr_target_url: string
           rate_per_km_vnd: number
           reject_reason: string | null
+          requested_driver_count: number | null
           reviewed_at: string | null
           reviewed_by: string | null
           spent_vnd: number
@@ -106,6 +108,7 @@ export type Database = {
           brief?: string | null
           budget_vnd: number
           created_at?: string
+          creative_urls?: string[]
           creative_url?: string | null
           daily_cap_km?: number
           driver_net_monthly_vnd?: number
@@ -120,6 +123,7 @@ export type Database = {
           qr_target_url: string
           rate_per_km_vnd: number
           reject_reason?: string | null
+          requested_driver_count?: number | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           spent_vnd?: number
@@ -134,6 +138,7 @@ export type Database = {
           brief?: string | null
           budget_vnd?: number
           created_at?: string
+          creative_urls?: string[]
           creative_url?: string | null
           daily_cap_km?: number
           driver_net_monthly_vnd?: number
@@ -148,6 +153,7 @@ export type Database = {
           qr_target_url?: string
           rate_per_km_vnd?: number
           reject_reason?: string | null
+          requested_driver_count?: number | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           spent_vnd?: number
@@ -529,33 +535,184 @@ export type Database = {
           },
         ]
       }
+      garage_earnings: {
+        Row: {
+          amount_vnd: number
+          approved_at: string
+          approved_by: string | null
+          contract_id: string
+          created_at: string
+          garage_id: string
+          id: string
+          photo_id: string | null
+          source: string
+        }
+        Insert: {
+          amount_vnd: number
+          approved_at?: string
+          approved_by?: string | null
+          contract_id: string
+          created_at?: string
+          garage_id: string
+          id?: string
+          photo_id?: string | null
+          source?: string
+        }
+        Update: {
+          amount_vnd?: number
+          approved_at?: string
+          approved_by?: string | null
+          contract_id?: string
+          created_at?: string
+          garage_id?: string
+          id?: string
+          photo_id?: string | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'garage_earnings_approved_by_fkey'
+            columns: ['approved_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'garage_earnings_contract_id_fkey'
+            columns: ['contract_id']
+            isOneToOne: false
+            referencedRelation: 'contracts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'garage_earnings_garage_id_fkey'
+            columns: ['garage_id']
+            isOneToOne: false
+            referencedRelation: 'garages'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'garage_earnings_photo_id_fkey'
+            columns: ['photo_id']
+            isOneToOne: false
+            referencedRelation: 'photos'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      garage_withdrawals: {
+        Row: {
+          amount_vnd: number
+          bank_snapshot: Json
+          created_at: string
+          failure_reason: string | null
+          garage_id: string
+          id: string
+          invoice_html: string
+          paid_at: string | null
+          requested_at: string
+          status: Database['public']['Enums']['payout_status']
+          withdrawal_number: string
+        }
+        Insert: {
+          amount_vnd: number
+          bank_snapshot?: Json
+          created_at?: string
+          failure_reason?: string | null
+          garage_id: string
+          id?: string
+          invoice_html: string
+          paid_at?: string | null
+          requested_at?: string
+          status?: Database['public']['Enums']['payout_status']
+          withdrawal_number: string
+        }
+        Update: {
+          amount_vnd?: number
+          bank_snapshot?: Json
+          created_at?: string
+          failure_reason?: string | null
+          garage_id?: string
+          id?: string
+          invoice_html?: string
+          paid_at?: string | null
+          requested_at?: string
+          status?: Database['public']['Enums']['payout_status']
+          withdrawal_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'garage_withdrawals_garage_id_fkey'
+            columns: ['garage_id']
+            isOneToOne: false
+            referencedRelation: 'garages'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       garages: {
         Row: {
           address: string
           approved: boolean
+          balance_vnd: number
+          bank_account_name: string | null
+          bank_account_number: string | null
+          bank_bin: string | null
+          bank_branch: string | null
+          bank_name: string | null
+          bank_verified_at: string | null
+          contact_name: string | null
+          google_maps_url: string | null
           id: string
           lat: number | null
           lng: number | null
+          phone: string | null
           rating: number | null
+          service_area: string | null
           shop_name: string
+          working_hours: string | null
         }
         Insert: {
           address: string
           approved?: boolean
+          balance_vnd?: number
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_bin?: string | null
+          bank_branch?: string | null
+          bank_name?: string | null
+          bank_verified_at?: string | null
+          contact_name?: string | null
+          google_maps_url?: string | null
           id: string
           lat?: number | null
           lng?: number | null
+          phone?: string | null
           rating?: number | null
+          service_area?: string | null
           shop_name: string
+          working_hours?: string | null
         }
         Update: {
           address?: string
           approved?: boolean
+          balance_vnd?: number
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_bin?: string | null
+          bank_branch?: string | null
+          bank_name?: string | null
+          bank_verified_at?: string | null
+          contact_name?: string | null
+          google_maps_url?: string | null
           id?: string
           lat?: number | null
           lng?: number | null
+          phone?: string | null
           rating?: number | null
+          service_area?: string | null
           shop_name?: string
+          working_hours?: string | null
         }
         Relationships: [
           {
@@ -840,6 +997,7 @@ export type Database = {
           effective_from: string
           ev_multiplier: number
           id: string
+          garage_minimum_withdrawal_vnd: number
           install_fee_vnd: number
           minimum_daily_km: number
           partner_minimum_cap_vnd: number
@@ -852,6 +1010,7 @@ export type Database = {
           daily_cap_km: number
           effective_from: string
           ev_multiplier: number
+          garage_minimum_withdrawal_vnd?: number
           id?: string
           install_fee_vnd?: number
           minimum_daily_km?: number
@@ -865,6 +1024,7 @@ export type Database = {
           daily_cap_km?: number
           effective_from?: string
           ev_multiplier?: number
+          garage_minimum_withdrawal_vnd?: number
           id?: string
           install_fee_vnd?: number
           minimum_daily_km?: number
@@ -1259,6 +1419,20 @@ export type Database = {
         }
         Returns: number
       }
+      admin_approve_driver_withdrawal: {
+        Args: {
+          p_actor_id: string
+          p_invoice_id: string
+        }
+        Returns: string
+      }
+      admin_mark_driver_payout_paid: {
+        Args: {
+          p_actor_id: string
+          p_payout_id: string
+        }
+        Returns: string
+      }
       admin_review_install_proof: {
         Args: {
           p_actor_id: string
@@ -1268,12 +1442,31 @@ export type Database = {
         }
         Returns: number
       }
+      admin_review_garage_withdrawal: {
+        Args: {
+          p_actor_id: string
+          p_withdrawal_id: string
+          p_decision: string
+          p_reason?: string | null
+        }
+        Returns: Database['public']['Enums']['payout_status']
+      }
       ensure_driver_monthly_earning_period: {
         Args: {
           p_driver_id: string
           p_contract_id: string
           p_period_start: string
           p_period_end: string
+        }
+        Returns: string
+      }
+      request_garage_withdrawal: {
+        Args: {
+          p_garage_id: string
+          p_withdrawal_number: string
+          p_amount_vnd: number
+          p_bank_snapshot: Json
+          p_invoice_html: string
         }
         Returns: string
       }
