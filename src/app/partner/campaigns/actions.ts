@@ -128,3 +128,45 @@ function addMonths(date: string, months: number) {
   if (d.getUTCDate() !== originalDay) d.setUTCDate(0)
   return d.toISOString().slice(0, 10)
 }
+
+// ── Creative upload ────────────────────────────────────────────────────────
+
+const CREATIVES_BUCKET = 'campaign-creatives'
+const MAX_CREATIVE_SIZE = 8 * 1024 * 1024 // 8MB
+
+/**
+ * Uploads a single creative image to Supabase Storage under the partner's own
+ * folder and returns its public URL. The UI collects these URLs and submits
+ * them via createPartnerCampaign's creativeUrls field (one per line).
+ */
+export async function uploadCampaignCreative(
+  formData: FormData,
+): Promise<{ url: string | null; error: string | null }> {
+  const role = await getCurrentUserRole()
+  if (role !== 'partner') return { url: null, error: 'Forbidden' }
+
+  const serverClient = await createSupabaseServerClient()
+  const {
+    data: { user },
+  } = await serverClient.auth.getUser()
+  if (!user) return { url: null, error: 'Not authenticated' }
+
+  const file = formData.get('file')
+  if (!(file instanceof File) || file.size === 0) return { url: null, error: 'No file provided' }
+  if (!file.type.startsWith('image/')) return { url: null, error: 'Creative must be an image file' }
+  if (file.size > MAX_CREATIVE_SIZE) return { url: null, error: 'Image must be smaller than 8MB' }
+
+  const ext = (file.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '')
+  const path = `${user.id}/${crypto.randomUUID()}.${ext}`
+  const body = Buffer.from(await file.arrayBuffer())
+
+  const supabase = createSupabaseAdminClient()
+  const { error: uploadError } = await supabase.storage.from(CREATIVES_BUCKET).upload(path, body, {
+    contentType: file.type,
+    upsert: false,
+  })
+  if (uploadError) return { url: null, error: uploadError.message }
+
+  const { data } = supabase.storage.from(CREATIVES_BUCKET).getPublicUrl(path)
+  return { url: data.publicUrl, error: null }
+}
