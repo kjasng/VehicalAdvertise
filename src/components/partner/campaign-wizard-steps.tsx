@@ -2,13 +2,17 @@
 
 /**
  * CampaignWizardSteps — step field panels for CampaignFormWizard.
- * Extracted to keep wizard under 200 lines.
+ *
+ * All panels stay mounted and inactive ones are hidden via CSS, so values
+ * (including uploaded creatives) survive Back/Next navigation. Unmounting the
+ * inputs would drop their react-hook-form Controller values.
  */
 import type { Control } from 'react-hook-form'
 
 import { CampaignCreativeUpload } from '@/components/partner/campaign-creative-upload'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
 
 export interface WizardFormValues {
   name: string
@@ -29,9 +33,10 @@ interface StepFieldsProps {
 }
 
 export function WizardStepFields({ step, control, getValues }: StepFieldsProps) {
-  if (step === 0) {
-    return (
-      <fieldset className="space-y-4">
+  return (
+    <>
+      {/* Step 0: Brief */}
+      <fieldset className={cn('space-y-4', step !== 0 && 'hidden')}>
         <legend className="sr-only">Campaign brief</legend>
         <FormField
           control={control}
@@ -101,12 +106,9 @@ export function WizardStepFields({ step, control, getValues }: StepFieldsProps) 
           />
         </div>
       </fieldset>
-    )
-  }
 
-  if (step === 1) {
-    return (
-      <fieldset className="space-y-4">
+      {/* Step 1: Creative */}
+      <fieldset className={cn('space-y-4', step !== 1 && 'hidden')}>
         <legend className="sr-only">Select creative</legend>
         <FormField
           control={control}
@@ -125,12 +127,9 @@ export function WizardStepFields({ step, control, getValues }: StepFieldsProps) 
           )}
         />
       </fieldset>
-    )
-  }
 
-  if (step === 2) {
-    return (
-      <fieldset className="space-y-4">
+      {/* Step 2: Budget */}
+      <fieldset className={cn('space-y-4', step !== 2 && 'hidden')}>
         <legend className="sr-only">Campaign budget</legend>
         <FormField
           control={control}
@@ -172,10 +171,14 @@ export function WizardStepFields({ step, control, getValues }: StepFieldsProps) 
           )}
         />
       </fieldset>
-    )
-  }
 
-  // Step 3: Review
+      {/* Step 3: Review */}
+      {step === 3 && <ReviewSummary getValues={getValues} />}
+    </>
+  )
+}
+
+function ReviewSummary({ getValues }: { getValues: (key: keyof WizardFormValues) => string }) {
   const rows: [string, string][] = [
     ['Name', getValues('name')],
     ['Description', getValues('description')],
