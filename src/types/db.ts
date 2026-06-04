@@ -1280,6 +1280,10 @@ export type Database = {
       }
     }
     Functions: {
+      admin_purge_user_data: {
+        Args: { p_user: string }
+        Returns: undefined
+      }
       _postgis_deprecate: {
         Args: { newname: string; oldname: string; version: string }
         Returns: undefined

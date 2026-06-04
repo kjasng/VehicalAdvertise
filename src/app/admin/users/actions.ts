@@ -64,16 +64,15 @@ export async function deleteUser(raw: unknown): Promise<{ error: string | null }
 
   if (target?.role === 'admin') return { error: 'Cannot delete another admin account' }
 
-  // For partner role: delete campaigns first (campaigns.partner_id has no ON DELETE CASCADE),
-  // then delete the partners row explicitly before auth user deletion.
-  if (target?.role === 'partner') {
-    await supabase.from('campaigns').delete().eq('partner_id', targetId)
-    await supabase.from('partners').delete().eq('id', targetId)
-  }
+  // Atomically purge the user's owned data (contracts, ledger, payouts, invoices,
+  // campaigns, vehicles) in dependency order. Several of these FKs are NOT NULL /
+  // NOACTION and would otherwise block the auth.users -> profiles cascade. See
+  // migration 0025. Reviewer/actor refs are handled separately by ON DELETE SET
+  // NULL (migrations 0022–0024).
+  const { error: purgeError } = await supabase.rpc('admin_purge_user_data', { p_user: targetId })
+  if (purgeError) return { error: purgeError.message }
 
-  // Delete auth user — cascades to profiles and owned child rows. Reviewer/actor
-  // refs (audit_log.actor_id, *.reviewed_by/approved_by, …) are ON DELETE SET NULL
-  // via migration 0022, so the profiles cascade is no longer blocked by history rows.
+  // Delete auth user — cascades to profiles and the role sub-row (drivers/partners/garages).
   const { error: deleteError } = await supabase.auth.admin.deleteUser(targetId)
   if (deleteError) return { error: deleteError.message }
 
