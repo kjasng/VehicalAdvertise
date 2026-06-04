@@ -119,60 +119,37 @@ export async function getPartnerInvoices(): Promise<InvoiceRow[]> {
   )
 }
 
-// Garage invoices: ledger_entries has no garage_id, so install payouts map through
-// contract_id -> contracts.install_garage_id.
 export async function getGarageInvoices(): Promise<InvoiceRow[]> {
   const supabase = createSupabaseAdminClient()
 
-  const { data: entries, error } = await supabase
-    .from('ledger_entries')
-    .select('id, ts, kind, amount_vnd, note, contract_id')
-    .eq('kind', 'garage_install_payout')
-    .not('contract_id', 'is', null)
-    .order('ts', { ascending: false })
+  const { data: withdrawals, error } = await supabase
+    .from('garage_withdrawals')
+    .select('id, withdrawal_number, garage_id, amount_vnd, status, requested_at, paid_at')
+    .order('requested_at', { ascending: false })
     .limit(100)
 
-  if (error || !entries?.length) return []
+  if (error || !withdrawals?.length) return []
 
-  const contractIds = [
-    ...new Set(entries.map((e) => e.contract_id).filter((id): id is string => id != null)),
-  ]
-
-  const { data: contracts } = await supabase
-    .from('contracts')
-    .select('id, install_garage_id')
-    .in('id', contractIds)
-    .not('install_garage_id', 'is', null)
-
-  const garageIdByContract = Object.fromEntries(
-    (contracts ?? []).map((c) => [c.id, c.install_garage_id]),
-  )
-
-  const garageIds = [
-    ...new Set(
-      Object.values(garageIdByContract).filter((id): id is string => typeof id === 'string'),
-    ),
-  ]
-  if (garageIds.length === 0) return []
-
+  const garageIds = [...new Set(withdrawals.map((row) => row.garage_id))]
   const { data: garages } = await supabase
     .from('garages')
-    .select('id, shop_name')
+    .select('id, shop_name, address')
     .in('id', garageIds)
 
-  const nameById = Object.fromEntries((garages ?? []).map((g) => [g.id, g.shop_name]))
+  const garageById = Object.fromEntries((garages ?? []).map((garage) => [garage.id, garage]))
 
-  return entries
-    .filter((e) => e.contract_id && garageIdByContract[e.contract_id!])
-    .map((e) => {
-      const garageId = garageIdByContract[e.contract_id!]
-      return {
-        id: e.id,
-        recipientName: garageId ? (nameById[garageId] ?? 'Unknown garage') : 'Unknown garage',
-        amountVnd: e.amount_vnd,
-        kind: e.kind,
-        createdAt: e.ts,
-        note: e.note,
-      }
-    })
+  return withdrawals.map((withdrawal) => {
+    const garage = garageById[withdrawal.garage_id]
+    return {
+      id: withdrawal.id,
+      invoiceNumber: withdrawal.withdrawal_number,
+      recipientName: garage?.shop_name ?? 'Unknown garage',
+      amountVnd: withdrawal.amount_vnd,
+      kind: 'garage_withdrawal',
+      createdAt: withdrawal.requested_at,
+      status: withdrawal.status,
+      printHref: `/admin/invoices/garage/${withdrawal.id}/print`,
+      note: garage?.address ?? null,
+    }
+  })
 }

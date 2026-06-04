@@ -8,15 +8,23 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 const CreatePayoutSchema = z.object({
-  driverId: z.string().uuid(),
-  amountVnd: z.number().int().positive(),
-  periodStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  periodEnd: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  invoiceId: z.string().uuid(),
 })
 
 const MarkPaidSchema = z.object({
   payoutId: z.string().uuid(),
 })
+
+const ReviewGarageWithdrawalSchema = z
+  .object({
+    withdrawalId: z.string().uuid(),
+    decision: z.enum(['approved', 'paid', 'failed']),
+    reason: z.string().trim().max(500).optional(),
+  })
+  .refine((data) => data.decision !== 'failed' || Boolean(data.reason), {
+    message: 'Failure reason required',
+    path: ['reason'],
+  })
 
 async function getActorId(): Promise<string | null> {
   const serverClient = await createSupabaseServerClient()
@@ -24,11 +32,10 @@ async function getActorId(): Promise<string | null> {
   return data.user?.id ?? null
 }
 
-/** Creates a new payout record and matching ledger_entry. */
+/** Approves a driver withdrawal invoice and reserves it for manual transfer. */
 export async function createPayout(raw: unknown): Promise<{ error: string | null }> {
   const parsed = CreatePayoutSchema.safeParse(raw)
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' }
-  const { driverId, amountVnd, periodStart, periodEnd } = parsed.data
 
   const role = await getCurrentUserRole()
   if (role !== 'admin') return { error: 'Forbidden' }
@@ -37,55 +44,11 @@ export async function createPayout(raw: unknown): Promise<{ error: string | null
   if (!actorId) return { error: 'Not authenticated' }
 
   const supabase = createSupabaseAdminClient()
-
-  // Insert payout record
-  const { data: payout, error: payoutError } = await supabase
-    .from('payouts')
-    .insert({
-      driver_id: driverId,
-      amount_vnd: amountVnd,
-      period_start: periodStart,
-      period_end: periodEnd,
-      status: 'pending',
-    })
-    .select('id')
-    .single()
-
-  if (payoutError) return { error: payoutError.message }
-
-  // Record as ledger debit so net balance reflects this payout
-  const { error: ledgerError } = await supabase.from('ledger_entries').insert({
-    driver_id: driverId,
-    kind: 'driver_payout',
-    amount_vnd: amountVnd,
-    note: `Payout ${payout.id} — ${periodStart} to ${periodEnd}`,
+  const { error } = await supabase.rpc('admin_approve_driver_withdrawal', {
+    p_actor_id: actorId,
+    p_invoice_id: parsed.data.invoiceId,
   })
-
-  if (ledgerError) console.error('[createPayout] ledger insert failed:', ledgerError.message)
-
-  const { error: invoiceError } = await supabase
-    .from('driver_invoices')
-    .update({
-      status: 'approved',
-      payout_id: payout.id,
-      reviewed_by: actorId,
-      reviewed_at: new Date().toISOString(),
-    })
-    .eq('driver_id', driverId)
-    .eq('period_start', periodStart)
-    .eq('period_end', periodEnd)
-    .eq('amount_vnd', amountVnd)
-    .in('status', ['requested', 'reviewing', 'approved'])
-  if (invoiceError) console.error('[createPayout] invoice link failed:', invoiceError.message)
-
-  const { error: auditError } = await supabase.from('audit_log').insert({
-    actor_id: actorId,
-    action: 'payout_created',
-    entity_type: 'payouts',
-    entity_id: payout.id,
-    diff: { driverId, amountVnd, periodStart, periodEnd },
-  })
-  if (auditError) console.error('[createPayout] audit_log insert failed:', auditError.message)
+  if (error) return { error: error.message }
 
   revalidatePath('/admin/payouts')
   revalidatePath('/admin/invoices/driver')
@@ -94,7 +57,7 @@ export async function createPayout(raw: unknown): Promise<{ error: string | null
   return { error: null }
 }
 
-/** Marks an existing pending payout as paid. */
+/** Marks a manually transferred driver payout as paid. */
 export async function markPayoutPaid(raw: unknown): Promise<{ error: string | null }> {
   const parsed = MarkPaidSchema.safeParse(raw)
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' }
@@ -107,48 +70,41 @@ export async function markPayoutPaid(raw: unknown): Promise<{ error: string | nu
   if (!actorId) return { error: 'Not authenticated' }
 
   const supabase = createSupabaseAdminClient()
-
-  const { data: updated, error: updateError } = await supabase
-    .from('payouts')
-    .update({ status: 'paid', paid_at: new Date().toISOString() })
-    .eq('id', payoutId)
-    .in('status', ['pending', 'processing']) // only allow transitioning from non-terminal states
-    .select('id')
-
-  if (updateError) return { error: updateError.message }
-  if (!updated?.length) return { error: 'Payout already finalised or not found' }
-
-  const { data: invoices, error: invoiceError } = await supabase
-    .from('driver_invoices')
-    .update({ status: 'paid', paid_at: new Date().toISOString() })
-    .eq('payout_id', payoutId)
-    .select('earning_period_id')
-  if (invoiceError) console.error('[markPayoutPaid] invoice update failed:', invoiceError.message)
-
-  const earningPeriodIds = [
-    ...new Set((invoices ?? []).map((invoice) => invoice.earning_period_id).filter(Boolean)),
-  ]
-  if (earningPeriodIds.length) {
-    const { error: periodError } = await supabase
-      .from('driver_earning_periods')
-      .update({ status: 'paid' })
-      .in('id', earningPeriodIds)
-    if (periodError)
-      console.error('[markPayoutPaid] earning period update failed:', periodError.message)
-  }
-
-  const { error: auditError } = await supabase.from('audit_log').insert({
-    actor_id: actorId,
-    action: 'payout_marked_paid',
-    entity_type: 'payouts',
-    entity_id: payoutId,
-    diff: {},
+  const { error } = await supabase.rpc('admin_mark_driver_payout_paid', {
+    p_actor_id: actorId,
+    p_payout_id: payoutId,
   })
-  if (auditError) console.error('[markPayoutPaid] audit_log insert failed:', auditError.message)
+  if (error) return { error: error.message }
 
   revalidatePath('/admin/payouts')
   revalidatePath('/admin/invoices/driver')
   revalidatePath('/driver/invoice')
   revalidatePath('/admin/dashboard')
+  return { error: null }
+}
+
+export async function reviewGarageWithdrawal(raw: unknown): Promise<{ error: string | null }> {
+  const parsed = ReviewGarageWithdrawalSchema.safeParse(raw)
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' }
+
+  const role = await getCurrentUserRole()
+  if (role !== 'admin') return { error: 'Forbidden' }
+
+  const actorId = await getActorId()
+  if (!actorId) return { error: 'Not authenticated' }
+
+  const supabase = createSupabaseAdminClient()
+  const { error } = await supabase.rpc('admin_review_garage_withdrawal', {
+    p_actor_id: actorId,
+    p_withdrawal_id: parsed.data.withdrawalId,
+    p_decision: parsed.data.decision,
+    p_reason: parsed.data.reason ?? null,
+  })
+  if (error) return { error: error.message }
+
+  revalidatePath('/admin/payouts')
+  revalidatePath('/admin/invoices/garage')
+  revalidatePath('/garage/payout')
+  revalidatePath('/admin/audit-log')
   return { error: null }
 }

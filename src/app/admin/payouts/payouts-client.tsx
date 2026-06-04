@@ -75,18 +75,20 @@ export function DriverBalancesTable({ balances }: DriverBalancesProps) {
 
   if (balances.length === 0)
     return (
-      <SectionShell title="Pending Balances">
+      <SectionShell title="Driver Withdrawal Requests">
         <EmptyState
           kicker="empty"
-          title="All Paid"
-          helper="No drivers have an outstanding balance."
+          title="No Driver Requests"
+          helper="Driver withdrawal invoices will appear here for manual approval."
         />
       </SectionShell>
     )
 
   return (
     <>
-      <SectionShell title={`Pending Balances (${filteredBalances.length}/${balances.length})`}>
+      <SectionShell
+        title={`Driver Withdrawal Requests (${filteredBalances.length}/${balances.length})`}
+      >
         <div className="mb-4">
           <label className="mb-1 block text-[11px] font-bold tracking-[2px] text-[#666666] uppercase">
             Search user
@@ -110,7 +112,7 @@ export function DriverBalancesTable({ balances }: DriverBalancesProps) {
             <table className="w-full text-[13px]">
               <thead className="bg-[#f7f8fa]">
                 <tr>
-                  {['Driver', 'Bank Account', 'Total Accrued', 'Total Paid', 'Net Balance', ''].map(
+                  {['Driver', 'Invoice', 'Bank Account', 'Request Amount', 'Net Balance', ''].map(
                     (h) => (
                       <th
                         key={h}
@@ -125,21 +127,21 @@ export function DriverBalancesTable({ balances }: DriverBalancesProps) {
               <tbody>
                 {filteredBalances.map((b, i) => (
                   <tr
-                    key={b.driverId}
+                    key={b.invoiceId}
                     className={`border-b border-[#cbccc9] last:border-0 ${i % 2 === 1 ? 'bg-[#f7f8fa]' : ''}`}
                   >
                     <td className="px-4 py-3 font-medium text-[#1a1a1a]">{b.driverName}</td>
+                    <td className="px-4 py-3 font-mono text-[12px] text-[#666666]">
+                      {b.invoiceNumber}
+                    </td>
                     <td className="px-4 py-3 font-mono text-[12px] text-[#666666]">
                       {b.bankAccountNumber ?? '—'}
                       {b.bankAccountName && (
                         <span className="ml-1 text-[#999]">({b.bankAccountName})</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 font-mono text-[12px] text-[#1a1a1a]">
-                      {b.totalAccrualVnd.toLocaleString('vi-VN')}
-                    </td>
-                    <td className="px-4 py-3 font-mono text-[12px] text-[#666666]">
-                      {b.totalPaidVnd.toLocaleString('vi-VN')}
+                    <td className="px-4 py-3 font-mono text-[12px] font-bold text-[#1a1a1a]">
+                      {b.requestedAmountVnd.toLocaleString('vi-VN')} ₫
                     </td>
                     <td className="px-4 py-3 font-mono text-[13px] font-bold text-green-700">
                       {b.netBalanceVnd.toLocaleString('vi-VN')} ₫
@@ -150,7 +152,7 @@ export function DriverBalancesTable({ balances }: DriverBalancesProps) {
                         className="flex items-center gap-1.5 rounded border border-[#cbccc9] px-3 py-1.5 text-[12px] font-medium text-[#1a1a1a] transition-colors hover:bg-[#f7f8fa]"
                       >
                         <BadgeDollarSign className="size-3.5" aria-hidden="true" />
-                        Pay Out
+                        Approve
                       </button>
                     </td>
                   </tr>
@@ -166,7 +168,7 @@ export function DriverBalancesTable({ balances }: DriverBalancesProps) {
         onOpenChange={(o) => {
           if (!o) setSelected(null)
         }}
-        title="Create Payout"
+        title="Approve Driver Withdrawal"
       >
         {selected && <CreatePayoutForm balance={selected} onClose={() => setSelected(null)} />}
       </ReviewDrawer>
@@ -176,14 +178,6 @@ export function DriverBalancesTable({ balances }: DriverBalancesProps) {
 
 // ─── Create Payout Form (inside drawer) ───────────────────────────────────
 
-function todayStr() {
-  return new Date().toISOString().split('T')[0]
-}
-function monthStartStr() {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
-}
-
 interface CreatePayoutFormProps {
   balance: DriverBalance
   onClose: () => void
@@ -191,22 +185,14 @@ interface CreatePayoutFormProps {
 
 function CreatePayoutForm({ balance, onClose }: CreatePayoutFormProps) {
   const [pending, startTransition] = useTransition()
-  const [periodStart, setPeriodStart] = useState(monthStartStr())
-  const [periodEnd, setPeriodEnd] = useState(todayStr())
-  const [amountVnd, setAmountVnd] = useState(balance.netBalanceVnd)
 
   function handleSubmit() {
     startTransition(async () => {
-      const result = await createPayout({
-        driverId: balance.driverId,
-        amountVnd,
-        periodStart,
-        periodEnd,
-      })
+      const result = await createPayout({ invoiceId: balance.invoiceId })
       if (result.error) toast.error(result.error)
       else {
         toast.success(
-          `Payout of ${amountVnd.toLocaleString('vi-VN')} ₫ created for ${balance.driverName}`,
+          `Withdrawal of ${balance.requestedAmountVnd.toLocaleString('vi-VN')} ₫ approved for ${balance.driverName}`,
         )
         onClose()
       }
@@ -218,9 +204,11 @@ function CreatePayoutForm({ balance, onClose }: CreatePayoutFormProps) {
       <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-[13px]">
         {[
           ['Driver', balance.driverName],
+          ['Invoice', balance.invoiceNumber],
           ['Bank', balance.bankAccountNumber ?? '—'],
           ['Acct Name', balance.bankAccountName ?? '—'],
           ['BIN', balance.bankBin ?? '—'],
+          ['Period', `${balance.periodStart} → ${balance.periodEnd}`],
         ].map(([k, v]) => (
           <div key={k}>
             <dt className="text-[11px] font-bold tracking-[1px] text-[#666666] uppercase">{k}</dt>
@@ -230,52 +218,23 @@ function CreatePayoutForm({ balance, onClose }: CreatePayoutFormProps) {
       </dl>
 
       <div className="space-y-3">
-        <div>
-          <label className="mb-1 block text-[11px] font-bold tracking-[2px] text-[#666666] uppercase">
-            Amount (VND)
-          </label>
-          <input
-            type="number"
-            value={amountVnd}
-            min={1}
-            onChange={(e) => setAmountVnd(Number(e.target.value))}
-            className="focus:ring-primary w-full rounded border border-[#cbccc9] px-3 py-2 font-mono text-[13px] text-[#1a1a1a] focus:ring-2 focus:outline-none"
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="mb-1 block text-[11px] font-bold tracking-[2px] text-[#666666] uppercase">
-              Period Start
-            </label>
-            <input
-              type="date"
-              value={periodStart}
-              onChange={(e) => setPeriodStart(e.target.value)}
-              className="focus:ring-primary w-full rounded border border-[#cbccc9] px-3 py-2 text-[13px] text-[#1a1a1a] focus:ring-2 focus:outline-none"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-[11px] font-bold tracking-[2px] text-[#666666] uppercase">
-              Period End
-            </label>
-            <input
-              type="date"
-              value={periodEnd}
-              onChange={(e) => setPeriodEnd(e.target.value)}
-              className="focus:ring-primary w-full rounded border border-[#cbccc9] px-3 py-2 text-[13px] text-[#1a1a1a] focus:ring-2 focus:outline-none"
-            />
-          </div>
-        </div>
+        <p className="rounded border border-[#cbccc9] bg-[#f7f8fa] p-3 text-[13px] text-[#666666]">
+          Approving reserves the balance for manual bank transfer. Mark it paid only after the
+          transfer succeeds.
+        </p>
+        <p className="font-heading text-[28px] leading-none text-[#1a1a1a]">
+          {balance.requestedAmountVnd.toLocaleString('vi-VN')} ₫
+        </p>
       </div>
 
       <div className="border-t border-[#cbccc9] pt-3">
         <button
-          disabled={pending || amountVnd <= 0}
+          disabled={pending}
           onClick={handleSubmit}
           className="flex w-full items-center justify-center gap-2 rounded bg-green-600 px-4 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-green-700 disabled:opacity-50"
         >
           <CheckCircle className="size-4" aria-hidden="true" />
-          {pending ? 'Creating…' : 'Confirm Payout'}
+          {pending ? 'Approving…' : 'Approve Withdrawal'}
         </button>
       </div>
     </div>

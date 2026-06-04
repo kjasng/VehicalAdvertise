@@ -3,6 +3,8 @@ import 'server-only'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
 export type DriverBalance = {
+  invoiceId: string
+  invoiceNumber: string
   driverId: string
   driverName: string
   email: string | null
@@ -13,6 +15,9 @@ export type DriverBalance = {
   totalAccrualVnd: number
   totalPaidVnd: number
   netBalanceVnd: number
+  requestedAmountVnd: number
+  periodStart: string
+  periodEnd: string
 }
 
 export type PayoutRow = {
@@ -33,6 +38,24 @@ export type PayoutRow = {
   createdAt: string
 }
 
+export type GarageWithdrawalAdminRow = {
+  id: string
+  withdrawalNumber: string
+  garageId: string
+  garageName: string
+  email: string | null
+  phone: string | null
+  bankAccountNumber: string | null
+  bankAccountName: string | null
+  bankName: string | null
+  bankBin: string | null
+  amountVnd: number
+  status: 'pending' | 'processing' | 'paid' | 'failed'
+  requestedAt: string
+  paidAt: string | null
+  failureReason: string | null
+}
+
 export type SepayEventRow = {
   id: number
   txnId: string
@@ -48,12 +71,27 @@ export type SepayEventRow = {
 export async function getDriverBalances(): Promise<DriverBalance[]> {
   const supabase = createSupabaseAdminClient()
 
+  const { data: invoices, error: invoicesError } = await supabase
+    .from('driver_invoices')
+    .select('id, invoice_number, driver_id, amount_vnd, period_start, period_end, bank_snapshot')
+    .in('status', ['requested', 'reviewing'])
+    .is('payout_id', null)
+    .order('requested_at', { ascending: true })
+
+  if (invoicesError) {
+    console.error('[getDriverBalances] invoice query error:', invoicesError.message)
+    return []
+  }
+  if (!invoices?.length) return []
+
+  const requestedDriverIds = [...new Set(invoices.map((invoice) => invoice.driver_id))]
+
   // Fetch all driver balance-affecting ledger entries.
   const { data: entries, error: entriesError } = await supabase
     .from('ledger_entries')
     .select('driver_id, kind, amount_vnd')
     .in('kind', ['driver_accrual', 'driver_payout', 'adjustment', 'refund'])
-    .not('driver_id', 'is', null)
+    .in('driver_id', requestedDriverIds)
 
   if (entriesError) {
     console.error('[getDriverBalances] ledger query error:', entriesError.message)
@@ -70,10 +108,10 @@ export async function getDriverBalances(): Promise<DriverBalance[]> {
     balanceMap.set(id, cur)
   }
 
-  // Filter to drivers with a positive balance
-  const positiveIds = Array.from(balanceMap.entries())
-    .filter(([, v]) => v.accrual - v.paid > 0)
-    .map(([id]) => id)
+  const positiveIds = requestedDriverIds.filter((id) => {
+    const balance = balanceMap.get(id)
+    return balance ? balance.accrual - balance.paid > 0 : false
+  })
 
   if (!positiveIds.length) return []
 
@@ -89,25 +127,34 @@ export async function getDriverBalances(): Promise<DriverBalance[]> {
   const profileById = Object.fromEntries((profilesRes.data ?? []).map((p) => [p.id, p]))
   const driverById = Object.fromEntries((driversRes.data ?? []).map((d) => [d.id, d]))
 
-  return positiveIds
-    .map((id) => {
-      const { accrual, paid } = balanceMap.get(id)!
-      const profile = profileById[id]
-      const driver = driverById[id]
+  return invoices
+    .filter((invoice) => positiveIds.includes(invoice.driver_id))
+    .map((invoice) => {
+      const { accrual, paid } = balanceMap.get(invoice.driver_id)!
+      const profile = profileById[invoice.driver_id]
+      const driver = driverById[invoice.driver_id]
+      const bankSnapshot = invoice.bank_snapshot as Record<string, unknown>
       return {
-        driverId: id,
+        invoiceId: invoice.id,
+        invoiceNumber: invoice.invoice_number,
+        driverId: invoice.driver_id,
         driverName: profile?.full_name ?? 'Unknown',
         email: profile?.email ?? null,
         phone: profile?.phone_e164 ?? null,
-        bankAccountNumber: driver?.bank_account_number ?? null,
-        bankAccountName: driver?.bank_account_name ?? null,
-        bankBin: driver?.bank_bin ?? null,
+        bankAccountNumber:
+          stringValue(bankSnapshot.bankAccountNumber) ?? driver?.bank_account_number ?? null,
+        bankAccountName:
+          stringValue(bankSnapshot.bankAccountName) ?? driver?.bank_account_name ?? null,
+        bankBin: stringValue(bankSnapshot.bankBin) ?? driver?.bank_bin ?? null,
         totalAccrualVnd: accrual,
         totalPaidVnd: paid,
         netBalanceVnd: accrual - paid,
+        requestedAmountVnd: invoice.amount_vnd,
+        periodStart: invoice.period_start,
+        periodEnd: invoice.period_end,
       }
     })
-    .sort((a, b) => b.netBalanceVnd - a.netBalanceVnd)
+    .sort((a, b) => a.periodStart.localeCompare(b.periodStart))
 }
 
 /** Fetches payout history ordered by newest first. */
@@ -129,7 +176,8 @@ export async function getPayoutHistory(): Promise<PayoutRow[]> {
   if (!payouts?.length) return []
 
   const driverIds = [...new Set(payouts.map((p) => p.driver_id))]
-  const [profilesRes, driversRes] = await Promise.all([
+  const payoutIds = payouts.map((p) => p.id)
+  const [profilesRes, driversRes, invoicesRes] = await Promise.all([
     driverIds.length
       ? supabase.from('profiles').select('id, full_name, email, phone_e164').in('id', driverIds)
       : Promise.resolve({ data: [] }),
@@ -139,23 +187,37 @@ export async function getPayoutHistory(): Promise<PayoutRow[]> {
           .select('id, bank_account_number, bank_account_name, bank_bin')
           .in('id', driverIds)
       : Promise.resolve({ data: [] }),
+    payoutIds.length
+      ? supabase
+          .from('driver_invoices')
+          .select('payout_id, bank_snapshot')
+          .in('payout_id', payoutIds)
+      : Promise.resolve({ data: [] }),
   ])
 
   const profileById = Object.fromEntries((profilesRes.data ?? []).map((p) => [p.id, p]))
   const driverById = Object.fromEntries((driversRes.data ?? []).map((d) => [d.id, d]))
+  const invoiceByPayoutId = Object.fromEntries(
+    (invoicesRes.data ?? [])
+      .filter((invoice) => invoice.payout_id)
+      .map((invoice) => [invoice.payout_id!, invoice]),
+  )
 
   return payouts.map((p) => {
     const profile = profileById[p.driver_id]
     const driver = driverById[p.driver_id]
+    const bankSnapshot = (invoiceByPayoutId[p.id]?.bank_snapshot ?? {}) as Record<string, unknown>
     return {
       id: p.id,
       driverId: p.driver_id,
       driverName: profile?.full_name ?? 'Unknown',
       email: profile?.email ?? null,
       phone: profile?.phone_e164 ?? null,
-      bankAccountNumber: driver?.bank_account_number ?? null,
-      bankAccountName: driver?.bank_account_name ?? null,
-      bankBin: driver?.bank_bin ?? null,
+      bankAccountNumber:
+        stringValue(bankSnapshot.bankAccountNumber) ?? driver?.bank_account_number ?? null,
+      bankAccountName:
+        stringValue(bankSnapshot.bankAccountName) ?? driver?.bank_account_name ?? null,
+      bankBin: stringValue(bankSnapshot.bankBin) ?? driver?.bank_bin ?? null,
       periodStart: p.period_start,
       periodEnd: p.period_end,
       amountVnd: p.amount_vnd,
@@ -165,6 +227,65 @@ export async function getPayoutHistory(): Promise<PayoutRow[]> {
       createdAt: p.created_at,
     }
   })
+}
+
+/** Garage withdrawal requests for manual admin review and transfer tracking. */
+export async function getGarageWithdrawalHistory(): Promise<GarageWithdrawalAdminRow[]> {
+  const supabase = createSupabaseAdminClient()
+  const { data: withdrawals, error } = await supabase
+    .from('garage_withdrawals')
+    .select(
+      'id, withdrawal_number, garage_id, amount_vnd, status, bank_snapshot, requested_at, paid_at, failure_reason',
+    )
+    .order('requested_at', { ascending: false })
+    .limit(200)
+
+  if (error) {
+    console.error('[getGarageWithdrawalHistory] query error:', error.message)
+    return []
+  }
+  if (!withdrawals?.length) return []
+
+  const garageIds = [...new Set(withdrawals.map((row) => row.garage_id))]
+  const [garagesRes, profilesRes] = await Promise.all([
+    supabase
+      .from('garages')
+      .select('id, shop_name, bank_account_number, bank_account_name, bank_name, bank_bin')
+      .in('id', garageIds),
+    supabase.from('profiles').select('id, email, phone_e164').in('id', garageIds),
+  ])
+
+  const garageById = Object.fromEntries((garagesRes.data ?? []).map((row) => [row.id, row]))
+  const profileById = Object.fromEntries((profilesRes.data ?? []).map((row) => [row.id, row]))
+
+  return withdrawals.map((withdrawal) => {
+    const garage = garageById[withdrawal.garage_id]
+    const profile = profileById[withdrawal.garage_id]
+    const bankSnapshot = withdrawal.bank_snapshot as Record<string, unknown>
+    return {
+      id: withdrawal.id,
+      withdrawalNumber: withdrawal.withdrawal_number,
+      garageId: withdrawal.garage_id,
+      garageName: garage?.shop_name ?? 'Unknown garage',
+      email: profile?.email ?? null,
+      phone: profile?.phone_e164 ?? null,
+      bankAccountNumber:
+        stringValue(bankSnapshot.bankAccountNumber) ?? garage?.bank_account_number ?? null,
+      bankAccountName:
+        stringValue(bankSnapshot.bankAccountName) ?? garage?.bank_account_name ?? null,
+      bankName: stringValue(bankSnapshot.bankName) ?? garage?.bank_name ?? null,
+      bankBin: stringValue(bankSnapshot.bankBin) ?? garage?.bank_bin ?? null,
+      amountVnd: withdrawal.amount_vnd,
+      status: withdrawal.status,
+      requestedAt: withdrawal.requested_at,
+      paidAt: withdrawal.paid_at,
+      failureReason: withdrawal.failure_reason,
+    }
+  })
+}
+
+function stringValue(value: unknown): string | null {
+  return typeof value === 'string' && value.length > 0 ? value : null
 }
 
 /** Fetches the 50 most recent SePay webhook events. */
