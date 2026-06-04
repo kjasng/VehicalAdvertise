@@ -5,13 +5,13 @@
  */
 import { Clock, Car, Megaphone } from 'lucide-react'
 
+import type { GarageInstallJob } from '@/lib/garage/types'
 import { cn } from '@/lib/utils'
 
-import type { InstallOrder } from './mock-data'
 import { INSTALL_STATUS_LABEL, INSTALL_STATUS_PILL } from './install-status-config'
 
 interface InstallCardProps {
-  order: InstallOrder
+  order: GarageInstallJob
   /** If provided, wraps the card in a clickable button */
   onClick?: () => void
 }
@@ -32,7 +32,7 @@ export function InstallCard({ order, onClick }: InstallCardProps) {
       <div className="flex items-center justify-between gap-2">
         <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#1a1a1a]">
           <Clock className="size-4 text-[#666666]" aria-hidden="true" />
-          {order.timeSlot}
+          {formatDate(order.garageSelectedAt ?? order.createdAt)}
         </span>
         <span
           className={cn(
@@ -51,8 +51,6 @@ export function InstallCard({ order, onClick }: InstallCardProps) {
         <span className="font-mono font-semibold">{order.vehiclePlate}</span>
         <span className="text-[#666666]">·</span>
         <span>{order.vehicleModel}</span>
-        <span className="text-[#666666]">·</span>
-        <span className="text-[#666666]">{order.vehicleColor}</span>
       </div>
 
       {/* Campaign row */}
@@ -61,9 +59,8 @@ export function InstallCard({ order, onClick }: InstallCardProps) {
         <span className="truncate">{order.campaignName}</span>
       </div>
 
-      {/* District */}
       <p className="text-[11px] font-bold tracking-[2px] text-[#666666] uppercase">
-        {order.district}
+        {order.driverName}
       </p>
     </article>
   )
@@ -82,4 +79,13 @@ export function InstallCard({ order, onClick }: InstallCardProps) {
   }
 
   return card
+}
+
+function formatDate(value: string | null) {
+  if (!value) return 'Chưa có lịch'
+  return new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date(value))
 }

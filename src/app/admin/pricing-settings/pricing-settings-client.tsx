@@ -18,6 +18,7 @@ export function PricingSettingsClient({ settings }: Props) {
   const [pending, startTransition] = useTransition()
   const [form, setForm] = useState({
     installFeeVnd: settings.installFeeVnd.toLocaleString('vi-VN'),
+    garageMinimumWithdrawalVnd: settings.garageMinimumWithdrawalVnd.toLocaleString('vi-VN'),
     partnerMinimumCapVnd: settings.partnerMinimumCapVnd.toLocaleString('vi-VN'),
     baseRatePerKmVnd: settings.baseRatePerKmVnd.toLocaleString('vi-VN'),
     evMultiplier: String(settings.evMultiplier),
@@ -57,6 +58,7 @@ export function PricingSettingsClient({ settings }: Props) {
     startTransition(async () => {
       const result = await updatePricingSettings({
         installFeeVnd: moneyValue(form.installFeeVnd),
+        garageMinimumWithdrawalVnd: moneyValue(form.garageMinimumWithdrawalVnd),
         partnerMinimumCapVnd: moneyValue(form.partnerMinimumCapVnd),
         baseRatePerKmVnd: moneyValue(form.baseRatePerKmVnd),
         evMultiplier,
@@ -82,6 +84,13 @@ export function PricingSettingsClient({ settings }: Props) {
               value={form.installFeeVnd}
               onChange={(value) => setField('installFeeVnd', value)}
               placeholder="500,000"
+            />
+            <PricingField
+              id="garage-minimum-withdrawal"
+              label="Minimum withdrawal"
+              value={form.garageMinimumWithdrawalVnd}
+              onChange={(value) => setField('garageMinimumWithdrawalVnd', value)}
+              placeholder="2,000,000"
             />
           </RoleGroup>
 

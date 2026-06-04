@@ -1,45 +1,69 @@
-/**
- * Garage Dashboard — today's install queue + KPI overview.
- */
+import Link from 'next/link'
+import { redirect } from 'next/navigation'
+
+import { InstallCard } from '@/components/garage/install-card'
+import { EmptyState } from '@/components/shared/empty-state'
 import { KpiCard } from '@/components/shared/kpi-card'
 import { PageHeader } from '@/components/shared/page-header'
-import { InstallCard } from '@/components/garage/install-card'
-import { MOCK_TODAY_ORDERS, MOCK_INSTALL_ORDERS } from '@/components/garage/mock-data'
+import { formatVnd } from '@/lib/garage/format'
+import { getGarageProfile } from '@/lib/garage/queries-context'
+import { getGarageInstallJobs } from '@/lib/garage/queries-installs'
 
 export const metadata = { title: 'Garage · Dashboard' }
 
-export default function GarageDashboardPage() {
-  const todayScheduled = MOCK_TODAY_ORDERS.length
-  const inProgress = MOCK_INSTALL_ORDERS.filter(
-    (o) => o.status === 'awaiting_install' || o.status === 'matched',
-  ).length
-  const awaitingPayout = MOCK_INSTALL_ORDERS.filter((o) => o.status === 'installed').length
+export default async function GarageDashboardPage() {
+  const [profile, jobs] = await Promise.all([getGarageProfile(), getGarageInstallJobs()])
+  if (!profile) redirect('/login')
+
+  if (!profile.approved) {
+    return (
+      <div className="space-y-6">
+        <PageHeader kicker="OVERVIEW" title="DASHBOARD" />
+        <EmptyState
+          kicker="pending"
+          title="Waiting Approval"
+          helper="Admin cần duyệt garage trước khi bạn nhận job lắp decal và setup payout."
+        />
+      </div>
+    )
+  }
+
+  const waitingInstall = jobs.filter((job) => job.status === 'waiting_install').length
+  const waitingReview = jobs.filter((job) => job.status === 'waiting_review').length
+  const approved = jobs.filter((job) => job.status === 'approved').length
+  const actionable = jobs.filter(
+    (job) => job.status === 'waiting_install' || job.status === 'rejected',
+  )
 
   return (
     <div className="flex flex-col gap-8">
       <PageHeader kicker="OVERVIEW" title="DASHBOARD" />
 
-      {/* KPI row */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <KpiCard label="Hôm nay lên lịch" value={todayScheduled} demo />
-        <KpiCard label="Đang thực hiện" value={inProgress} demo />
-        <KpiCard label="Chờ thanh toán" value={awaitingPayout} demo />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+        <KpiCard label="Chờ lắp" value={waitingInstall} />
+        <KpiCard label="Chờ admin duyệt" value={waitingReview} />
+        <KpiCard label="Đã approve" value={approved} />
+        <KpiCard label="Balance" value={formatVnd(profile.balanceVnd)} />
       </div>
 
-      {/* Today's appointments */}
       <section aria-labelledby="today-heading">
-        <h2
-          id="today-heading"
-          className="mb-4 text-[12px] font-extrabold tracking-[1.5px] text-[#666666] uppercase"
-        >
-          Lịch hôm nay
-        </h2>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2
+            id="today-heading"
+            className="text-[12px] font-extrabold tracking-[1.5px] text-[#666666] uppercase"
+          >
+            Job cần xử lý
+          </h2>
+          <Link href="/garage/installs" className="text-[12px] font-bold text-[#ff5c00]">
+            Xem tất cả
+          </Link>
+        </div>
 
-        {MOCK_TODAY_ORDERS.length === 0 ? (
-          <p className="text-[14px] text-[#666666]">Không có lịch lắp đặt nào hôm nay.</p>
+        {actionable.length === 0 ? (
+          <p className="text-[14px] text-[#666666]">Không có job lắp decal cần xử lý.</p>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {MOCK_TODAY_ORDERS.map((order) => (
+            {actionable.slice(0, 6).map((order) => (
               <InstallCard key={order.id} order={order} />
             ))}
           </div>

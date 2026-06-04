@@ -10,6 +10,7 @@ export type PricingSettings = {
   dailyCapKm: number
   platformFeePct: number
   installFeeVnd: number
+  garageMinimumWithdrawalVnd: number
   partnerMinimumCapVnd: number
   minimumDailyKm: number
   createdAt: string | null
@@ -23,6 +24,7 @@ type PricingRuleRow = Partial<{
   daily_cap_km: number
   platform_fee_pct: number
   install_fee_vnd: number
+  garage_minimum_withdrawal_vnd: number
   partner_minimum_cap_vnd: number
   minimum_daily_km: number
   created_at: string
@@ -36,6 +38,7 @@ const DEFAULT_SETTINGS: PricingSettings = {
   dailyCapKm: 150,
   platformFeePct: 20,
   installFeeVnd: 0,
+  garageMinimumWithdrawalVnd: 2_000_000,
   partnerMinimumCapVnd: 0,
   minimumDailyKm: 0,
   createdAt: null,
@@ -71,6 +74,8 @@ function rowToSettings(data: PricingRuleRow): PricingSettings {
     dailyCapKm: data.daily_cap_km ?? DEFAULT_SETTINGS.dailyCapKm,
     platformFeePct: data.platform_fee_pct ?? DEFAULT_SETTINGS.platformFeePct,
     installFeeVnd: data.install_fee_vnd ?? DEFAULT_SETTINGS.installFeeVnd,
+    garageMinimumWithdrawalVnd:
+      data.garage_minimum_withdrawal_vnd ?? DEFAULT_SETTINGS.garageMinimumWithdrawalVnd,
     partnerMinimumCapVnd: data.partner_minimum_cap_vnd ?? DEFAULT_SETTINGS.partnerMinimumCapVnd,
     minimumDailyKm: data.minimum_daily_km ?? DEFAULT_SETTINGS.minimumDailyKm,
     createdAt: data.created_at ?? null,

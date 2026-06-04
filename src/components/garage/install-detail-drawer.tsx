@@ -1,36 +1,32 @@
 'use client'
 
-/**
- * InstallDetailDrawer — client component.
- * Slide-in drawer (right, 480px) showing full install order details.
- * A11y: role="dialog", aria-modal, Escape-to-close, backdrop click.
- */
-import { useEffect, useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 
-import { X, Car, Megaphone, Ruler, User, Phone } from 'lucide-react'
-import { toast } from 'sonner'
+import { Car, ExternalLink, Megaphone, Phone, Upload, User, X } from 'lucide-react'
+import Link from 'next/link'
 
+import type { GarageInstallJob } from '@/lib/garage/types'
 import { cn } from '@/lib/utils'
 
-import type { InstallOrder } from './mock-data'
 import { INSTALL_STATUS_LABEL, INSTALL_STATUS_PILL } from './install-status-config'
 
 interface Props {
-  order: InstallOrder | null
+  order: GarageInstallJob | null
   onClose: () => void
 }
 
-function DetailRow({ label, value }: { label: string; value: string }) {
+function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-0.5">
       <p className="text-[11px] font-bold tracking-[2px] text-[#666666] uppercase">{label}</p>
-      <p className="text-[14px] text-[#1a1a1a]">{value}</p>
+      <div className="text-[14px] text-[#1a1a1a]">{value}</div>
     </div>
   )
 }
 
 export function InstallDetailDrawer({ order, onClose }: Props) {
   const isOpen = order !== null
+  const canUpload = order?.status === 'waiting_install' || order?.status === 'rejected'
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -45,18 +41,8 @@ export function InstallDetailDrawer({ order, onClose }: Props) {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, handleKeyDown])
 
-  function handleMarkInstalled() {
-    if (!order) return
-    console.log('[InstallDetailDrawer] Mark installed:', order.id)
-    toast.success(`Đơn ${order.id} đã được đánh dấu hoàn thành.`)
-    onClose()
-  }
-
-  const isDone = order?.status === 'installed' || order?.status === 'terminated'
-
   return (
     <>
-      {/* Backdrop */}
       <div
         className={cn(
           'fixed inset-0 z-40 bg-black/40 transition-opacity duration-300',
@@ -65,8 +51,6 @@ export function InstallDetailDrawer({ order, onClose }: Props) {
         aria-hidden="true"
         onClick={onClose}
       />
-
-      {/* Drawer panel */}
       <div
         role="dialog"
         aria-modal="true"
@@ -79,14 +63,13 @@ export function InstallDetailDrawer({ order, onClose }: Props) {
       >
         {order && (
           <>
-            {/* Header */}
             <div className="flex items-center justify-between border-b border-[#cbccc9] px-6 py-5">
               <div className="space-y-0.5">
                 <p className="text-[11px] font-bold tracking-[2.5px] text-[#ff5c00] uppercase">
                   Đơn lắp đặt
                 </p>
                 <h2 className="font-heading text-[28px] leading-none text-[#1a1a1a] uppercase">
-                  {order.id}
+                  {order.id.slice(0, 8)}
                 </h2>
               </div>
               <button
@@ -99,7 +82,6 @@ export function InstallDetailDrawer({ order, onClose }: Props) {
               </button>
             </div>
 
-            {/* Status pill */}
             <div className="px-6 pt-4">
               <span
                 className={cn(
@@ -111,12 +93,11 @@ export function InstallDetailDrawer({ order, onClose }: Props) {
               </span>
             </div>
 
-            {/* Body */}
             <div className="flex-1 space-y-6 overflow-y-auto px-6 py-4">
-              <section aria-labelledby="drw-vehicle">
+              <section className="space-y-3" aria-labelledby="drw-vehicle">
                 <h3
                   id="drw-vehicle"
-                  className="mb-3 inline-flex items-center gap-2 text-[12px] font-extrabold tracking-[1.5px] text-[#666666] uppercase"
+                  className="inline-flex items-center gap-2 text-[12px] font-extrabold tracking-[1.5px] text-[#666666] uppercase"
                 >
                   <Car className="size-4" aria-hidden="true" />
                   Thông tin xe
@@ -124,82 +105,88 @@ export function InstallDetailDrawer({ order, onClose }: Props) {
                 <div className="grid grid-cols-2 gap-4">
                   <DetailRow label="Biển số" value={order.vehiclePlate} />
                   <DetailRow label="Dòng xe" value={order.vehicleModel} />
-                  <DetailRow label="Màu sắc" value={order.vehicleColor} />
-                  <DetailRow label="Quận / Huyện" value={order.district} />
+                  <DetailRow label="Nhiên liệu" value={order.vehicleFuel} />
+                  <DetailRow label="Contract" value={order.contractStatus.replaceAll('_', ' ')} />
                 </div>
               </section>
 
-              <section aria-labelledby="drw-campaign">
+              <section className="space-y-3" aria-labelledby="drw-campaign">
                 <h3
                   id="drw-campaign"
-                  className="mb-3 inline-flex items-center gap-2 text-[12px] font-extrabold tracking-[1.5px] text-[#666666] uppercase"
+                  className="inline-flex items-center gap-2 text-[12px] font-extrabold tracking-[1.5px] text-[#666666] uppercase"
                 >
                   <Megaphone className="size-4" aria-hidden="true" />
                   Chiến dịch
                 </h3>
                 <DetailRow label="Tên chiến dịch" value={order.campaignName} />
+                {order.creativeUrl && (
+                  <a
+                    href={order.creativeUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 text-[13px] font-bold text-[#ff5c00] hover:underline"
+                  >
+                    <ExternalLink className="size-3.5" aria-hidden="true" />
+                    Xem creative/decal
+                  </a>
+                )}
               </section>
 
-              <section aria-labelledby="drw-creative">
-                <h3
-                  id="drw-creative"
-                  className="mb-3 inline-flex items-center gap-2 text-[12px] font-extrabold tracking-[1.5px] text-[#666666] uppercase"
-                >
-                  <Ruler className="size-4" aria-hidden="true" />
-                  Thông số sáng tạo
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <DetailRow label="Kích thước" value={order.creativeSize} />
-                  <DetailRow label="Vị trí dán" value={order.creativePosition} />
-                </div>
-              </section>
-
-              <section aria-labelledby="drw-contact">
+              <section className="space-y-3" aria-labelledby="drw-contact">
                 <h3
                   id="drw-contact"
-                  className="mb-3 inline-flex items-center gap-2 text-[12px] font-extrabold tracking-[1.5px] text-[#666666] uppercase"
+                  className="inline-flex items-center gap-2 text-[12px] font-extrabold tracking-[1.5px] text-[#666666] uppercase"
                 >
                   <User className="size-4" aria-hidden="true" />
-                  Liên hệ khách hàng
+                  Driver
                 </h3>
                 <div className="grid grid-cols-2 gap-4">
-                  <DetailRow label="Họ tên" value={order.customerName} />
-                  <div className="flex flex-col gap-0.5">
-                    <p className="text-[11px] font-bold tracking-[2px] text-[#666666] uppercase">
-                      Số điện thoại
-                    </p>
-                    <a
-                      href={`tel:${order.customerPhone.replace(/\s/g, '')}`}
-                      className="inline-flex items-center gap-1.5 rounded text-[14px] text-[#ff5c00] underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:ring-[#ff5c00] focus-visible:outline-none"
-                      aria-label={`Gọi ${order.customerPhone}`}
-                    >
-                      <Phone className="size-3.5" aria-hidden="true" />
-                      {order.customerPhone}
-                    </a>
-                  </div>
+                  <DetailRow label="Họ tên" value={order.driverName} />
+                  <DetailRow
+                    label="Số điện thoại"
+                    value={
+                      order.driverPhone ? (
+                        <a
+                          href={`tel:${order.driverPhone}`}
+                          className="inline-flex items-center gap-1.5 text-[#ff5c00] hover:underline"
+                        >
+                          <Phone className="size-3.5" aria-hidden="true" />
+                          {order.driverPhone}
+                        </a>
+                      ) : (
+                        '—'
+                      )
+                    }
+                  />
                 </div>
               </section>
 
-              <DetailRow label="Khung giờ" value={`${order.timeSlot} — ${order.scheduledDate}`} />
+              <DetailRow
+                label="Proof"
+                value={`${order.proofTotal} ảnh · ${order.proofPending} chờ duyệt · ${order.proofRejected} bị từ chối`}
+              />
+              {order.latestRejectReason && (
+                <div className="rounded-md border border-red-200 bg-red-50 p-3 text-[13px] text-red-700">
+                  {order.latestRejectReason}
+                </div>
+              )}
+              {order.note && <DetailRow label="Ghi chú" value={order.note} />}
             </div>
 
-            {/* Footer */}
             <div className="border-t border-[#cbccc9] px-6 py-4">
-              <button
-                type="button"
-                onClick={handleMarkInstalled}
-                disabled={isDone}
+              <Link
+                href={`/garage/proof-upload?contract=${order.id}`}
                 className={cn(
-                  'w-full rounded-md px-4 py-3 text-[14px] font-bold tracking-[0.5px] transition-colors duration-150',
-                  'focus-visible:ring-2 focus-visible:ring-[#ff5c00] focus-visible:ring-offset-2 focus-visible:outline-none',
-                  isDone
-                    ? 'cursor-not-allowed bg-[#f0f0ee] text-[#999]'
-                    : 'bg-[#ff5c00] text-white hover:bg-[#e05200]',
+                  'flex w-full items-center justify-center gap-2 rounded-md px-4 py-3 text-[14px] font-bold tracking-[0.5px]',
+                  canUpload
+                    ? 'bg-[#ff5c00] text-white hover:bg-[#e05200]'
+                    : 'pointer-events-none bg-[#f0f0ee] text-[#999]',
                 )}
-                aria-disabled={isDone}
+                aria-disabled={!canUpload}
               >
-                {order.status === 'installed' ? 'Đã hoàn thành' : 'Đánh dấu đã lắp'}
-              </button>
+                <Upload className="size-4" aria-hidden="true" />
+                {canUpload ? 'Upload ảnh lắp decal' : 'Không cần upload'}
+              </Link>
             </div>
           </>
         )}

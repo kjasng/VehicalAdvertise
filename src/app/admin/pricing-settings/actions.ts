@@ -9,6 +9,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 const UpdatePricingSettingsSchema = z.object({
   installFeeVnd: z.number().int().min(0).max(999_999_999),
+  garageMinimumWithdrawalVnd: z.number().int().min(0).max(999_999_999),
   partnerMinimumCapVnd: z.number().int().min(0).max(999_999_999_999),
   baseRatePerKmVnd: z.number().int().positive().max(9_999_999),
   evMultiplier: z.number().min(1).max(10),
@@ -49,6 +50,7 @@ export async function updatePricingSettings(raw: unknown): Promise<{ error: stri
     daily_cap_km: latest?.daily_cap_km ?? 150,
     platform_fee_pct: parsed.data.platformFeePct,
     install_fee_vnd: parsed.data.installFeeVnd,
+    garage_minimum_withdrawal_vnd: parsed.data.garageMinimumWithdrawalVnd,
     partner_minimum_cap_vnd: parsed.data.partnerMinimumCapVnd,
     minimum_daily_km: parsed.data.minimumDailyKm,
     created_by: user.id,
@@ -61,6 +63,7 @@ export async function updatePricingSettings(raw: unknown): Promise<{ error: stri
     entity_type: 'pricing_rules',
     diff: {
       install_fee_vnd: parsed.data.installFeeVnd,
+      garage_minimum_withdrawal_vnd: parsed.data.garageMinimumWithdrawalVnd,
       partner_minimum_cap_vnd: parsed.data.partnerMinimumCapVnd,
       base_rate_per_km_vnd: parsed.data.baseRatePerKmVnd,
       ev_multiplier: parsed.data.evMultiplier,
@@ -72,5 +75,6 @@ export async function updatePricingSettings(raw: unknown): Promise<{ error: stri
 
   revalidatePath('/admin/pricing-settings')
   revalidatePath('/admin/install-proofs')
+  revalidatePath('/garage/payout')
   return { error: null }
 }

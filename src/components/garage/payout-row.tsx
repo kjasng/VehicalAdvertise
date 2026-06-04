@@ -3,12 +3,13 @@
  * Single weekly payout row: week label, total VND, status pill, transaction ID.
  */
 import { cn } from '@/lib/utils'
+import type { GarageWithdrawalRow } from '@/lib/garage/types'
 
-import type { PayoutEntry, PayoutStatus } from './mock-data'
-
-const STATUS_STYLES: Record<PayoutStatus, { label: string; className: string }> = {
-  pending: { label: 'Chờ thanh toán', className: 'bg-amber-100 text-amber-700' },
+const STATUS_STYLES: Record<GarageWithdrawalRow['status'], { label: string; className: string }> = {
+  pending: { label: 'Chờ admin duyệt', className: 'bg-amber-100 text-amber-700' },
+  processing: { label: 'Admin đã duyệt', className: 'bg-blue-100 text-blue-700' },
   paid: { label: 'Đã thanh toán', className: 'bg-green-100 text-green-700' },
+  failed: { label: 'Đã từ chối', className: 'bg-red-100 text-red-600' },
 }
 
 function formatVnd(amount: number): string {
@@ -16,7 +17,7 @@ function formatVnd(amount: number): string {
 }
 
 interface PayoutRowProps {
-  entry: PayoutEntry
+  entry: GarageWithdrawalRow
 }
 
 export function PayoutRow({ entry }: PayoutRowProps) {
@@ -26,14 +27,14 @@ export function PayoutRow({ entry }: PayoutRowProps) {
     <article className="flex flex-col gap-2 rounded-md border border-[#cbccc9] bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
       {/* Left: week + install count */}
       <div className="flex flex-col gap-0.5">
-        <p className="text-[14px] font-semibold text-[#1a1a1a]">{entry.weekLabel}</p>
-        <p className="text-[12px] text-[#666666]">{entry.installCount} lượt lắp đặt</p>
+        <p className="text-[14px] font-semibold text-[#1a1a1a]">{entry.withdrawalNumber}</p>
+        <p className="text-[12px] text-[#666666]">{entry.requestedAt.slice(0, 10)}</p>
       </div>
 
       {/* Right: amount + status + tx ID */}
       <div className="flex flex-wrap items-center gap-3 sm:justify-end">
         <p className="font-heading text-[22px] leading-none text-[#1a1a1a]">
-          {formatVnd(entry.totalVnd)}
+          {formatVnd(entry.amountVnd)}
         </p>
 
         <span
@@ -46,12 +47,9 @@ export function PayoutRow({ entry }: PayoutRowProps) {
           {statusLabel}
         </span>
 
-        {entry.transactionId ? (
-          <span
-            className="font-mono text-[11px] text-[#666666]"
-            aria-label={`Mã giao dịch: ${entry.transactionId}`}
-          >
-            {entry.transactionId}
+        {entry.failureReason ? (
+          <span className="text-[11px] text-red-600" aria-label="Failure reason">
+            {entry.failureReason}
           </span>
         ) : (
           <span className="text-[11px] text-[#999]" aria-label="Chưa có mã giao dịch">

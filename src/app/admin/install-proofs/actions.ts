@@ -47,6 +47,9 @@ export async function reviewInstallProof(raw: unknown): Promise<{ error: string 
   revalidatePath('/admin/campaigns')
   revalidatePath('/admin/contracts')
   revalidatePath('/admin/invoices/garage')
+  revalidatePath('/garage/dashboard')
+  revalidatePath('/garage/installs')
+  revalidatePath('/garage/payout')
   revalidatePath('/driver/invoice')
   revalidatePath('/admin/audit-log')
   return { error: null }
