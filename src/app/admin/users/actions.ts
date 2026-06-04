@@ -71,7 +71,9 @@ export async function deleteUser(raw: unknown): Promise<{ error: string | null }
     await supabase.from('partners').delete().eq('id', targetId)
   }
 
-  // Delete auth user — cascades to profiles and remaining child records
+  // Delete auth user — cascades to profiles and owned child rows. Reviewer/actor
+  // refs (audit_log.actor_id, *.reviewed_by/approved_by, …) are ON DELETE SET NULL
+  // via migration 0022, so the profiles cascade is no longer blocked by history rows.
   const { error: deleteError } = await supabase.auth.admin.deleteUser(targetId)
   if (deleteError) return { error: deleteError.message }
 
