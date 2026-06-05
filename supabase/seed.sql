@@ -1,6 +1,9 @@
 -- Wheels Earner — seed: one admin + default pricing rule (car-only).
 -- Run after migrations: psql ... -f supabase/seed.sql
 -- The admin user_id is fixed so the same seed is idempotent across local resets.
+-- pgcrypto (crypt/gen_salt) is schema-qualified as `extensions.*` because Supabase
+-- installs it in the `extensions` schema and the seeder runs each statement with
+-- the default search_path.
 
 -- Idempotent admin user (uses supabase auth.users). UUID is stable.
 insert into auth.users (
@@ -16,7 +19,7 @@ values (
   '00000000-0000-0000-0000-000000000000',
   'authenticated', 'authenticated',
   'admin@wheels-earner.local',
-  crypt('changeme-on-first-login', gen_salt('bf')),
+  extensions.crypt('changeme-on-first-login', extensions.gen_salt('bf')),
   '{"provider":"phone","providers":["phone"]}'::jsonb,
   '{"full_name":"Platform Admin"}'::jsonb,
   now(), now(), '+84900000001',
