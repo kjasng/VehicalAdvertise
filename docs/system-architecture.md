@@ -12,7 +12,6 @@ Next.js 16 monolith (one deploy, segments per role)
   proxy.ts          Supabase session refresh + role gate
 
   ↕ Supabase (Postgres + Auth + Storage + Realtime + Edge fns)
-  ↕ MapLibre + OSM tiles (Nominatim geocoding)
   ↕ SePay  (VietQR top-up + payout)
   ↕ Vercel Cron (rollup, prompts, fraud sweep)
 ```
@@ -65,9 +64,9 @@ GPS/km earning is intentionally skipped for the current web-only phase.
 
 Flow: driver profile approved → campaign assigned → driver chooses garage → garage uploads install proof → admin approves decal → contract becomes `running`, `earning_start_date` set.
 
-After a completed monthly period, `ensure_driver_monthly_earning_period()` creates exactly one `driver_earning_periods` row per contract/period. It checks campaign funding mode (`monthly_cap` or `balance_percent`), partner balance, campaign total budget, and optional active driver limit.
+Campaign creation reserves the full campaign budget via `partner_create_campaign_with_reserve()`: the RPC locks `partners.balance_vnd`, inserts the campaign, deducts the budget from available partner balance, and writes one `ledger_entries.partner_charge` with `ref_type = campaign_budget_reserve`.
 
-Ledger triple per period: `partner_charge` deducts gross campaign charge, `platform_fee` records fee, `driver_accrual` records driver net. Driver net target defaults to 1.1m VND/month after fee.
+After a completed monthly period, `ensure_driver_monthly_earning_period()` creates exactly one `driver_earning_periods` row per contract/period. It checks campaign funding mode (`monthly_cap` or `balance_percent`), campaign total budget, and optional active driver limit. Reserved campaigns consume campaign budget and create driver accrual without deducting the partner wallet again; admin later approves/marks the driver payout paid from the held funds. Legacy non-reserved campaigns still deduct partner balance per period.
 
 ## 6. Fraud signals (server-side, no client trust)
 
@@ -77,17 +76,21 @@ Current phase: earning gate requires approved profile, assigned campaign, select
 
 Driver PWA / garage panel → compressed image (< 2 MB) → Supabase Storage signed URL → photo finalize → admin queue. Install proof approval is the earning gate.
 
-Garage install proof approval runs through `admin_review_install_proof()`. Approval updates the proof, moves the contract to `running`, sets `earning_start_date`, and if `pricing_rules.install_fee_vnd > 0`, creates one `garage_earnings` row per contract and credits `garages.balance_vnd`. `garage_earnings.contract_id` is unique, so approving multiple proof photos cannot duplicate garage payout.
+Garage install proof upload requires four angle photos: front, rear, left, right. Admin review is contract-level: `admin_review_install_proof()` locks the latest 4-photo batch and approve/reject applies to all four photos in one transaction. Approval moves the contract to `running`, sets `earning_start_date`, credits one fixed 3.2m VND `garage_earnings` row, updates garage balance, and writes one `ledger_entries.garage_install_payout` row for the approved proof batch.
 
 ## 8. Vietnam stack wiring
 
 - **Auth:** Supabase OAuth (Google + GitHub). No SMS dependency. Role assignment via `choose_role()` RPC post-signup (maps to `auth.users.raw_user_meta_data.role`).
-- **Partner flow:** Pending partners are gated to onboarding until admin approval. Approved partners can generate VietQR top-up instructions, publish campaigns to `submitted`, and must pass 3-month duration, creative, monthly cap, and balance checks.
-- **SePay (VietQR):** Top-up uses partner UUID as memo → webhook/manual admin RPC → `ledger_entries` credit + partner balance update in one transaction. Minimum deposit is 10m VND. Driver and garage payouts are manual bank transfers: admin approves the withdrawal, transfers externally, then marks the record paid.
+- **Partner flow:** Pending partners are gated to onboarding until admin approval. Approved partners can generate SePay-compatible VietQR top-up images from Plan, publish campaigns to `submitted`, and must pass package duration, creative, monthly cap, and full campaign budget reserve checks. Standard packages are 3/6/12 months; Business allows flexible dates. Campaign creation calls `partner_create_campaign_with_reserve()` so the partner balance is locked and deducted atomically. Budget reserve includes driver net target, 10% platform fee, and the fixed 3.2m VND garage install cost per driver.
+- **Partner invoices:** `/partner/invoices` summarizes each partner campaign budget, driver payout, garage payout, platform fee, and remaining balance after fees.
+- **Admin campaigns:** Admin navigation uses Campaigns as the single workspace. Campaign analytics is shown on `/admin/contracts/[campaignId]` with budget burn, QR scans, Cars/Drivers counts, formatted dates, and driver list instead of a separate analytics nav page.
+- **SePay (VietQR):** Top-up QR is rendered from `qr.sepay.vn/img` using the configured receiving account and partner tax-code memo (`TOPUP {taxCode}`). Incoming SePay webhooks hit `/api/v1/webhooks/sepay`, verify API key, dedupe by SePay transaction ID, match partner by tax code, enforce `SEPAY_MIN_TOPUP_VND` (default 10m VND), then atomically write `sepay_webhook_events` + `ledger_entries.partner_topup` + partner balance. Driver and garage payouts are manual bank transfers: admin approves the withdrawal, transfers externally, then marks the record paid.
 - **Driver invoices:** `driver_invoices.invoice_html` stores the printable HTML snapshot. Admin `/admin/invoices/driver/[id]/print` renders that snapshot for print/export. `admin_approve_driver_withdrawal()` atomically reserves the driver balance and creates a processing payout; `admin_mark_driver_payout_paid()` finalises it only after the external bank transfer succeeds.
-- **Garage withdrawals:** Approved install proof credits garage balance immediately. Garage withdrawal uses `request_garage_withdrawal()` to lock the garage row, validate payout settings + minimum withdrawal, reserve balance, and create a printable pending request. `admin_review_garage_withdrawal()` moves pending → processing → paid or refunds balance on failure.
+- **Withdrawal review UI:** Driver withdrawal requests live in `/admin/invoices/driver`; garage withdrawal requests live in `/admin/invoices/garage`. The Invoices nav badge shows the combined pending/processing request count, while Driver/Garage invoice children show role-specific counts.
+- **Partner invoices:** Admin partner invoices are recognized campaign charges from `driver_earning_periods`; wallet top-ups stay in ledger/billing and do not appear as partner invoices.
+- **Garage withdrawals:** Approved install proof credits garage balance immediately. Garage withdrawal uses `request_garage_withdrawal()` to lock the garage row, validate payout settings + minimum withdrawal, reserve balance, and create a printable pending request. Garage and admin print routes render the stored HTML invoice. `admin_review_garage_withdrawal()` moves pending → processing → paid or refunds balance on failure.
+- **Admin reporting:** Invoice reports aggregate by month: paid driver withdrawals, recognized partner campaign charges, paid garage withdrawals, and net profit. CSV exports use `/api/v1/admin/reports/[type]?month=YYYY-MM`.
 - **CCCD KYC:** Manual review at P1. v2 candidates: VNPT eKYC / TrustingSocial.
-- **Geocoding & Maps:** MapLibre GL + OpenStreetMap tiles + Nominatim. Used for vehicle location display and garage service-area approximation.
 - **E-invoice:** Deferred. Trigger: nightly cron for partner charges > 200k VND → VNPT/Misa.
 
 ## 9. Folder map
@@ -95,7 +98,7 @@ Garage install proof approval runs through `admin_review_install_proof()`. Appro
 ```
 src/
 ├── app/{driver,partner,admin,garage,(public),api/v1}/
-│   ├── api/v1/admin/reports/[type]/route.ts    Dynamic CSV export (drivers, campaigns, invoices, fraud)
+│   ├── api/v1/admin/reports/[type]/route.ts    Monthly invoice/profit CSV exports
 ├── components/{ui,driver,partner,admin,garage,shared}/
 │   ├── shared/role-*.tsx         shell primitives: role-shell, role-sidebar, role-bottom-nav, role-topbar, role-user-menu
 │   ├── shared/{page-header,kpi-card,section-shell,empty-state}.tsx
@@ -104,7 +107,7 @@ src/
 │   ├── garage/                   garage panel components (under development)
 │   └── admin/                    admin panel components: admin-nav-config, data-table, review-drawer, review-content (KYC, creative, photo verif), queue-client (KYC, creatives, install-proofs, photo-verif)
 ├── lib/{supabase,geo,money,photo,qr,sepay,fraud,auth,driver,garage}/
-│   └── admin/                    query library (getKycQueue, getCreativesQueue, getPhotoVerifications, getReportsData w/ period), csv-helpers (toCsv, csvResponse)
+│   └── admin/                    query library (queues, invoices, unified withdrawals, monthly reports), csv-helpers (toCsv, csvResponse)
 ├── server/{distance,payout,state-machine}/  # server-only, never bundled
 ├── providers/  hooks/  types/  proxy.ts
 ```

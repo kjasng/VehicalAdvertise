@@ -17,7 +17,7 @@ pnpm dev                          # http://localhost:3000
 ```
 src/
 ├── app/
-│   ├── (admin)/   sidebar shell, approvals/payouts/fraud/pricing/audit
+│   ├── (admin)/   sidebar shell, approvals/payouts/pricing/invoices
 │   ├── (public)/  landing, login (phone OTP), QR redirect
 │   └── api/v1/    photo finalize, webhooks, cron, transitions
 ├── lib/
