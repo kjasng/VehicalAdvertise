@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { getCurrentUserRole } from '@/lib/auth/role-gate'
 import { getGarageProfile, hasGaragePayoutSettings } from '@/lib/garage/queries-context'
 import { buildGarageWithdrawalHtml } from '@/lib/garage/withdrawal-html'
+import { getCompanyInfo } from '@/lib/shared/vn-doc/company-info'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
@@ -85,13 +86,10 @@ export async function requestGarageWithdrawal(raw: unknown): Promise<{ error: st
   const invoiceHtml = buildGarageWithdrawalHtml({
     withdrawalNumber,
     requestedAt: now,
+    company: getCompanyInfo(),
     garageName: profile.shopName,
     garageAddress: profile.address,
     amountVnd: parsed.data.amountVnd,
-    bankAccountName: profile.bankAccountName,
-    bankAccountNumber: profile.bankAccountNumber,
-    bankName: profile.bankName,
-    bankBin: null,
   })
 
   const supabase = createSupabaseAdminClient()

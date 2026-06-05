@@ -5,8 +5,10 @@ import { revalidatePath } from 'next/cache'
 import { getCurrentUserRole } from '@/lib/auth/role-gate'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { buildAdLeaseContractHtml } from '@/lib/driver/ad-lease-contract-html'
 import { buildDriverInvoiceHtml } from '@/lib/driver/invoice-html'
 import { getLastCompletedMonthlyPeriod } from '@/lib/driver/monthly-earning'
+import { getCompanyInfo } from '@/lib/shared/vn-doc/company-info'
 
 export async function createDriverWithdrawalInvoice(): Promise<{ error: string | null }> {
   const role = await getCurrentUserRole()
@@ -23,12 +25,12 @@ export async function createDriverWithdrawalInvoice(): Promise<{ error: string |
     supabase.from('profiles').select('full_name, email').eq('id', user.id).maybeSingle(),
     supabase
       .from('drivers')
-      .select('bank_account_name, bank_account_number, bank_name, bank_bin')
+      .select('bank_account_name, bank_account_number, bank_name, bank_bin, cccd_number')
       .eq('id', user.id)
       .maybeSingle(),
     supabase
       .from('contracts')
-      .select('id, campaign_id, status, earning_start_date, campaigns(name)')
+      .select('id, campaign_id, status, earning_start_date, campaigns(name), vehicles(plate)')
       .eq('driver_id', user.id)
       .eq('status', 'running')
       .not('earning_start_date', 'is', null)
@@ -76,7 +78,12 @@ export async function createDriverWithdrawalInvoice(): Promise<{ error: string |
   if (!earningPeriod) return { error: 'Monthly earning period is not ready.' }
 
   const campaign = Array.isArray(contract.campaigns) ? contract.campaigns[0] : contract.campaigns
+  const vehicle = Array.isArray(contract.vehicles) ? contract.vehicles[0] : contract.vehicles
+  const campaignName = campaign?.name ?? 'Campaign'
+  const vehiclePlate = vehicle?.plate ?? '—'
+  const company = getCompanyInfo()
   const invoiceNumber = `DRV-${period.start.replaceAll('-', '')}-${user.id.slice(0, 8).toUpperCase()}`
+  const contractNumber = `HD-${period.start.replaceAll('-', '')}-${user.id.slice(0, 8).toUpperCase()}`
   const bankSnapshot = {
     bankAccountName: driver.bank_account_name,
     bankAccountNumber: driver.bank_account_number,
@@ -85,12 +92,26 @@ export async function createDriverWithdrawalInvoice(): Promise<{ error: string |
   }
   const now = new Date().toISOString()
 
-  const invoiceHtml = buildDriverInvoiceHtml({
+  // Stored document = ad-lease contract (Bên A/Bên B) followed by the payment invoice.
+  const contractHtml = buildAdLeaseContractHtml({
+    contractNumber,
+    signDate: now,
+    company,
+    driverName: profileRes.data.full_name,
+    driverCccd: driver.cccd_number,
+    driverAddress: null,
+    vehiclePlate,
+    campaignName,
+    periodStart: period.start,
+    periodEnd: period.end,
+  })
+  const invoiceDocHtml = buildDriverInvoiceHtml({
     invoiceNumber,
     requestedAt: now,
+    company,
     driverName: profileRes.data.full_name,
     driverEmail: profileRes.data.email,
-    campaignName: campaign?.name ?? 'Campaign',
+    campaignName,
     periodStart: period.start,
     periodEnd: period.end,
     amountVnd: earningPeriod.driver_net_vnd,
@@ -99,6 +120,7 @@ export async function createDriverWithdrawalInvoice(): Promise<{ error: string |
     bankName: driver.bank_name,
     bankBin: driver.bank_bin,
   })
+  const invoiceHtml = `${contractHtml}<div class="page-break"></div>${invoiceDocHtml}`
 
   const { error: insertError } = await supabase.from('driver_invoices').insert({
     invoice_number: invoiceNumber,

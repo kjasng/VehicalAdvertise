@@ -102,11 +102,6 @@ export function GarageWithdrawalModal({ profile, minimumWithdrawalVnd, onClose }
             />
           </label>
 
-          <div className="text-[12px] text-[#666666]">
-            Số dư: <span className="font-bold text-[#1a1a1a]">{formatVnd(profile.balanceVnd)}</span>
-            {' · '}Tối thiểu: <span className="font-bold">{formatVnd(minimumWithdrawalVnd)}</span>
-          </div>
-
           <div className="space-y-2 rounded-md border border-[#cbccc9] bg-[#f7f8fa] p-3">
             <p className="text-[11px] font-bold tracking-[2px] text-[#666666] uppercase">
               Tài khoản nhận tiền

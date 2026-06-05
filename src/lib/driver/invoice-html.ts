@@ -1,8 +1,17 @@
-import { escapeHtml, formatVnd } from './monthly-earning'
+import type { CompanyInfo } from '@/lib/shared/vn-doc/company-info'
+import { amountInWords } from '@/lib/shared/vn-doc/amount-in-words'
+import {
+  BASE_DOC_CSS,
+  vnNationalHeader,
+  vnPartyBlock,
+  vnSignatureRow,
+} from '@/lib/shared/vn-doc/doc-styles'
+import { escapeHtml, formatVndDong } from '@/lib/shared/vn-doc/format'
 
 export type DriverInvoiceHtmlInput = {
   invoiceNumber: string
   requestedAt: string
+  company: CompanyInfo
   driverName: string
   driverEmail: string | null
   campaignName: string
@@ -15,43 +24,38 @@ export type DriverInvoiceHtmlInput = {
   bankBin: string | null
 }
 
+/** Vietnamese-style payment document for a driver's monthly withdrawal (no tax). */
 export function buildDriverInvoiceHtml(input: DriverInvoiceHtmlInput) {
+  const { company } = input
   return `
-<article class="invoice-doc">
-  <style>
-    .invoice-doc{font-family:Arial,sans-serif;color:#1a1a1a;max-width:820px;margin:0 auto;padding:32px}
-    .invoice-doc h1{font-size:28px;margin:0 0 8px;text-transform:uppercase}
-    .invoice-doc h2{font-size:14px;margin:24px 0 8px;text-transform:uppercase;letter-spacing:1.5px}
-    .invoice-doc p,.invoice-doc td,.invoice-doc th{font-size:13px;line-height:1.5}
-    .invoice-doc table{width:100%;border-collapse:collapse;margin-top:8px}
-    .invoice-doc th,.invoice-doc td{border:1px solid #cbccc9;padding:10px;text-align:left}
-    .invoice-doc th{background:#f7f8fa;text-transform:uppercase;font-size:11px;letter-spacing:1px}
-    .invoice-doc .total{font-size:22px;font-weight:700}
-    @media print{.invoice-doc{padding:0}.no-print{display:none}}
-  </style>
-  <h1>Driver Withdrawal Invoice</h1>
-  <p><strong>No:</strong> ${escapeHtml(input.invoiceNumber)}</p>
-  <p><strong>Requested:</strong> ${escapeHtml(input.requestedAt.slice(0, 10))}</p>
+<article class="vn-doc">
+  <style>${BASE_DOC_CSS}</style>
+  ${vnNationalHeader()}
+  <h1>Hóa đơn thanh toán</h1>
+  <p class="subtitle">Số: ${escapeHtml(input.invoiceNumber)} · Ngày lập: ${escapeHtml(input.requestedAt.slice(0, 10))}</p>
 
-  <h2>Driver</h2>
-  <table>
-    <tr><th>Name</th><td>${escapeHtml(input.driverName)}</td></tr>
-    <tr><th>Email</th><td>${escapeHtml(input.driverEmail ?? '—')}</td></tr>
-  </table>
+  ${vnPartyBlock('Bên chi trả', [
+    ['Đơn vị', company.name],
+    ['Mã số thuế', company.taxCode || '—'],
+    ['Địa chỉ', company.address || '—'],
+  ])}
 
-  <h2>Campaign Period</h2>
-  <table>
-    <tr><th>Campaign</th><td>${escapeHtml(input.campaignName)}</td></tr>
-    <tr><th>Period</th><td>${escapeHtml(input.periodStart)} → ${escapeHtml(input.periodEnd)}</td></tr>
-    <tr><th>Withdrawal Amount</th><td class="total">${escapeHtml(formatVnd(input.amountVnd))}</td></tr>
-  </table>
+  ${vnPartyBlock('Bên nhận tiền', [
+    ['Họ và tên', input.driverName],
+    ['Email', input.driverEmail ?? '—'],
+    ['Chủ tài khoản', input.bankAccountName],
+    ['Số tài khoản', input.bankAccountNumber],
+    ['Ngân hàng', input.bankBin ? `${input.bankName} (${input.bankBin})` : input.bankName],
+  ])}
 
-  <h2>Payout Bank Snapshot</h2>
+  <h2>Nội dung thanh toán</h2>
   <table>
-    <tr><th>Account Holder</th><td>${escapeHtml(input.bankAccountName)}</td></tr>
-    <tr><th>Account Number</th><td>${escapeHtml(input.bankAccountNumber)}</td></tr>
-    <tr><th>Bank</th><td>${escapeHtml(input.bankName)}</td></tr>
-    <tr><th>Bank Code/BIN</th><td>${escapeHtml(input.bankBin ?? '—')}</td></tr>
+    <tr><th>Diễn giải</th><td>Tiền thuê vị trí quảng cáo trên xe ô tô theo chiến dịch "${escapeHtml(input.campaignName)}"</td></tr>
+    <tr><th>Kỳ thanh toán</th><td>${escapeHtml(input.periodStart)} → ${escapeHtml(input.periodEnd)}</td></tr>
+    <tr><th>Số tiền</th><td class="total">${escapeHtml(formatVndDong(input.amountVnd))}</td></tr>
   </table>
+  <p class="in-words">Bằng chữ: ${escapeHtml(amountInWords(input.amountVnd))}.</p>
+
+  ${vnSignatureRow('Bên chi trả', 'Bên nhận tiền')}
 </article>`.trim()
 }

@@ -133,6 +133,24 @@ Located in `src/components/garage/`. Support real garage install and payout work
 | `garage-withdrawal-modal.tsx`     | Request payout modal: amount + read-only bank info from profile                                       |
 | `payout-row.tsx`                  | Non-paid (recent) withdrawal request row with status pill + print link                                |
 
+## Vietnamese Documents (invoices & contracts)
+
+Printed money documents render as Vietnamese-style HTML (`dangerouslySetInnerHTML` on `/print` routes). **No tax/VAT/withholding** is applied for any party — amounts are unchanged. Shared primitives in `src/lib/shared/vn-doc/`.
+
+| Module                              | Purpose                                                                                              |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `shared/vn-doc/format.ts`           | `escapeHtml`, `formatVndDong` ("1.000.000 đồng")                                                     |
+| `shared/vn-doc/amount-in-words.ts`  | `amountInWords` — "số tiền bằng chữ" via `vn-num2words`                                              |
+| `shared/vn-doc/doc-styles.ts`       | `BASE_DOC_CSS`, `vnNationalHeader()` (Quốc hiệu), `vnSignatureRow()`                                 |
+| `shared/vn-doc/company-info.ts`     | `getCompanyInfo()` — seller "Bên A" identity (static + `COMPANY_*` env)                              |
+| `driver/ad-lease-contract-html.ts`  | "Hợp đồng thuê vị trí quảng cáo trên xe ô tô" (Bên A/Bên B, CCCD + biển số; no tax clause)           |
+| `driver/invoice-html.ts`            | VN driver payment invoice; stored combined with the lease contract in `driver_invoices.invoice_html` |
+| `partner/invoice-html.ts`           | VN simple partner invoice (no VAT)                                                                   |
+| `partner/acceptance-record-html.ts` | "Biên bản nghiệm thu" — vehicle plate list + signed install-proof photos                             |
+| `garage/withdrawal-html.ts`         | "Hóa đơn dịch vụ thi công decal" (garage = bên bán, company = bên mua; no VAT)                       |
+
+Print routes: `/driver/invoice/[id]/print` (RLS, own only), `/admin/invoices/{driver,partner}/[id]/print` (admin), `/garage/payout/[id]/print`.
+
 ## Auth & Gating
 
 | Module                         | Purpose                                                                                                                                                                              |

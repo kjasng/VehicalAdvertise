@@ -4,7 +4,10 @@ import { ArrowLeft } from 'lucide-react'
 
 import { PrintPageButton } from '@/components/admin/print-page-button'
 import { PageHeader } from '@/components/shared/page-header'
+import { PrintIsolationStyles } from '@/components/shared/print-isolation-styles'
 import { getCurrentGarageId } from '@/lib/garage/queries-context'
+import { buildGarageWithdrawalHtml } from '@/lib/garage/withdrawal-html'
+import { getCompanyInfo } from '@/lib/shared/vn-doc/company-info'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
 export const metadata = { title: 'Garage · Print Withdrawal Invoice' }
@@ -20,15 +23,27 @@ export default async function GarageWithdrawalPrintPage({ params }: PageProps) {
   const supabase = createSupabaseAdminClient()
   const { data: withdrawal } = await supabase
     .from('garage_withdrawals')
-    .select('withdrawal_number, invoice_html')
+    .select('withdrawal_number, amount_vnd, requested_at, garages(shop_name, address)')
     .eq('id', id)
     .eq('garage_id', garageId)
     .maybeSingle()
 
   if (!withdrawal) notFound()
 
+  // Rendered fresh from row data so document-format changes apply to all rows.
+  const garage = Array.isArray(withdrawal.garages) ? withdrawal.garages[0] : withdrawal.garages
+  const invoiceHtml = buildGarageWithdrawalHtml({
+    withdrawalNumber: withdrawal.withdrawal_number,
+    requestedAt: withdrawal.requested_at,
+    company: getCompanyInfo(),
+    garageName: garage?.shop_name ?? '—',
+    garageAddress: garage?.address ?? '—',
+    amountVnd: withdrawal.amount_vnd,
+  })
+
   return (
     <div className="space-y-6">
+      <PrintIsolationStyles />
       <PageHeader
         kicker="Money"
         title={withdrawal.withdrawal_number}
@@ -47,8 +62,8 @@ export default async function GarageWithdrawalPrintPage({ params }: PageProps) {
       />
 
       <div
-        className="rounded-md border border-[#cbccc9] bg-white p-5 print:border-0 print:p-0"
-        dangerouslySetInnerHTML={{ __html: withdrawal.invoice_html }}
+        className="print-document rounded-md border border-[#cbccc9] bg-white p-5 print:border-0 print:p-0"
+        dangerouslySetInnerHTML={{ __html: invoiceHtml }}
       />
     </div>
   )

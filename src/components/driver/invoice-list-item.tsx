@@ -1,3 +1,6 @@
+import Link from 'next/link'
+import { Printer } from 'lucide-react'
+
 import { cn } from '@/lib/utils'
 import type { DriverInvoiceRow } from '@/lib/driver/queries-invoices'
 
@@ -60,6 +63,16 @@ export function InvoiceListItem({ invoice }: { invoice: DriverInvoiceRow }) {
         <Detail label="Requested" value={invoice.requestedAt.slice(0, 10)} />
         <Detail label="Period start" value={invoice.periodStart} />
         <Detail label="Period end" value={invoice.periodEnd} />
+      </div>
+
+      <div className="border-t border-[#cbccc9] px-4 py-3">
+        <Link
+          href={`/driver/invoice/${invoice.id}/print`}
+          className="inline-flex h-9 items-center gap-2 rounded border border-[#cbccc9] px-3 text-[11px] font-bold tracking-[1px] text-[#1a1a1a] uppercase hover:bg-[#f7f8fa]"
+        >
+          <Printer className="size-3.5" aria-hidden="true" />
+          Hợp đồng & Hóa đơn
+        </Link>
       </div>
     </details>
   )
