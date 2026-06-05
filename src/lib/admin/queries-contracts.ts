@@ -21,6 +21,7 @@ export type ContractRow = {
 export type CampaignMatchRow = {
   id: string
   name: string
+  partnerId: string
   partnerName: string
   budgetVnd: number
   spentVnd: number
@@ -40,7 +41,7 @@ export type AvailableDriverRow = {
   vehicles: { id: string; plate: string; fuel: string; approved: boolean }[]
 }
 
-/** Campaigns eligible for driver matching (approved or awaiting_install). */
+/** Campaigns shown in the admin Campaigns workspace. */
 export async function getCampaignsForMatching(): Promise<CampaignMatchRow[]> {
   const supabase = createSupabaseAdminClient()
 
@@ -49,9 +50,8 @@ export async function getCampaignsForMatching(): Promise<CampaignMatchRow[]> {
     .select(
       'id, name, partner_id, budget_vnd, spent_vnd, rate_per_km_vnd, daily_cap_km, status, start_date, end_date',
     )
-    .in('status', ['approved', 'awaiting_install', 'active'])
     .order('created_at', { ascending: false })
-    .limit(100)
+    .limit(500)
 
   if (error || !campaigns?.length) return []
 
@@ -79,6 +79,7 @@ export async function getCampaignsForMatching(): Promise<CampaignMatchRow[]> {
   return campaigns.map((c) => ({
     id: c.id,
     name: c.name,
+    partnerId: c.partner_id,
     partnerName: partnerName[c.partner_id] ?? '—',
     budgetVnd: c.budget_vnd,
     spentVnd: c.spent_vnd,

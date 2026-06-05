@@ -63,6 +63,8 @@ export async function updateCampaignFunding(raw: unknown): Promise<{ error: stri
   if (auditError) console.error('[updateCampaignFunding] audit insert failed:', auditError.message)
 
   revalidatePath('/admin/campaigns')
+  revalidatePath('/admin/contracts')
+  revalidatePath(`/admin/contracts/${data.campaignId}`)
   revalidatePath('/driver/invoice')
   return { error: null }
 }

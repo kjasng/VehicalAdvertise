@@ -5,10 +5,10 @@
  * Uses react-hook-form + zod. Submit writes real campaign rows.
  * Step field panels extracted to campaign-wizard-steps.tsx.
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
@@ -33,6 +33,7 @@ const campaignSchema = z
     startDate: z.string().min(1, 'Start date is required'),
     endDate: z.string().min(1, 'End date is required'),
     creativeUrls: z.string().min(1, 'Upload at least one creative image'),
+    planPackage: z.enum(['3', '6', '12', 'business']),
     driverCount: z
       .string()
       .min(1, 'Number of drivers is required')
@@ -58,7 +59,7 @@ type StepIndex = 0 | 1 | 2 | 3
 const STEP_FIELDS: Record<StepIndex, (keyof WizardFormValues)[]> = {
   0: ['name', 'description', 'districts', 'startDate', 'endDate'],
   1: ['creativeUrls'],
-  2: ['driverCount', 'monthlyCapVnd', 'qrTargetUrl'],
+  2: ['planPackage', 'driverCount', 'monthlyCapVnd', 'qrTargetUrl'],
   3: [],
 }
 
@@ -79,11 +80,32 @@ export function CampaignFormWizard({ onSuccess }: Props) {
       startDate: '',
       endDate: '',
       creativeUrls: '',
+      planPackage: '3',
       driverCount: '10',
       monthlyCapVnd: String(10 * DRIVER_GROSS_MONTHLY_VND),
       qrTargetUrl: 'https://vehicaladvertise.com',
     },
   })
+  const planPackage = useWatch({ control: form.control, name: 'planPackage' })
+  const startDate = useWatch({ control: form.control, name: 'startDate' })
+  const driverCount = useWatch({ control: form.control, name: 'driverCount' })
+
+  useEffect(() => {
+    const parsedDriverCount = Math.max(0, Number(driverCount || 0))
+    const requiredMonthly = parsedDriverCount * DRIVER_GROSS_MONTHLY_VND
+    if (requiredMonthly > 0) {
+      const currentMonthlyCap = Number(form.getValues('monthlyCapVnd') || 0)
+      if (planPackage !== 'business' || currentMonthlyCap < requiredMonthly) {
+        form.setValue('monthlyCapVnd', String(requiredMonthly), { shouldValidate: false })
+      }
+    }
+
+    if (planPackage !== 'business' && startDate) {
+      form.setValue('endDate', addMonths(startDate, Number(planPackage)), {
+        shouldValidate: false,
+      })
+    }
+  }, [driverCount, form, planPackage, startDate])
 
   async function onSubmit(values: WizardFormValues) {
     setSubmitting(true)

@@ -12,6 +12,8 @@ import type { Control } from 'react-hook-form'
 import { CampaignCreativeUpload } from '@/components/partner/campaign-creative-upload'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { CAMPAIGN_PACKAGE_OPTIONS } from '@/lib/partner/constants'
+import type { CampaignPackageValue } from '@/lib/partner/constants'
 import { cn } from '@/lib/utils'
 
 export interface WizardFormValues {
@@ -21,6 +23,7 @@ export interface WizardFormValues {
   startDate: string
   endDate: string
   creativeUrls: string
+  planPackage: CampaignPackageValue
   driverCount: string
   monthlyCapVnd: string
   qrTargetUrl: string
@@ -133,6 +136,32 @@ export function WizardStepFields({ step, control, getValues }: StepFieldsProps) 
         <legend className="sr-only">Campaign budget</legend>
         <FormField
           control={control}
+          name="planPackage"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Campaign package</FormLabel>
+              <FormControl>
+                <select
+                  {...field}
+                  className="focus:ring-primary border-input bg-background h-10 w-full rounded-md border px-3 text-sm text-[#1a1a1a] focus:ring-2 focus:outline-none"
+                >
+                  {CAMPAIGN_PACKAGE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </FormControl>
+              <FormMessage />
+              <p className="text-[11px] text-[#666666]">
+                3/6/12 month packages auto-calculate dates and required cap. Business keeps dates
+                and budget flexible.
+              </p>
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={control}
           name="driverCount"
           render={({ field }) => (
             <FormItem>
@@ -185,6 +214,7 @@ function ReviewSummary({ getValues }: { getValues: (key: keyof WizardFormValues)
     ['Districts', getValues('districts')],
     ['Dates', `${getValues('startDate')} → ${getValues('endDate')}`],
     ['Creatives', `${getValues('creativeUrls').split(/\n|,/).filter(Boolean).length}`],
+    ['Package', packageLabel(getValues('planPackage'))],
     ['Drivers', Number(getValues('driverCount')).toLocaleString('vi-VN')],
     ['Monthly Cap', `₫${Number(getValues('monthlyCapVnd')).toLocaleString('vi-VN')}`],
     ['QR URL', getValues('qrTargetUrl')],
@@ -203,4 +233,8 @@ function ReviewSummary({ getValues }: { getValues: (key: keyof WizardFormValues)
       ))}
     </div>
   )
+}
+
+function packageLabel(value: string) {
+  return CAMPAIGN_PACKAGE_OPTIONS.find((option) => option.value === value)?.label ?? value
 }

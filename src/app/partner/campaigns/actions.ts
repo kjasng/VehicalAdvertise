@@ -4,7 +4,13 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
 import { getCurrentUserRole } from '@/lib/auth/role-gate'
-import { DRIVER_GROSS_MONTHLY_VND, MIN_CAMPAIGN_MONTHS, formatVnd } from '@/lib/partner/constants'
+import {
+  DRIVER_GROSS_MONTHLY_VND,
+  DRIVER_NET_MONTHLY_VND,
+  GARAGE_INSTALL_FEE_VND,
+  MIN_CAMPAIGN_MONTHS,
+  formatVnd,
+} from '@/lib/partner/constants'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
@@ -15,6 +21,7 @@ const CampaignSchema = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Start date is required'),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'End date is required'),
   creativeUrls: z.string().trim().min(1, 'Upload or enter at least one creative URL'),
+  planPackage: z.enum(['3', '6', '12', 'business']).default('3'),
   driverCount: z.number().int().positive('Number of drivers must be positive').max(10_000),
   monthlyCapVnd: z.number().int().positive('Monthly cap must be positive').max(999_999_999_999),
   qrTargetUrl: z.string().url('QR target URL must be a valid URL'),
@@ -37,7 +44,14 @@ export async function createPartnerCampaign(raw: unknown): Promise<{ error: stri
   const creativeUrls = parseCreativeUrls(data.creativeUrls)
   if (!creativeUrls.length) return { error: 'Upload or enter at least one creative URL' }
 
-  if (!hasMinimumDuration(data.startDate, data.endDate)) {
+  const durationMonths =
+    data.planPackage === 'business'
+      ? countBillingMonths(data.startDate, data.endDate)
+      : Number(data.planPackage)
+  const effectiveEndDate =
+    data.planPackage === 'business' ? data.endDate : addMonths(data.startDate, durationMonths)
+
+  if (!hasMinimumDuration(data.startDate, effectiveEndDate)) {
     return { error: 'Chiến dịch phải kéo dài tối thiểu 3 tháng.' }
   }
 
@@ -57,41 +71,49 @@ export async function createPartnerCampaign(raw: unknown): Promise<{ error: stri
 
   if (partner?.status !== 'approved') return { error: 'Partner account is not active yet.' }
 
-  const minimumRequiredBalance = requiredMonthlyBudget * MIN_CAMPAIGN_MONTHS
-  if ((partner.balance_vnd ?? 0) < minimumRequiredBalance) {
+  const installReserveVnd = data.driverCount * GARAGE_INSTALL_FEE_VND
+  const campaignBudgetVnd = data.monthlyCapVnd * durationMonths + installReserveVnd
+
+  if ((partner.balance_vnd ?? 0) < campaignBudgetVnd) {
     return {
-      error: `Số dư hiện tại không đủ cho số lượng Driver đã chọn. Yêu cầu: ${formatVnd(minimumRequiredBalance)}. Hiện có: ${formatVnd(partner.balance_vnd ?? 0)}.`,
+      error: `Số dư hiện tại không đủ để reserve campaign budget. Yêu cầu: ${formatVnd(campaignBudgetVnd)}. Hiện có: ${formatVnd(partner.balance_vnd ?? 0)}.`,
     }
   }
 
-  const durationMonths = countBillingMonths(data.startDate, data.endDate)
-  const { error } = await supabase.from('campaigns').insert({
-    partner_id: user.id,
-    name: data.name,
-    brief: data.description,
-    creative_url: creativeUrls[0],
-    creative_urls: creativeUrls,
-    qr_target_url: data.qrTargetUrl,
-    budget_vnd: data.monthlyCapVnd * durationMonths,
-    rate_per_km_vnd: 0,
-    start_date: data.startDate,
-    end_date: data.endDate,
-    target_districts: splitList(data.districts),
-    status: 'submitted',
-    funding_mode: 'monthly_cap',
-    monthly_budget_vnd: data.monthlyCapVnd,
-    driver_net_monthly_vnd: DRIVER_GROSS_MONTHLY_VND,
-    platform_fee_pct: 0,
-    active_driver_limit: data.driverCount,
-    requested_driver_count: data.driverCount,
+  const { data: campaignId, error } = await supabase.rpc('partner_create_campaign_with_reserve', {
+    p_partner_id: user.id,
+    p_name: data.name,
+    p_brief: data.description,
+    p_creative_url: creativeUrls[0],
+    p_creative_urls: creativeUrls,
+    p_qr_target_url: data.qrTargetUrl,
+    p_budget_vnd: campaignBudgetVnd,
+    p_start_date: data.startDate,
+    p_end_date: effectiveEndDate,
+    p_target_districts: splitList(data.districts),
+    p_monthly_budget_vnd: data.monthlyCapVnd,
+    p_driver_net_monthly_vnd: DRIVER_NET_MONTHLY_VND,
+    p_active_driver_limit: data.driverCount,
+    p_requested_driver_count: data.driverCount,
   })
 
-  if (error) return { error: error.message }
+  if (error) {
+    if (error.message.includes('partner balance is insufficient')) {
+      return { error: 'Số dư không đủ. Refresh và thử lại.' }
+    }
+    return { error: error.message }
+  }
+
+  if (!campaignId) return { error: 'Campaign reserve succeeded but campaign id was not returned.' }
 
   revalidatePath('/partner/campaigns')
   revalidatePath('/partner/dashboard')
+  revalidatePath('/partner/billing')
+  revalidatePath('/partner/invoices')
   revalidatePath('/admin/creatives-review')
   revalidatePath('/admin/campaigns')
+  revalidatePath('/admin/contracts')
+  revalidatePath('/admin/partner-balances')
   return { error: null }
 }
 
