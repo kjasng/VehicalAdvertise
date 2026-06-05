@@ -40,9 +40,15 @@ export default async function GarageDashboardPage() {
       <PageHeader kicker="OVERVIEW" title="DASHBOARD" />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-        <KpiCard label="Chờ lắp" value={waitingInstall} />
-        <KpiCard label="Chờ admin duyệt" value={waitingReview} />
-        <KpiCard label="Đã approve" value={approved} />
+        <Link href="/garage/installs?status=pending" className="block hover:opacity-90">
+          <KpiCard label="Chờ lắp" value={waitingInstall} />
+        </Link>
+        <Link href="/garage/installs?status=review" className="block hover:opacity-90">
+          <KpiCard label="Chờ admin duyệt" value={waitingReview} />
+        </Link>
+        <Link href="/garage/installs?status=done" className="block hover:opacity-90">
+          <KpiCard label="Đã approve" value={approved} />
+        </Link>
         <KpiCard label="Balance" value={formatVnd(profile.balanceVnd)} />
       </div>
 

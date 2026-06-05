@@ -46,9 +46,6 @@ export async function getGarageProfile(): Promise<GarageProfile | null> {
     bankAccountName: data.bank_account_name ?? '',
     bankAccountNumber: data.bank_account_number ?? '',
     bankName: data.bank_name ?? '',
-    bankBranch: data.bank_branch ?? '',
-    bankBin: data.bank_bin ?? '',
-    bankVerified: Boolean(data.bank_verified_at),
   }
 }
 

@@ -20,8 +20,6 @@ const UpdateGarageProfileSchema = z.object({
   bankAccountName: z.string().trim().max(120).optional(),
   bankAccountNumber: z.string().trim().max(40).optional(),
   bankName: z.string().trim().max(120).optional(),
-  bankBranch: z.string().trim().max(120).optional(),
-  bankBin: z.string().trim().max(20).optional(),
 })
 
 const WithdrawalSchema = z.object({
@@ -52,14 +50,13 @@ export async function updateGarageProfile(raw: unknown): Promise<{ error: string
       bank_account_name: parsed.data.bankAccountName || null,
       bank_account_number: parsed.data.bankAccountNumber || null,
       bank_name: parsed.data.bankName || null,
-      bank_branch: parsed.data.bankBranch || null,
-      bank_bin: parsed.data.bankBin || null,
       bank_verified_at: null,
     })
     .eq('id', userId)
 
   if (error) return { error: error.message }
 
+  revalidatePath('/garage/profile')
   revalidatePath('/garage/payout')
   revalidatePath('/garage/dashboard')
   return { error: null }
@@ -84,8 +81,6 @@ export async function requestGarageWithdrawal(raw: unknown): Promise<{ error: st
     bankAccountName: profile.bankAccountName,
     bankAccountNumber: profile.bankAccountNumber,
     bankName: profile.bankName,
-    bankBranch: profile.bankBranch,
-    bankBin: profile.bankBin,
   }
   const invoiceHtml = buildGarageWithdrawalHtml({
     withdrawalNumber,
@@ -96,7 +91,7 @@ export async function requestGarageWithdrawal(raw: unknown): Promise<{ error: st
     bankAccountName: profile.bankAccountName,
     bankAccountNumber: profile.bankAccountNumber,
     bankName: profile.bankName,
-    bankBin: profile.bankBin || null,
+    bankBin: null,
   })
 
   const supabase = createSupabaseAdminClient()
@@ -111,7 +106,7 @@ export async function requestGarageWithdrawal(raw: unknown): Promise<{ error: st
 
   revalidatePath('/garage/payout')
   revalidatePath('/admin/invoices/garage')
-  revalidatePath('/admin/audit-log')
+  revalidatePath('/admin/reports')
   return { error: null }
 }
 

@@ -9,7 +9,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 const BUCKET = 'driver-kyc'
 const MAX_FILE_SIZE = 6 * 1024 * 1024
-const ANGLES = ['front', 'rear', 'left', 'right', 'closeup'] as const
+const ANGLES = ['front', 'rear', 'left', 'right'] as const
 
 const ContractSchema = z.object({
   contractId: z.string().uuid(),
@@ -36,7 +36,7 @@ export async function submitGarageInstallProof(
 
   const files = ANGLES.map((angle) => [angle, readFile(formData, angle)] as const)
   const missing = files.filter(([, file]) => !file).map(([angle]) => angle)
-  if (missing.length > 0) return { error: 'Upload đủ 5 ảnh xác nhận lắp decal.' }
+  if (missing.length > 0) return { error: 'Upload đủ 4 ảnh xác nhận lắp decal.' }
 
   const invalid = files.find(([, file]) => file && !isValidImage(file))
   if (invalid) return { error: 'Ảnh phải là file image và nhỏ hơn 6MB.' }

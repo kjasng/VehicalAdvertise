@@ -16,7 +16,6 @@ const ANGLES: { key: ProofAngle; label: string }[] = [
   { key: 'rear', label: 'Mặt sau' },
   { key: 'left', label: 'Hông trái' },
   { key: 'right', label: 'Hông phải' },
-  { key: 'closeup', label: 'Cận decal' },
 ]
 
 const COMPRESSION_OPTIONS = {
@@ -64,7 +63,7 @@ export function PhotoCaptureGrid({ contractId }: PhotoCaptureGridProps) {
 
   function handleSubmit() {
     if (!ANGLES.every((angle) => files[angle.key])) {
-      toast.error('Vui lòng upload đủ 5 ảnh.')
+      toast.error('Vui lòng upload đủ 4 ảnh.')
       return
     }
 
@@ -91,7 +90,7 @@ export function PhotoCaptureGrid({ contractId }: PhotoCaptureGridProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {ANGLES.map(({ key, label }) => (
           <PhotoSlot
             key={key}

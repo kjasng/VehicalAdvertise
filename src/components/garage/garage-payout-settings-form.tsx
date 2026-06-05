@@ -21,8 +21,6 @@ type FormState = {
   bankAccountName: string
   bankAccountNumber: string
   bankName: string
-  bankBranch: string
-  bankBin: string
 }
 
 export function GaragePayoutSettingsForm({ profile }: { profile: GarageProfile }) {
@@ -38,8 +36,6 @@ export function GaragePayoutSettingsForm({ profile }: { profile: GarageProfile }
     bankAccountName: profile.bankAccountName,
     bankAccountNumber: profile.bankAccountNumber,
     bankName: profile.bankName,
-    bankBranch: profile.bankBranch,
-    bankBin: profile.bankBin,
   })
 
   function setField(key: keyof FormState, value: string) {
@@ -134,26 +130,9 @@ export function GaragePayoutSettingsForm({ profile }: { profile: GarageProfile }
             onChange={(value) => setField('bankName', value)}
             required={false}
           />
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field
-              id="bank-branch"
-              label="Branch"
-              value={form.bankBranch}
-              onChange={(value) => setField('bankBranch', value)}
-              required={false}
-            />
-            <Field
-              id="bank-bin"
-              label="Bank code / BIN"
-              value={form.bankBin}
-              onChange={(value) => setField('bankBin', value)}
-              required={false}
-            />
-          </div>
+
           <p className="text-[12px] text-[#666666]">
-            {profile.bankVerified
-              ? 'Tài khoản đã được xác minh.'
-              : 'Có thể rút sau khi lưu đủ thông tin ngân hàng.'}
+            Có thể rút sau khi lưu đủ thông tin ngân hàng.
           </p>
         </Panel>
       </div>

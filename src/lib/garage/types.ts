@@ -14,9 +14,6 @@ export type GarageProfile = {
   bankAccountName: string
   bankAccountNumber: string
   bankName: string
-  bankBranch: string
-  bankBin: string
-  bankVerified: boolean
 }
 
 export type GarageInstallStatus =
@@ -48,15 +45,6 @@ export type GarageInstallJob = {
   latestRejectReason: string | null
 }
 
-export type GarageEarningRow = {
-  id: string
-  amountVnd: number
-  createdAt: string
-  contractId: string
-  campaignName: string
-  vehiclePlate: string
-}
-
 export type GarageWithdrawalRow = {
   id: string
   withdrawalNumber: string
@@ -70,8 +58,5 @@ export type GarageWithdrawalRow = {
 export type GaragePayoutData = {
   profile: GarageProfile
   minimumWithdrawalVnd: number
-  lifetimeEarningsVnd: number
-  withdrawalsTotalVnd: number
-  earnings: GarageEarningRow[]
   withdrawals: GarageWithdrawalRow[]
 }

@@ -1,19 +1,19 @@
 /**
- * PayoutRow — server component.
- * Single weekly payout row: week label, total VND, status pill, transaction ID.
+ * PayoutRow — single withdrawal request row: number, request date, amount,
+ * status pill, and a print link. Used for non-paid (recent) requests.
  */
-import { cn } from '@/lib/utils'
+import Link from 'next/link'
+import { Printer } from 'lucide-react'
+
+import { formatVnd } from '@/lib/garage/format'
 import type { GarageWithdrawalRow } from '@/lib/garage/types'
+import { cn } from '@/lib/utils'
 
 const STATUS_STYLES: Record<GarageWithdrawalRow['status'], { label: string; className: string }> = {
-  pending: { label: 'Chờ admin duyệt', className: 'bg-amber-100 text-amber-700' },
-  processing: { label: 'Admin đã duyệt', className: 'bg-blue-100 text-blue-700' },
-  paid: { label: 'Đã thanh toán', className: 'bg-green-100 text-green-700' },
-  failed: { label: 'Đã từ chối', className: 'bg-red-100 text-red-600' },
-}
-
-function formatVnd(amount: number): string {
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount)
+  pending: { label: 'Pending', className: 'bg-amber-100 text-amber-700' },
+  processing: { label: 'Processing', className: 'bg-blue-100 text-blue-700' },
+  paid: { label: 'Paid', className: 'bg-green-100 text-green-700' },
+  failed: { label: 'Failed', className: 'bg-red-100 text-red-600' },
 }
 
 interface PayoutRowProps {
@@ -56,6 +56,14 @@ export function PayoutRow({ entry }: PayoutRowProps) {
             —
           </span>
         )}
+
+        <Link
+          href={`/garage/payout/${entry.id}/print`}
+          className="inline-flex h-8 items-center gap-1 rounded border border-[#cbccc9] px-2 text-[11px] font-bold tracking-[1px] text-[#1a1a1a] uppercase hover:bg-[#f7f8fa]"
+        >
+          <Printer className="size-3.5" aria-hidden="true" />
+          Invoice
+        </Link>
       </div>
     </article>
   )

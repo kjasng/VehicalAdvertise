@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 
+import { useSearchParams } from 'next/navigation'
+
 import { InstallCard } from '@/components/garage/install-card'
 import { InstallDetailDrawer } from '@/components/garage/install-detail-drawer'
 import type { GarageInstallJob, GarageInstallStatus } from '@/lib/garage/types'
@@ -24,7 +26,10 @@ const FILTER_STATUSES: Record<FilterKey, GarageInstallStatus[]> = {
 }
 
 export function GarageInstallsClient({ jobs }: { jobs: GarageInstallJob[] }) {
-  const [activeFilter, setActiveFilter] = useState<FilterKey>('all')
+  const searchParams = useSearchParams()
+  const [activeFilter, setActiveFilter] = useState<FilterKey>(() =>
+    normalizeFilter(searchParams.get('status')),
+  )
   const [selectedOrder, setSelectedOrder] = useState<GarageInstallJob | null>(null)
   const filtered = jobs.filter((job) => FILTER_STATUSES[activeFilter].includes(job.status))
 
@@ -63,4 +68,8 @@ export function GarageInstallsClient({ jobs }: { jobs: GarageInstallJob[] }) {
       <InstallDetailDrawer order={selectedOrder} onClose={() => setSelectedOrder(null)} />
     </>
   )
+}
+
+function normalizeFilter(value: string | null): FilterKey {
+  return FILTERS.some((filter) => filter.key === value) ? (value as FilterKey) : 'all'
 }

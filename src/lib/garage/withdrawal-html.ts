@@ -9,7 +9,7 @@ export type GarageWithdrawalHtmlInput = {
   bankAccountName: string
   bankAccountNumber: string
   bankName: string
-  bankBin: string | null
+  bankBin: string | null | undefined
 }
 
 export function buildGarageWithdrawalHtml(input: GarageWithdrawalHtmlInput) {

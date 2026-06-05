@@ -25,11 +25,11 @@ export function GarageWithdrawalForm({
     : !hasBank
       ? 'Hoàn tất payout settings trước khi rút.'
       : profile.balanceVnd < minimumWithdrawalVnd
-        ? `Balance cần đạt tối thiểu ${formatVnd(minimumWithdrawalVnd)}.`
+        ? `Số tiền tối thiểu để rút là ${formatVnd(minimumWithdrawalVnd)}.`
         : amountVnd < minimumWithdrawalVnd
-          ? `Số tiền rút tối thiểu ${formatVnd(minimumWithdrawalVnd)}.`
+          ? `Số tiền rút tối thiểu là ${formatVnd(minimumWithdrawalVnd)}.`
           : amountVnd > profile.balanceVnd
-            ? 'Số tiền rút lớn hơn balance hiện tại.'
+            ? `Số tiền rút lớn hơn số tiền hiện có là ${formatVnd(profile.balanceVnd)}.`
             : null
 
   function handleSubmit(e: React.FormEvent) {

@@ -1,6 +1,6 @@
 import { Camera, X } from 'lucide-react'
 
-export type ProofAngle = 'front' | 'rear' | 'left' | 'right' | 'closeup'
+export type ProofAngle = 'front' | 'rear' | 'left' | 'right'
 
 export function PhotoSlot({
   angle,
