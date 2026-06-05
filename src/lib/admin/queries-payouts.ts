@@ -288,6 +288,10 @@ function stringValue(value: unknown): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null
 }
 
+function numberValue(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null
+}
+
 /** Fetches the 50 most recent SePay webhook events. */
 export async function getSepayEvents(): Promise<SepayEventRow[]> {
   const supabase = createSupabaseAdminClient()
@@ -311,8 +315,8 @@ export async function getSepayEvents(): Promise<SepayEventRow[]> {
       receivedAt: e.received_at,
       processedAt: e.processed_at,
       error: e.error,
-      amount: typeof payload.amount === 'number' ? payload.amount : null,
-      description: typeof payload.description === 'string' ? payload.description : null,
+      amount: numberValue(payload.transferAmount) ?? numberValue(payload.amount),
+      description: stringValue(payload.content) ?? stringValue(payload.description),
     }
   })
 }

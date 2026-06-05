@@ -19,9 +19,8 @@ const AdjustmentSchema = z.object({
 const MONEY_PATHS = [
   '/admin/ledger-adjustments',
   '/admin/dashboard',
-  '/admin/payouts',
+  '/admin/invoices/driver',
   '/admin/partner-balances',
-  '/admin/audit-log',
 ]
 
 /**

@@ -50,8 +50,8 @@ export async function createPayout(raw: unknown): Promise<{ error: string | null
   })
   if (error) return { error: error.message }
 
-  revalidatePath('/admin/payouts')
   revalidatePath('/admin/invoices/driver')
+  revalidatePath('/admin/reports')
   revalidatePath('/driver/invoice')
   revalidatePath('/admin/dashboard')
   return { error: null }
@@ -76,8 +76,8 @@ export async function markPayoutPaid(raw: unknown): Promise<{ error: string | nu
   })
   if (error) return { error: error.message }
 
-  revalidatePath('/admin/payouts')
   revalidatePath('/admin/invoices/driver')
+  revalidatePath('/admin/reports')
   revalidatePath('/driver/invoice')
   revalidatePath('/admin/dashboard')
   return { error: null }
@@ -102,9 +102,8 @@ export async function reviewGarageWithdrawal(raw: unknown): Promise<{ error: str
   })
   if (error) return { error: error.message }
 
-  revalidatePath('/admin/payouts')
   revalidatePath('/admin/invoices/garage')
+  revalidatePath('/admin/reports')
   revalidatePath('/garage/payout')
-  revalidatePath('/admin/audit-log')
   return { error: null }
 }

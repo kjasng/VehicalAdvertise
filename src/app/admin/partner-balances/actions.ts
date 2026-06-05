@@ -60,6 +60,5 @@ export async function topUpPartnerBalance(raw: unknown): Promise<{ error: string
   revalidatePath('/admin/invoices/partner')
   revalidatePath('/partner/billing')
   revalidatePath('/partner/dashboard')
-  revalidatePath('/admin/audit-log')
   return { error: null }
 }
