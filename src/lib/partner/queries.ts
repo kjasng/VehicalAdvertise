@@ -39,6 +39,7 @@ export type PartnerNotification = {
 export type PartnerData = {
   partnerId: string
   companyName: string
+  taxCode: string | null
   status: string
   balanceVnd: number
   campaigns: PartnerCampaignRow[]
@@ -57,7 +58,7 @@ export async function getPartnerData(): Promise<PartnerData | null> {
   const [partnerRes, campaignsRes, ledgerRes] = await Promise.all([
     supabase
       .from('partners')
-      .select('id, company_name, status, balance_vnd')
+      .select('id, company_name, tax_code, status, balance_vnd')
       .eq('id', user.id)
       .maybeSingle(),
     supabase
@@ -115,6 +116,7 @@ export async function getPartnerData(): Promise<PartnerData | null> {
   return {
     partnerId: partner.id,
     companyName: partner.company_name,
+    taxCode: partner.tax_code,
     status: partner.status ?? 'pending',
     balanceVnd: partner.balance_vnd,
     campaigns,

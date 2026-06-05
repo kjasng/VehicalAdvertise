@@ -2,12 +2,12 @@
 
 import { useState } from 'react'
 
-import { QRCodeSVG } from 'qrcode.react'
+import Image from 'next/image'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { PARTNER_MIN_DEPOSIT_VND } from '@/lib/partner/constants'
+import { PARTNER_MIN_DEPOSIT_VND, buildSePayQrImageUrl } from '@/lib/partner/constants'
 import { cn } from '@/lib/utils'
 
 const PRESETS = [
@@ -18,39 +18,17 @@ const PRESETS = [
 ]
 
 type TopupQrCardProps = {
-  partnerId: string
+  taxCode?: string | null
+  bankCode?: string
   bankName?: string
   bankAccount?: string
   accountName?: string
 }
 
-function buildVietQrPayload({
-  amountVnd,
-  partnerId,
-  bankName,
-  bankAccount,
-  accountName,
-}: {
-  amountVnd: number
-  partnerId: string
-  bankName: string
-  bankAccount: string
-  accountName: string
-}): string {
-  // VietQR EMV-like string (simplified memo payload for QR display)
-  const memo = `TOPUP ${partnerId} ${amountVnd}`
-  return [
-    `Bank: ${bankName}`,
-    `Account: ${bankAccount}`,
-    `Name: ${accountName}`,
-    `Amount: ${amountVnd}`,
-    `Memo: ${memo}`,
-  ].join('\n')
-}
-
 export function TopupQrCard({
-  partnerId,
-  bankName = 'VCB',
+  taxCode,
+  bankCode,
+  bankName = 'Vietcombank',
   bankAccount = '0123456789',
   accountName = 'VEHICAL ADVERTISE JSC',
 }: TopupQrCardProps) {
@@ -62,15 +40,23 @@ export function TopupQrCard({
     ? Math.max(0, parseInt(customAmount.replace(/\D/g, ''), 10) || 0)
     : (selectedPreset ?? 0)
 
-  const qrValue = buildVietQrPayload({
-    amountVnd: effectiveAmount,
-    partnerId,
-    bankName,
-    bankAccount,
-    accountName,
-  })
+  const normalizedTaxCode = taxCode?.trim()
+  const memo = normalizedTaxCode ? `TOPUP ${normalizedTaxCode}` : ''
+  const qrImageUrl =
+    effectiveAmount > 0 && normalizedTaxCode
+      ? buildSePayQrImageUrl({
+          amountVnd: effectiveAmount,
+          memo,
+          bankCode: bankCode ?? bankName,
+          bankAccount,
+        })
+      : null
 
   function handleConfirm() {
+    if (!normalizedTaxCode) {
+      toast.error('Thiếu mã số thuế đối tác để tạo nội dung chuyển khoản')
+      return
+    }
     if (effectiveAmount < PARTNER_MIN_DEPOSIT_VND) {
       toast.error('Số tiền nạp tối thiểu là 10.000.000 VNĐ')
       return
@@ -117,7 +103,7 @@ export function TopupQrCard({
           <Input
             type="text"
             inputMode="numeric"
-            placeholder="e.g. 250000"
+            placeholder="e.g. 25000000"
             value={customAmount}
             aria-label="Custom top-up amount in VND"
             onFocus={() => setIsCustom(true)}
@@ -152,19 +138,21 @@ export function TopupQrCard({
         <p className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
           Scan to pay
         </p>
-        {effectiveAmount > 0 ? (
-          <QRCodeSVG
-            value={qrValue}
-            size={200}
-            level="M"
-            aria-label={`VietQR code for ₫${effectiveAmount.toLocaleString('vi-VN')}`}
+        {qrImageUrl ? (
+          <Image
+            src={qrImageUrl}
+            width={200}
+            height={200}
+            unoptimized
+            className="size-[200px]"
+            alt={`VietQR top-up code for ₫${effectiveAmount.toLocaleString('vi-VN')}`}
           />
         ) : (
           <div
             className="flex size-[200px] items-center justify-center rounded-md bg-[#f7f8fa] text-[12px] text-[#666666]"
-            aria-label="Select an amount to generate QR"
+            aria-label={normalizedTaxCode ? 'Select an amount to generate QR' : 'Missing tax code'}
           >
-            Select amount first
+            {normalizedTaxCode ? 'Select amount first' : 'Missing tax code'}
           </div>
         )}
         <div className="w-full space-y-1 text-[12px]">
@@ -184,7 +172,9 @@ export function TopupQrCard({
           </div>
           <div className="flex justify-between">
             <span className="text-[#666666]">Memo</span>
-            <span className="font-mono font-bold text-[#ff5c00]">TOPUP {partnerId}</span>
+            <span className="font-mono font-bold text-[#ff5c00]">
+              {memo || 'MST chưa cập nhật'}
+            </span>
           </div>
           <div className="flex justify-between border-t border-[#cbccc9] pt-2">
             <span className="text-[#666666]">Amount</span>
