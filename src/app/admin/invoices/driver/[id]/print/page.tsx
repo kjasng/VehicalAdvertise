@@ -27,7 +27,7 @@ export default async function DriverInvoicePrintPage({ params }: PageProps) {
     <div className="space-y-6">
       <PageHeader
         kicker="Money"
-        title={invoice.invoice_number}
+        title={`Hóa đơn rút tiền #${invoice.invoice_number}`}
         cta={
           <div className="flex gap-2 print:hidden">
             <Link

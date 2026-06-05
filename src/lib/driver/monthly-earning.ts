@@ -5,7 +5,7 @@ export type MonthlyPeriod = {
 }
 
 export const DEFAULT_DRIVER_NET_MONTHLY_VND = 1_100_000
-export const DEFAULT_PLATFORM_FEE_PCT = 20
+export const DEFAULT_PLATFORM_FEE_PCT = 10
 
 function asUtcDate(date: string) {
   const [year, month, day] = date.split('-').map(Number)

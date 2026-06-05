@@ -1,9 +1,6 @@
 import 'server-only'
 
-import type { Database } from '@/types/db'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
-
-type LedgerKind = Database['public']['Enums']['ledger_kind']
 
 export type InvoiceRow = {
   id: number | string
@@ -17,47 +14,6 @@ export type InvoiceRow = {
   periodEnd?: string
   printHref?: string
   note: string | null
-}
-
-async function fetchLedgerRows(
-  supabase: ReturnType<typeof createSupabaseAdminClient>,
-  kinds: LedgerKind[],
-  idColumn: 'driver_id' | 'partner_id',
-): Promise<InvoiceRow[]> {
-  const { data: entries, error } = await supabase
-    .from('ledger_entries')
-    .select(`id, ts, kind, amount_vnd, note, ${idColumn}`)
-    .in('kind', kinds)
-    .not(idColumn, 'is', null)
-    .order('ts', { ascending: false })
-    .limit(100)
-
-  if (error || !entries?.length) return []
-
-  const profileIds = [
-    ...new Set(
-      entries.map((e) => (e as Record<string, unknown>)[idColumn] as string).filter(Boolean),
-    ),
-  ]
-
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, full_name')
-    .in('id', profileIds)
-
-  const nameById = Object.fromEntries((profiles ?? []).map((p) => [p.id, p.full_name]))
-
-  return entries.map((e) => {
-    const profileId = (e as Record<string, unknown>)[idColumn] as string
-    return {
-      id: e.id,
-      recipientName: nameById[profileId] ?? 'Unknown',
-      amountVnd: e.amount_vnd,
-      kind: e.kind,
-      createdAt: e.ts,
-      note: e.note,
-    }
-  })
 }
 
 export async function getDriverInvoices(): Promise<InvoiceRow[]> {
@@ -112,11 +68,55 @@ export async function getDriverInvoices(): Promise<InvoiceRow[]> {
 }
 
 export async function getPartnerInvoices(): Promise<InvoiceRow[]> {
-  return fetchLedgerRows(
-    createSupabaseAdminClient(),
-    ['partner_topup', 'partner_charge'],
-    'partner_id',
+  const supabase = createSupabaseAdminClient()
+
+  const { data: periods, error } = await supabase
+    .from('driver_earning_periods')
+    .select(
+      'id, campaign_id, driver_id, period_start, period_end, gross_charge_vnd, platform_fee_vnd, driver_net_vnd, created_at',
+    )
+    .order('period_start', { ascending: false })
+    .limit(100)
+
+  if (error || !periods?.length) return []
+
+  const campaignIds = [...new Set(periods.map((period) => period.campaign_id))]
+  const driverIds = [...new Set(periods.map((period) => period.driver_id))]
+  const [campaignsRes, driversRes] = await Promise.all([
+    supabase.from('campaigns').select('id, name, partner_id').in('id', campaignIds),
+    supabase.from('profiles').select('id, full_name').in('id', driverIds),
+  ])
+
+  const campaigns = campaignsRes.data ?? []
+  const partnerIds = [...new Set(campaigns.map((campaign) => campaign.partner_id))]
+  const { data: partners } = partnerIds.length
+    ? await supabase.from('partners').select('id, company_name').in('id', partnerIds)
+    : { data: [] }
+
+  const campaignById = Object.fromEntries(campaigns.map((campaign) => [campaign.id, campaign]))
+  const partnerById = Object.fromEntries((partners ?? []).map((partner) => [partner.id, partner]))
+  const driverById = Object.fromEntries(
+    (driversRes.data ?? []).map((driver) => [driver.id, driver]),
   )
+
+  return periods.map((period) => {
+    const campaign = campaignById[period.campaign_id]
+    const partner = campaign ? partnerById[campaign.partner_id] : null
+    const periodLabel = `${period.period_start} → ${period.period_end}`
+    return {
+      id: period.id,
+      invoiceNumber: `PINV-${period.period_start.replaceAll('-', '')}-${period.id.slice(0, 8).toUpperCase()}`,
+      recipientName: partner?.company_name ?? 'Unknown partner',
+      amountVnd: period.gross_charge_vnd,
+      kind: 'partner_campaign_charge',
+      createdAt: period.created_at,
+      status: 'issued',
+      periodStart: period.period_start,
+      periodEnd: period.period_end,
+      printHref: `/admin/invoices/partner/${period.id}/print`,
+      note: `${campaign?.name ?? 'Campaign'} · ${driverById[period.driver_id]?.full_name ?? 'Driver'} · ${periodLabel}`,
+    }
+  })
 }
 
 export async function getGarageInvoices(): Promise<InvoiceRow[]> {

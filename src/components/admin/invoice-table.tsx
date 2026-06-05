@@ -7,7 +7,7 @@
 import { useState } from 'react'
 
 import Link from 'next/link'
-import { Printer } from 'lucide-react'
+import { Eye, Printer } from 'lucide-react'
 
 import type { InvoiceRow } from '@/lib/admin/queries-invoices'
 
@@ -21,6 +21,7 @@ const KIND_STYLES: Record<string, string> = {
   driver_withdrawal: 'bg-green-100 text-green-700',
   partner_topup: 'bg-purple-100 text-purple-700',
   partner_charge: 'bg-orange-100 text-orange-700',
+  partner_campaign_charge: 'bg-orange-100 text-orange-700',
   platform_fee: 'bg-[#f0f0ee] text-[#666666]',
   garage_install_payout: 'bg-green-100 text-green-700',
   garage_withdrawal: 'bg-green-100 text-green-700',
@@ -36,6 +37,7 @@ const STATUS_STYLES: Record<string, string> = {
   paid: 'bg-green-100 text-green-700',
   failed: 'bg-red-100 text-red-600',
   rejected: 'bg-red-100 text-red-600',
+  issued: 'bg-blue-100 text-blue-700',
 }
 
 interface InvoiceTableProps {
@@ -66,14 +68,14 @@ export function InvoiceTable({ rows }: InvoiceTableProps) {
   const columns = [
     {
       key: 'id' as const,
-      header: 'ID',
+      header: 'Mã hóa đơn',
       cell: (r: InvoiceRow) => (
-        <span className="font-mono text-[12px] text-[#666666]">{r.invoiceNumber ?? r.id}</span>
+        <span className="font-mono text-[12px] text-black">{r.invoiceNumber ?? r.id}</span>
       ),
     },
     {
       key: 'recipientName' as const,
-      header: 'Recipient',
+      header: 'Người nhận',
       sortValue: (r: InvoiceRow) => r.recipientName,
       cell: (r: InvoiceRow) => (
         <span className="font-medium text-[#1a1a1a]">{r.recipientName}</span>
@@ -81,7 +83,7 @@ export function InvoiceTable({ rows }: InvoiceTableProps) {
     },
     {
       key: 'amountVnd' as const,
-      header: 'Amount (VND)',
+      header: 'Số tiền (VND)',
       sortValue: (r: InvoiceRow) => r.amountVnd,
       cell: (r: InvoiceRow) => (
         <span className="font-mono text-[13px]">{r.amountVnd.toLocaleString('vi-VN')}</span>
@@ -89,15 +91,21 @@ export function InvoiceTable({ rows }: InvoiceTableProps) {
     },
     {
       key: 'createdAt' as const,
-      header: 'Date',
+      header: 'Ngày tạo',
       sortValue: (r: InvoiceRow) => r.createdAt,
       cell: (r: InvoiceRow) => (
-        <span className="font-mono text-[12px] text-[#666666]">{r.createdAt.slice(0, 10)}</span>
+        <span className="font-mono text-[12px] text-black">
+          {new Date(r.createdAt).toLocaleString('vi-VN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+          })}
+        </span>
       ),
     },
     {
       key: 'kind' as const,
-      header: 'Kind',
+      header: 'Loại',
       sortValue: (r: InvoiceRow) => r.kind,
       cell: (r: InvoiceRow) => (
         <span
@@ -109,7 +117,7 @@ export function InvoiceTable({ rows }: InvoiceTableProps) {
     },
     {
       key: 'status' as const,
-      header: 'Status',
+      header: 'Trạng thái',
       sortValue: (r: InvoiceRow) => r.status ?? '',
       cell: (r: InvoiceRow) =>
         r.status ? (
@@ -124,23 +132,36 @@ export function InvoiceTable({ rows }: InvoiceTableProps) {
     },
     {
       key: 'note' as const,
-      header: 'Note',
+      header: 'Ghi chú',
       cell: (r: InvoiceRow) => (
         <span className="max-w-[320px] text-[12px] text-[#666666]">{r.note ?? '—'}</span>
       ),
     },
     {
       key: 'printHref' as const,
-      header: 'Print',
+      header: 'Thao tác',
       cell: (r: InvoiceRow) =>
         r.printHref ? (
-          <Link
-            href={r.printHref}
-            className="inline-flex h-8 items-center gap-1 rounded border border-[#cbccc9] px-2 text-[11px] font-bold tracking-[1px] text-[#1a1a1a] uppercase hover:bg-[#f7f8fa]"
-          >
-            <Printer className="size-3.5" aria-hidden="true" />
-            Print
-          </Link>
+          <div className="flex items-center gap-1.5">
+            <Link
+              href={r.printHref}
+              title="Xem hóa đơn"
+              aria-label="Xem hóa đơn"
+              className="inline-flex size-8 items-center justify-center rounded border border-[#cbccc9] text-[#1a1a1a] hover:bg-[#f7f8fa]"
+            >
+              <Eye className="size-4" aria-hidden="true" />
+            </Link>
+            <Link
+              href={r.printHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="In hóa đơn"
+              aria-label="In hóa đơn"
+              className="inline-flex size-8 items-center justify-center rounded border border-[#cbccc9] text-[#1a1a1a] hover:bg-[#f7f8fa]"
+            >
+              <Printer className="size-4" aria-hidden="true" />
+            </Link>
+          </div>
         ) : (
           <span className="text-[#999]">—</span>
         ),

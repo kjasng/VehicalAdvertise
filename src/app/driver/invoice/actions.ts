@@ -122,6 +122,5 @@ export async function createDriverWithdrawalInvoice(): Promise<{ error: string |
 
   revalidatePath('/driver/invoice')
   revalidatePath('/admin/invoices/driver')
-  revalidatePath('/admin/payouts')
   return { error: null }
 }

@@ -5,16 +5,29 @@ import { InvoiceTable } from '@/components/admin/invoice-table'
 import { PageHeader } from '@/components/shared/page-header'
 import { SectionShell } from '@/components/shared/section-shell'
 import { getGarageInvoices } from '@/lib/admin/queries-invoices'
+import { getWithdrawalRequests } from '@/lib/admin/queries-withdrawal-requests'
+
+import { WithdrawalRequestsTable } from '../../payouts/payouts-client'
 
 export const metadata = { title: 'Admin · Garage Invoices' }
 
 export default async function GarageInvoicesPage() {
-  const rows = await getGarageInvoices()
+  const [rows, withdrawalRequests] = await Promise.all([
+    getGarageInvoices(),
+    getWithdrawalRequests({ role: 'garage' }),
+  ])
 
   return (
     <div className="space-y-6">
       <PageHeader kicker="Money" title="Garage Invoices" />
-      <SectionShell title="Garage Withdrawals">
+      <WithdrawalRequestsTable
+        rows={withdrawalRequests}
+        title="Garage Withdrawal Requests"
+        lockedRole="garage"
+        emptyTitle="No Garage Withdrawal Requests"
+        emptyHelper="Garage withdrawal requests will appear here."
+      />
+      <SectionShell title="Garage Invoice History">
         <InvoiceTable rows={rows} />
       </SectionShell>
     </div>

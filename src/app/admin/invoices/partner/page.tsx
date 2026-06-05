@@ -1,5 +1,5 @@
 /**
- * Partner Invoices — partner top-up and charge ledger entries.
+ * Partner Invoices — monthly campaign charges.
  */
 import { InvoiceTable } from '@/components/admin/invoice-table'
 import { PageHeader } from '@/components/shared/page-header'
@@ -14,7 +14,7 @@ export default async function PartnerInvoicesPage() {
   return (
     <div className="space-y-6">
       <PageHeader kicker="Money" title="Partner Invoices" />
-      <SectionShell title="Top-ups & Charges">
+      <SectionShell title="Campaign Charges">
         <InvoiceTable rows={rows} />
       </SectionShell>
     </div>

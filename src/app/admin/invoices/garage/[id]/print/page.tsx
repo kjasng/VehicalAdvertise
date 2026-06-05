@@ -27,7 +27,7 @@ export default async function GarageWithdrawalPrintPage({ params }: PageProps) {
     <div className="space-y-6">
       <PageHeader
         kicker="Money"
-        title={withdrawal.withdrawal_number}
+        title={`Hóa đơn rút tiền #${withdrawal.withdrawal_number}`}
         cta={
           <div className="flex gap-2 print:hidden">
             <Link
