@@ -12,11 +12,14 @@ const BlockSchema = z.object({
   blocked: z.boolean(),
 })
 
+const MANAGED_USER_ROLES = ['driver', 'partner', 'garage'] as const
+const EDITABLE_USER_ROLES = ['driver', 'partner', 'garage', 'admin'] as const
+
 // 'admin' is intentionally excluded — use a separate explicit promote flow to
 // prevent accidental privilege escalation via this general-purpose action.
 const RoleSchema = z.object({
   targetId: z.string().uuid(),
-  role: z.enum(['driver', 'partner', 'garage']),
+  role: z.enum(MANAGED_USER_ROLES),
 })
 
 export async function setUserBlocked(raw: unknown): Promise<{ error: string | null }> {
@@ -62,7 +65,15 @@ export async function deleteUser(raw: unknown): Promise<{ error: string | null }
     .eq('id', targetId)
     .single()
 
-  if (target?.role === 'admin') return { error: 'Cannot delete another admin account' }
+  if (target?.role === 'admin') {
+    const { count, error: countError } = await supabase
+      .from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .eq('role', 'admin')
+
+    if (countError) return { error: countError.message }
+    if ((count ?? 0) <= 1) return { error: 'Cannot delete the last admin account' }
+  }
 
   // Atomically purge the user's owned data (contracts, ledger, payouts, invoices,
   // campaigns, vehicles) in dependency order. Several of these FKs are NOT NULL /
@@ -140,7 +151,7 @@ const BODY_TYPES = ['sedan', 'suv', 'hatchback', 'mpv', 'pickup'] as const
 const CreateUserSchema = z.object({
   email: z.string().email('Invalid email'),
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
-  role: z.enum(['driver', 'partner', 'garage']),
+  role: z.enum(MANAGED_USER_ROLES),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   bodyType: z.enum(BODY_TYPES).optional(),
 })
@@ -222,24 +233,56 @@ export async function fetchUserKycPhotos(userId: string): Promise<{
 
 const UpdateUserSchema = z.object({
   targetId: z.string().uuid(),
+  email: z.string().trim().email('Invalid email'),
   fullName: z.string().min(2, 'Name must be at least 2 characters').max(100),
   phone: z.string().max(20).optional(),
-  role: z.enum(['driver', 'partner', 'garage']),
+  role: z.enum(EDITABLE_USER_ROLES),
+  password: z.preprocess(
+    (value) => (typeof value === 'string' && value.length === 0 ? undefined : value),
+    z.string().min(8, 'Password must be at least 8 characters').optional(),
+  ),
   bodyType: z.enum(BODY_TYPES).optional(),
 })
 
 export async function updateUser(raw: unknown): Promise<{ error: string | null }> {
   const parsed = UpdateUserSchema.safeParse(raw)
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' }
-  const { targetId, fullName, phone, role, bodyType } = parsed.data
+  const { targetId, email, fullName, phone, role, password, bodyType } = parsed.data
 
   const callerRole = await getCurrentUserRole()
   if (callerRole !== 'admin') return { error: 'Forbidden' }
 
   const supabase = createSupabaseAdminClient()
+  const { data: previous, error: previousError } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', targetId)
+    .single()
+
+  if (previousError) return { error: previousError.message }
+  if (previous.role === 'admin' && role !== 'admin') {
+    return { error: 'Admin role cannot be changed here' }
+  }
+  if (previous.role !== 'admin' && role === 'admin') {
+    return { error: 'Admin promotion requires a dedicated flow' }
+  }
+
+  const authUpdate: {
+    email: string
+    password?: string
+    user_metadata: { full_name: string }
+  } = {
+    email,
+    user_metadata: { full_name: fullName },
+  }
+  if (password) authUpdate.password = password
+
+  const { error: authError } = await supabase.auth.admin.updateUserById(targetId, authUpdate)
+  if (authError) return { error: authError.message }
+
   const { error } = await supabase
     .from('profiles')
-    .update({ full_name: fullName, role, phone_e164: phone ?? null })
+    .update({ email, full_name: fullName, role, phone_e164: phone ?? null })
     .eq('id', targetId)
   if (error) return { error: error.message }
 
@@ -268,11 +311,43 @@ export async function bulkDeleteUsers(
   const callerRole = await getCurrentUserRole()
   if (callerRole !== 'admin') return { error: 'Forbidden', count: 0 }
 
+  const serverClient = await createSupabaseServerClient()
+  const {
+    data: { user },
+  } = await serverClient.auth.getUser()
+  if (!user) return { error: 'Not authenticated', count: 0 }
+
   const supabase = createSupabaseAdminClient()
+  const ids = parsed.data.ids.filter((id) => id !== user.id)
+  if (ids.length === 0) return { error: 'Cannot delete your own account', count: 0 }
+
+  const { data: targets, error: targetsError } = await supabase
+    .from('profiles')
+    .select('id, role')
+    .in('id', ids)
+  if (targetsError) return { error: targetsError.message, count: 0 }
+
+  const { count: initialAdminCount, error: adminCountError } = await supabase
+    .from('profiles')
+    .select('id', { count: 'exact', head: true })
+    .eq('role', 'admin')
+  if (adminCountError) return { error: adminCountError.message, count: 0 }
+
+  let adminCount = initialAdminCount ?? 0
   let count = 0
-  for (const id of parsed.data.ids) {
-    const { error } = await supabase.auth.admin.deleteUser(id)
-    if (!error) count++
+  for (const target of targets ?? []) {
+    if (target.role === 'admin' && adminCount <= 1) continue
+
+    const { error: purgeError } = await supabase.rpc('admin_purge_user_data', {
+      p_user: target.id,
+    })
+    if (purgeError) return { error: purgeError.message, count }
+
+    const { error } = await supabase.auth.admin.deleteUser(target.id)
+    if (!error) {
+      count++
+      if (target.role === 'admin') adminCount--
+    }
   }
   revalidatePath('/admin/users')
   return { error: null, count }
@@ -302,9 +377,7 @@ export async function bulkSetUsersBlocked(
 export async function bulkChangeRole(
   raw: unknown,
 ): Promise<{ error: string | null; count: number }> {
-  const parsed = BulkIdsSchema.merge(
-    z.object({ role: z.enum(['driver', 'partner', 'garage']) }),
-  ).safeParse(raw)
+  const parsed = BulkIdsSchema.merge(z.object({ role: z.enum(MANAGED_USER_ROLES) })).safeParse(raw)
   if (!parsed.success) return { error: 'Invalid input', count: 0 }
 
   const callerRole = await getCurrentUserRole()

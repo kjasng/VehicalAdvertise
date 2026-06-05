@@ -8,7 +8,7 @@
 import Image from 'next/image'
 import { useState, useTransition } from 'react'
 
-import { Car, Info, Store, X } from 'lucide-react'
+import { Car, Info, ShieldCheck, Store, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import type { AdminUserRow } from '@/lib/admin/queries-users'
@@ -39,9 +39,23 @@ const ROLE_META = {
     badge: 'bg-orange-100 text-orange-700',
     header: 'bg-orange-50 border-orange-200',
   },
+  admin: {
+    label: 'Admin',
+    icon: ShieldCheck,
+    desc: 'Manage platform users, finance, and verification.',
+    badge: 'bg-emerald-100 text-emerald-700',
+    header: 'bg-emerald-50 border-emerald-200',
+  },
 } as const
 
 type EditableRole = keyof typeof ROLE_META
+type CreatableRole = Exclude<EditableRole, 'admin'>
+
+const CREATABLE_ROLES: CreatableRole[] = ['driver', 'partner', 'garage']
+
+function getEditableRole(role: string): EditableRole {
+  return role in ROLE_META ? (role as EditableRole) : 'driver'
+}
 
 const BODY_TYPES = [
   { value: 'sedan', label: 'Sedan' },
@@ -70,20 +84,25 @@ function EditModal({
 }) {
   const [pending, startTransition] = useTransition()
   const [fullName, setFullName] = useState(user.fullName)
+  const [email, setEmail] = useState(user.email ?? '')
   const [phone, setPhone] = useState(user.phone ?? '')
-  const [role, setRole] = useState<string>(user.role !== 'admin' ? user.role : 'driver')
+  const [role, setRole] = useState<EditableRole>(getEditableRole(user.role))
+  const [password, setPassword] = useState('')
   const [bodyType, setBodyType] = useState(user.bodyType ?? '')
 
-  const meta = ROLE_META[role as EditableRole] ?? ROLE_META.driver
+  const meta = ROLE_META[role]
+  const canChangeRole = user.role !== 'admin'
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     startTransition(async () => {
       const result = await updateUser({
         targetId: user.id,
+        email,
         fullName,
         phone: phone || undefined,
         role,
+        password: password || undefined,
         bodyType:
           role === 'driver' && bodyType
             ? (bodyType as (typeof BODY_TYPES)[number]['value'])
@@ -152,13 +171,15 @@ function EditModal({
             </div>
             <div className="space-y-1">
               <label className="block text-[11px] font-bold tracking-[1.5px] text-[#666666] uppercase">
-                Email
+                Email *
               </label>
               <input
                 type="email"
-                value={user.email ?? ''}
-                disabled
-                className="h-[38px] w-full rounded border border-[#cbccc9] bg-[#f7f8fa] px-3 text-[13px] text-[#999]"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+                className="focus:ring-primary h-[38px] w-full rounded border border-[#cbccc9] px-3 text-[13px] focus:ring-2 focus:outline-none"
               />
             </div>
             <div className="space-y-1">
@@ -167,15 +188,30 @@ function EditModal({
               </label>
               <select
                 value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="focus:ring-primary h-[38px] w-full rounded border border-[#cbccc9] bg-white px-3 text-[13px] focus:ring-2 focus:outline-none"
+                onChange={(e) => setRole(e.target.value as EditableRole)}
+                disabled={!canChangeRole}
+                className="focus:ring-primary h-[38px] w-full rounded border border-[#cbccc9] bg-white px-3 text-[13px] focus:ring-2 focus:outline-none disabled:bg-[#f7f8fa] disabled:text-[#999]"
               >
-                {(Object.keys(ROLE_META) as EditableRole[]).map((r) => (
+                {(canChangeRole ? CREATABLE_ROLES : (['admin'] as EditableRole[])).map((r) => (
                   <option key={r} value={r}>
                     {ROLE_META[r].label}
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[11px] font-bold tracking-[1.5px] text-[#666666] uppercase">
+                New Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                minLength={8}
+                autoComplete="new-password"
+                placeholder="Leave blank to keep current password"
+                className="focus:ring-primary h-[38px] w-full rounded border border-[#cbccc9] px-3 text-[13px] focus:ring-2 focus:outline-none"
+              />
             </div>
             {/* Vehicle type — drivers only */}
             {role === 'driver' && (
@@ -279,7 +315,7 @@ function EditModal({
 
 function CreateModal({ onClose }: { onClose: () => void }) {
   const [step, setStep] = useState<1 | 2>(1)
-  const [selectedRole, setSelectedRole] = useState<EditableRole | null>(null)
+  const [selectedRole, setSelectedRole] = useState<CreatableRole | null>(null)
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -331,29 +367,28 @@ function CreateModal({ onClose }: { onClose: () => void }) {
       {step === 1 ? (
         <div className="space-y-2 px-6 py-5">
           <p className="mb-3 text-[12px] text-[#666666]">Select the role for this user:</p>
-          {(Object.entries(ROLE_META) as [EditableRole, (typeof ROLE_META)[EditableRole]][]).map(
-            ([r, m]) => {
-              const Icon = m.icon
-              return (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => setSelectedRole(r)}
-                  className={`flex w-full cursor-pointer items-center gap-4 rounded-lg border px-4 py-3 text-left transition-colors ${selectedRole === r ? `${m.header} border-current` : 'border-[#cbccc9] hover:border-[#1a1a1a]'}`}
+          {CREATABLE_ROLES.map((r) => {
+            const m = ROLE_META[r]
+            const Icon = m.icon
+            return (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setSelectedRole(r)}
+                className={`flex w-full cursor-pointer items-center gap-4 rounded-lg border px-4 py-3 text-left transition-colors ${selectedRole === r ? `${m.header} border-current` : 'border-[#cbccc9] hover:border-[#1a1a1a]'}`}
+              >
+                <span
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${m.badge}`}
                 >
-                  <span
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${m.badge}`}
-                  >
-                    <Icon className="size-4" aria-hidden="true" />
-                  </span>
-                  <div>
-                    <p className="text-[13px] font-bold text-[#1a1a1a]">{m.label}</p>
-                    <p className="text-[12px] text-[#666666]">{m.desc}</p>
-                  </div>
-                </button>
-              )
-            },
-          )}
+                  <Icon className="size-4" aria-hidden="true" />
+                </span>
+                <div>
+                  <p className="text-[13px] font-bold text-[#1a1a1a]">{m.label}</p>
+                  <p className="text-[12px] text-[#666666]">{m.desc}</p>
+                </div>
+              </button>
+            )
+          })}
           <div className="border-t border-[#cbccc9] pt-3">
             <button
               disabled={!selectedRole}

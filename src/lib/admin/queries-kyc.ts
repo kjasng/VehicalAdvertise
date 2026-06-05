@@ -99,3 +99,27 @@ export async function getKycQueue(): Promise<KycQueueRow[]> {
       )
   )
 }
+
+export async function getPendingDriverKycRequestCount(): Promise<number> {
+  const supabase = createSupabaseAdminClient()
+  const { data: profiles, error } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('role', 'driver')
+    .eq('kyc_status', 'pending')
+    .limit(1000)
+
+  if (error || !profiles?.length) return 0
+
+  const { data: photos, error: photoError } = await supabase
+    .from('photos')
+    .select('subject_id')
+    .in(
+      'subject_id',
+      profiles.map((profile) => profile.id),
+    )
+    .in('kind', ['kyc_cccd_front', 'kyc_cccd_back', 'kyc_selfie'])
+
+  if (photoError || !photos?.length) return 0
+  return new Set(photos.map((photo) => photo.subject_id)).size
+}

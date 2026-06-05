@@ -4,183 +4,136 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
 export type WeeklyKmPoint = { week: string; km: number }
 
-export type ReportPeriod = 'week' | 'month' | 'prev_month' | 'year'
+export type FinanceMetricKey =
+  | 'driverPaidVnd'
+  | 'partnerReceivedVnd'
+  | 'garagePaidVnd'
+  | 'netProfitVnd'
 
-export type FraudStats = {
-  photosPending: number
-  photosApproved: number
-  photosRejected: number
-  autoRejectRatePct: number
-  photoCompletionPct: number
+export type MonthlyFinancePoint = Record<FinanceMetricKey, number> & {
+  month: string
 }
 
 export type ReportsSummary = {
-  weeklyKm: WeeklyKmPoint[]
-  totalDrivers: number
-  totalPartners: number
-  totalKmPeriod: number
+  selectedMonth: string
   periodStart: string
   periodEnd: string
-  fraud: FraudStats
+  monthOptions: string[]
+  totals: MonthlyFinancePoint
+  monthlyFinance: MonthlyFinancePoint[]
 }
 
-/** Returns [startDate, endDate] in YYYY-MM-DD for a given period. */
-function periodRange(period: ReportPeriod): [string, string] {
-  const now = new Date()
-  const y = now.getFullYear()
-  const m = now.getMonth() // 0-indexed
-
-  if (period === 'week') {
-    const start = new Date(now)
-    start.setDate(now.getDate() - 6)
-    return [start.toISOString().split('T')[0], now.toISOString().split('T')[0]]
-  }
-  if (period === 'month') {
-    const start = new Date(y, m, 1)
-    const end = new Date(y, m + 1, 0)
-    return [start.toISOString().split('T')[0], end.toISOString().split('T')[0]]
-  }
-  if (period === 'prev_month') {
-    const start = new Date(y, m - 1, 1)
-    const end = new Date(y, m, 0)
-    return [start.toISOString().split('T')[0], end.toISOString().split('T')[0]]
-  }
-  // year
-  return [`${y}-01-01`, `${y}-12-31`]
+export function currentMonthString() {
+  return new Date().toISOString().slice(0, 7)
 }
 
-/** Groups daily stats rows into labelled buckets based on period. */
-function groupByPeriod(
-  rows: { day: string; km_valid: number | null }[],
-  period: ReportPeriod,
-): WeeklyKmPoint[] {
-  const bucketMap = new Map<string, number>()
-
-  for (const row of rows) {
-    const date = new Date(row.day)
-    let label: string
-
-    if (period === 'week') {
-      // Daily labels: "Mon 6/2"
-      label = date.toLocaleDateString('en-US', {
-        weekday: 'short',
-        month: 'numeric',
-        day: 'numeric',
-      })
-    } else if (period === 'year') {
-      // Monthly labels: "Jan", "Feb"
-      label = date.toLocaleDateString('en-US', { month: 'short' })
-    } else {
-      // week/month/prev_month: group by ISO week within the range
-      label = isoWeekLabel(date)
-    }
-
-    bucketMap.set(label, (bucketMap.get(label) ?? 0) + Number(row.km_valid ?? 0))
-  }
-
-  return Array.from(bucketMap.entries()).map(([week, km]) => ({ week, km: Math.round(km) }))
+export function monthRange(month: string): [string, string] {
+  const [year, monthNumber] = month.split('-').map(Number)
+  const start = new Date(Date.UTC(year, monthNumber - 1, 1))
+  const end = new Date(Date.UTC(year, monthNumber, 0))
+  return [start.toISOString().slice(0, 10), end.toISOString().slice(0, 10)]
 }
 
-export async function getReportsData(period: ReportPeriod = 'week'): Promise<ReportsSummary> {
+export function nextMonthStart(month: string) {
+  const [year, monthNumber] = month.split('-').map(Number)
+  return new Date(Date.UTC(year, monthNumber, 1)).toISOString().slice(0, 10)
+}
+
+export async function getReportsData(month = currentMonthString()): Promise<ReportsSummary> {
+  const selectedMonth = /^\d{4}-\d{2}$/.test(month) ? month : currentMonthString()
+  const monthOptions = withSelectedMonth(lastMonths(12), selectedMonth)
+  const sortedMonths = [...monthOptions].sort((a, b) => b.localeCompare(a))
+  const queryStart = sortedMonths[sortedMonths.length - 1] ?? selectedMonth
+  const queryEnd = nextMonthStart(sortedMonths[0] ?? selectedMonth)
+  const [periodStart, periodEnd] = monthRange(selectedMonth)
   const supabase = createSupabaseAdminClient()
-  const [startDate, endDate] = periodRange(period)
 
-  const [
-    statsRes,
-    driverCountRes,
-    partnerCountRes,
-    photoPendingRes,
-    photoApprovedRes,
-    photoRejectedRes,
-    completionRes,
-  ] = await Promise.all([
+  const [driverInvoices, partnerCharges, garageWithdrawals] = await Promise.all([
     supabase
-      .from('contract_daily_stats')
-      .select('day, km_valid')
-      .gte('day', startDate)
-      .lte('day', endDate)
-      .order('day', { ascending: true }),
-    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'driver'),
-    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'partner'),
-    // Photo fraud stats for period
+      .from('driver_invoices')
+      .select('amount_vnd, paid_at')
+      .eq('status', 'paid')
+      .gte('paid_at', `${queryStart}-01`)
+      .lt('paid_at', queryEnd),
     supabase
-      .from('photos')
-      .select('*', { count: 'exact', head: true })
-      .in('kind', ['periodic_vehicle', 'periodic_selfie'])
-      .eq('status', 'pending')
-      .gte('created_at', startDate)
-      .lte('created_at', endDate + 'T23:59:59Z'),
+      .from('driver_earning_periods')
+      .select('gross_charge_vnd, period_start')
+      .gte('period_start', `${queryStart}-01`)
+      .lt('period_start', queryEnd),
     supabase
-      .from('photos')
-      .select('*', { count: 'exact', head: true })
-      .in('kind', ['periodic_vehicle', 'periodic_selfie'])
-      .eq('status', 'approved')
-      .gte('created_at', startDate)
-      .lte('created_at', endDate + 'T23:59:59Z'),
-    supabase
-      .from('photos')
-      .select('*', { count: 'exact', head: true })
-      .in('kind', ['periodic_vehicle', 'periodic_selfie'])
-      .eq('status', 'rejected')
-      .gte('created_at', startDate)
-      .lte('created_at', endDate + 'T23:59:59Z'),
-    // Photo completion from daily stats
-    supabase
-      .from('contract_daily_stats')
-      .select('photo_required, photo_done')
-      .gte('day', startDate)
-      .lte('day', endDate),
+      .from('garage_withdrawals')
+      .select('amount_vnd, paid_at')
+      .eq('status', 'paid')
+      .gte('paid_at', `${queryStart}-01`)
+      .lt('paid_at', queryEnd),
   ])
+  assertNoReportError('driver_invoices', driverInvoices.error)
+  assertNoReportError('driver_earning_periods', partnerCharges.error)
+  assertNoReportError('garage_withdrawals', garageWithdrawals.error)
 
-  const queryErrors = [statsRes.error, driverCountRes.error, partnerCountRes.error].filter(Boolean)
-  if (queryErrors.length) {
-    console.error(
-      '[getReportsData] query errors:',
-      queryErrors.map((e) => e!.message),
-    )
+  const rows = Object.fromEntries(monthOptions.map((m) => [m, emptyPoint(m)]))
+  for (const row of driverInvoices.data ?? []) {
+    if (row.paid_at) pointFor(rows, row.paid_at.slice(0, 7)).driverPaidVnd += row.amount_vnd
+  }
+  for (const row of partnerCharges.data ?? []) {
+    pointFor(rows, row.period_start.slice(0, 7)).partnerReceivedVnd += row.gross_charge_vnd
+  }
+  for (const row of garageWithdrawals.data ?? []) {
+    if (row.paid_at) pointFor(rows, row.paid_at.slice(0, 7)).garagePaidVnd += row.amount_vnd
   }
 
-  const rows = statsRes.data ?? []
-  const weeklyKm = groupByPeriod(rows, period)
-  const totalKmPeriod = rows.reduce((acc, r) => acc + Number(r.km_valid ?? 0), 0)
-
-  // Compute fraud stats
-  const approved = photoApprovedRes.count ?? 0
-  const rejected = photoRejectedRes.count ?? 0
-  const reviewed = approved + rejected
-  const completionRows = completionRes.data ?? []
-  const totalRequired = completionRows.filter((r) => r.photo_required).length
-  const totalDone = completionRows.filter((r) => r.photo_done).length
-
-  const fraud: FraudStats = {
-    photosPending: photoPendingRes.count ?? 0,
-    photosApproved: approved,
-    photosRejected: rejected,
-    autoRejectRatePct: reviewed > 0 ? Math.round((rejected / reviewed) * 100) : 0,
-    photoCompletionPct: totalRequired > 0 ? Math.round((totalDone / totalRequired) * 100) : 100,
-  }
+  const monthlyFinance = sortedMonths.map((m) => finalizePoint(rows[m] ?? emptyPoint(m))).reverse()
+  const totals = finalizePoint(rows[selectedMonth] ?? emptyPoint(selectedMonth))
 
   return {
-    weeklyKm,
-    totalDrivers: driverCountRes.count ?? 0,
-    totalPartners: partnerCountRes.count ?? 0,
-    totalKmPeriod: Math.round(totalKmPeriod),
-    periodStart: startDate,
-    periodEnd: endDate,
-    fraud,
+    selectedMonth,
+    periodStart,
+    periodEnd,
+    monthOptions,
+    totals,
+    monthlyFinance,
   }
 }
 
-// Returns 'W{ISO week number}' label for a given date
-function isoWeekLabel(date: Date): string {
-  const tmp = new Date(date)
-  tmp.setHours(0, 0, 0, 0)
-  tmp.setDate(tmp.getDate() + 3 - ((tmp.getDay() + 6) % 7))
-  const week1 = new Date(tmp.getFullYear(), 0, 4)
-  const weekNum =
-    1 +
-    Math.round(
-      ((tmp.getTime() - week1.getTime()) / 86_400_000 - 3 + ((week1.getDay() + 6) % 7)) / 7,
-    )
-  return `W${weekNum}`
+function finalizePoint(point: MonthlyFinancePoint): MonthlyFinancePoint {
+  return {
+    ...point,
+    netProfitVnd: point.partnerReceivedVnd - point.driverPaidVnd - point.garagePaidVnd,
+  }
+}
+
+function emptyPoint(month: string): MonthlyFinancePoint {
+  return {
+    month,
+    driverPaidVnd: 0,
+    partnerReceivedVnd: 0,
+    garagePaidVnd: 0,
+    netProfitVnd: 0,
+  }
+}
+
+function pointFor(rows: Record<string, MonthlyFinancePoint>, month: string) {
+  rows[month] = rows[month] ?? emptyPoint(month)
+  return rows[month]
+}
+
+function withSelectedMonth(months: string[], selectedMonth: string) {
+  return months.includes(selectedMonth) ? months : [selectedMonth, ...months]
+}
+
+function assertNoReportError(source: string, error: { message: string } | null) {
+  if (!error) return
+  console.error(`[getReportsData] ${source} query error:`, error.message)
+  throw new Error(`Unable to load report data from ${source}`)
+}
+
+function lastMonths(count: number) {
+  const result: string[] = []
+  const cursor = new Date()
+  cursor.setUTCDate(1)
+  for (let index = 0; index < count; index++) {
+    result.push(cursor.toISOString().slice(0, 7))
+    cursor.setUTCMonth(cursor.getUTCMonth() - 1)
+  }
+  return result
 }

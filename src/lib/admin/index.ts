@@ -1,4 +1,4 @@
-export type { DashboardStats, LedgerRow } from './queries-dashboard'
+export type { DashboardStats, RecentRequestRow } from './queries-dashboard'
 export { getDashboardStats } from './queries-dashboard'
 
 export type { KycQueueRow } from './queries-kyc'
@@ -21,6 +21,3 @@ export { getUsers } from './queries-users'
 
 export type { WeeklyKmPoint, ReportsSummary } from './queries-reports'
 export { getReportsData } from './queries-reports'
-
-export type { GpsTrail, GpsPoint } from './queries-map'
-export { getActiveGpsTrails } from './queries-map'

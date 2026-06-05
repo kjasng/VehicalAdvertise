@@ -17,20 +17,37 @@ import { cn } from '@/lib/utils'
 import { ADMIN_NAV } from './admin-nav-config'
 import type { NavItem } from '@/components/shared/role-sidebar'
 
+type WithdrawalRequestBadgeCounts = {
+  driver: number
+  garage: number
+  total: number
+}
+
+type MobileNavLink = NavItem & { href: string; groupLabel?: string }
+
+// Circular red count badge — sits flush-right on a nav row.
+const BADGE_CLASS =
+  'inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white'
+
 // ── Collapsible group (client, useState for toggle) ────────────────────────
 
 function NavGroupItem({
   item,
   pathname,
+  badgeByHref,
+  badgeByGroupLabel,
 }: {
   item: NavItem & { children: NavItem[] }
   pathname: string
+  badgeByHref: Record<string, number>
+  badgeByGroupLabel: Record<string, number>
 }) {
   const Icon = item.icon
   const anyChildActive = item.children.some(
     (c) => c.href && (pathname === c.href || pathname.startsWith(c.href + '/')),
   )
   const [open, setOpen] = useState(anyChildActive)
+  const groupBadge = badgeByGroupLabel[item.label] ?? 0
 
   return (
     <li>
@@ -45,6 +62,7 @@ function NavGroupItem({
       >
         <Icon className="size-4 shrink-0" aria-hidden="true" />
         <span className="flex-1 text-left">{item.label}</span>
+        {groupBadge > 0 && <span className={BADGE_CLASS}>{groupBadge}</span>}
         <ChevronRight
           className={cn('size-3 transition-transform duration-150', open && 'rotate-90')}
           aria-hidden="true"
@@ -57,6 +75,7 @@ function NavGroupItem({
             if (!child.href) return null
             const childActive = pathname === child.href || pathname.startsWith(child.href + '/')
             const ChildIcon = child.icon
+            const badge = badgeByHref[child.href] ?? 0
             return (
               <li key={child.href}>
                 <Link
@@ -71,7 +90,10 @@ function NavGroupItem({
                   )}
                 >
                   <ChildIcon className="size-3.5 shrink-0" aria-hidden="true" />
-                  {child.label}
+                  <span className="flex-1">{formatNavLabel(child.label, child.href, badge)}</span>
+                  {badge > 0 && !usesInlineCount(child.href) && (
+                    <span className={BADGE_CLASS}>{badge}</span>
+                  )}
                 </Link>
               </li>
             )
@@ -84,14 +106,25 @@ function NavGroupItem({
 
 // ── Mobile nav strip (horizontal scroll, flattens groups) ─────────────────
 
-export function AdminMobileNav() {
+export function AdminMobileNav({
+  pendingDriverKycCount = 0,
+  withdrawalRequestCounts = { driver: 0, garage: 0, total: 0 },
+}: {
+  pendingDriverKycCount?: number
+  withdrawalRequestCounts?: WithdrawalRequestBadgeCounts
+}) {
   const pathname = usePathname()
+  const badgeByHref = buildBadgeByHref(pendingDriverKycCount, withdrawalRequestCounts)
+  const badgeByGroupLabel = buildBadgeByGroupLabel(withdrawalRequestCounts)
 
-  const flatItems = ADMIN_NAV.flatMap((item) =>
+  const flatItems: MobileNavLink[] = ADMIN_NAV.flatMap((item) =>
     item.children?.length
-      ? item.children.filter((c): c is NavItem & { href: string } => !!c.href)
+      ? [
+          ...mobileGroupSummaryItem(item, badgeByGroupLabel),
+          ...item.children.filter((c): c is MobileNavLink => !!c.href),
+        ]
       : item.href
-        ? [item as NavItem & { href: string }]
+        ? [item as MobileNavLink]
         : [],
   )
 
@@ -101,23 +134,31 @@ export function AdminMobileNav() {
       aria-label="Admin mobile navigation"
     >
       <div className="flex gap-1 whitespace-nowrap">
-        {flatItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            aria-current={
-              pathname === item.href || pathname.startsWith(item.href + '/') ? 'page' : undefined
-            }
-            className={cn(
-              'rounded px-3 py-1.5 text-[12px] font-bold tracking-[0.5px] uppercase transition-colors',
-              pathname === item.href || pathname.startsWith(item.href + '/')
-                ? 'bg-white/15 text-white'
-                : 'text-white/50 hover:bg-white/10 hover:text-white/80',
-            )}
-          >
-            {item.label}
-          </Link>
-        ))}
+        {flatItems.map((item) => {
+          const badge = item.groupLabel
+            ? (badgeByGroupLabel[item.groupLabel] ?? 0)
+            : (badgeByHref[item.href] ?? 0)
+          return (
+            <Link
+              key={item.groupLabel ? `${item.groupLabel}-${item.href}` : item.href}
+              href={item.href}
+              aria-current={
+                pathname === item.href || pathname.startsWith(item.href + '/') ? 'page' : undefined
+              }
+              className={cn(
+                'flex items-center gap-1 rounded px-3 py-1.5 text-[12px] font-bold tracking-[0.5px] uppercase transition-colors',
+                pathname === item.href || pathname.startsWith(item.href + '/')
+                  ? 'bg-white/15 text-white'
+                  : 'text-white/50 hover:bg-white/10 hover:text-white/80',
+              )}
+            >
+              {formatNavLabel(item.label, item.groupLabel ? undefined : item.href, badge)}
+              {badge > 0 && !usesInlineCount(item.groupLabel ? undefined : item.href) && (
+                <span className={BADGE_CLASS}>{badge}</span>
+              )}
+            </Link>
+          )
+        })}
       </div>
     </nav>
   )
@@ -125,8 +166,16 @@ export function AdminMobileNav() {
 
 // ── Main nav list ──────────────────────────────────────────────────────────
 
-export function AdminSidebarNav() {
+export function AdminSidebarNav({
+  pendingDriverKycCount = 0,
+  withdrawalRequestCounts = { driver: 0, garage: 0, total: 0 },
+}: {
+  pendingDriverKycCount?: number
+  withdrawalRequestCounts?: WithdrawalRequestBadgeCounts
+}) {
   const pathname = usePathname()
+  const badgeByHref = buildBadgeByHref(pendingDriverKycCount, withdrawalRequestCounts)
+  const badgeByGroupLabel = buildBadgeByGroupLabel(withdrawalRequestCounts)
 
   return (
     <ul className="flex flex-col gap-0.5">
@@ -137,6 +186,8 @@ export function AdminSidebarNav() {
               key={item.label}
               item={item as NavItem & { children: NavItem[] }}
               pathname={pathname}
+              badgeByHref={badgeByHref}
+              badgeByGroupLabel={badgeByGroupLabel}
             />
           )
         }
@@ -164,4 +215,40 @@ export function AdminSidebarNav() {
       })}
     </ul>
   )
+}
+
+function buildBadgeByHref(
+  pendingDriverKycCount: number,
+  withdrawalRequestCounts: WithdrawalRequestBadgeCounts,
+): Record<string, number> {
+  return {
+    '/admin/drivers-kyc': pendingDriverKycCount,
+    '/admin/invoices/driver': withdrawalRequestCounts.driver,
+    '/admin/invoices/garage': withdrawalRequestCounts.garage,
+  }
+}
+
+function buildBadgeByGroupLabel(
+  withdrawalRequestCounts: WithdrawalRequestBadgeCounts,
+): Record<string, number> {
+  return {
+    Invoices: withdrawalRequestCounts.total,
+  }
+}
+
+function usesInlineCount(href?: string): boolean {
+  return href === '/admin/invoices/driver'
+}
+
+function formatNavLabel(label: string, href: string | undefined, count: number): string {
+  return count > 0 && usesInlineCount(href) ? `${label} (${count})` : label
+}
+
+function mobileGroupSummaryItem(
+  item: NavItem,
+  badgeByGroupLabel: Record<string, number>,
+): MobileNavLink[] {
+  const badge = badgeByGroupLabel[item.label] ?? 0
+  const firstHref = item.children?.find((child) => child.href)?.href
+  return badge > 0 && firstHref ? [{ ...item, href: firstHref, groupLabel: item.label }] : []
 }

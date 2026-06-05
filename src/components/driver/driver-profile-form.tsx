@@ -15,8 +15,6 @@ type DriverProfileFormState = {
   bankAccountName: string
   bankAccountNumber: string
   bankName: string
-  bankBranch: string
-  bankBin: string
   vehiclePlate: string
 }
 
@@ -28,8 +26,6 @@ export function DriverProfileForm({ profile }: { profile: DriverProfileData }) {
     bankAccountName: profile.bankAccountName,
     bankAccountNumber: profile.bankAccountNumber,
     bankName: profile.bankName,
-    bankBranch: profile.bankBranch,
-    bankBin: profile.bankBin,
     vehiclePlate: profile.vehiclePlate,
   })
 
@@ -93,22 +89,6 @@ export function DriverProfileForm({ profile }: { profile: DriverProfileData }) {
             value={form.bankName}
             onChange={(value) => setField('bankName', value)}
           />
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field
-              id="bank-branch"
-              label="Branch"
-              value={form.bankBranch}
-              onChange={(value) => setField('bankBranch', value)}
-              required={false}
-            />
-            <Field
-              id="bank-bin"
-              label="Bank code / BIN"
-              value={form.bankBin}
-              onChange={(value) => setField('bankBin', value)}
-              required={false}
-            />
-          </div>
           <p className="text-[12px] text-[#666666]">
             {profile.bankVerified
               ? 'Tài khoản đã được xác minh.'

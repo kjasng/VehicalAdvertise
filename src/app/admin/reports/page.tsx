@@ -1,174 +1,99 @@
-/**
- * Reports — period-filtered KM chart + CSV download cards.
- * Period controlled by ?period= URL param (week/month/prev_month/year).
- */
 import { Download } from 'lucide-react'
 
-import { WeeklyKmChart } from '@/components/admin/weekly-km-chart'
-import { EmptyState } from '@/components/shared/empty-state'
+import { MonthlyFinanceTable } from '@/components/admin/monthly-finance-table'
+import { KpiCard } from '@/components/shared/kpi-card'
 import { PageHeader } from '@/components/shared/page-header'
 import { SectionShell } from '@/components/shared/section-shell'
-import { getReportsData, type ReportPeriod } from '@/lib/admin/queries-reports'
+import { getReportsData } from '@/lib/admin/queries-reports'
 
-export const metadata = { title: 'Admin · Reports' }
+export const metadata = { title: 'Admin · Invoice Reports' }
 
-const PERIOD_LABELS: Record<ReportPeriod, string> = {
-  week: 'This Week',
-  month: 'This Month',
-  prev_month: 'Last Month',
-  year: 'This Year',
-}
-
-const CSV_REPORTS = [
+const EXPORTS = [
   {
-    id: 'drivers',
-    label: 'Drivers Report',
-    description: 'All driver KYC statuses, phone, district, join date.',
+    id: 'driver-invoices',
+    label: 'Driver Invoices',
+    description: 'Monthly driver withdrawal invoices and payout status.',
   },
   {
-    id: 'campaigns',
-    label: 'Campaigns Report',
-    description: 'Active / expired campaigns, partner, budget, dates.',
+    id: 'partner-invoices',
+    label: 'Partner Invoices',
+    description: 'Monthly recognized campaign charges by partner.',
   },
   {
-    id: 'invoices',
-    label: 'Invoices Report',
-    description: 'All ledger entries across driver / partner cohorts.',
+    id: 'garage-invoices',
+    label: 'Garage Invoices',
+    description: 'Monthly garage withdrawal invoices and payout status.',
   },
   {
-    id: 'fraud',
-    label: 'Fraud Signals Report',
-    description: 'Photo verification failures and pending reviews.',
+    id: 'net-profit',
+    label: 'Net Profit',
+    description: 'Partner received minus driver and garage payouts.',
   },
 ]
 
 interface PageProps {
-  searchParams: Promise<{ period?: string }>
+  searchParams: Promise<{ month?: string }>
 }
 
 export default async function ReportsPage({ searchParams }: PageProps) {
-  const { period: rawPeriod } = await searchParams
-  const period: ReportPeriod =
-    rawPeriod === 'month' || rawPeriod === 'prev_month' || rawPeriod === 'year' ? rawPeriod : 'week'
-
-  const report = await getReportsData(period)
-
-  const chartTitle =
-    period === 'week'
-      ? 'Daily KM — This Week'
-      : period === 'month'
-        ? 'Weekly KM — This Month'
-        : period === 'prev_month'
-          ? 'Weekly KM — Last Month'
-          : 'Monthly KM — This Year'
+  const { month } = await searchParams
+  const report = await getReportsData(month)
 
   return (
     <div className="space-y-8">
-      <PageHeader kicker="System" title="Reports" />
+      <PageHeader kicker="Invoices" title="Reports" />
 
-      {/* Period selector */}
-      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Report period">
-        {(Object.keys(PERIOD_LABELS) as ReportPeriod[]).map((p) => (
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
+          Month
+        </span>
+        {report.monthOptions.map((option) => (
           <a
-            key={p}
-            href={`/admin/reports?period=${p}`}
-            role="tab"
-            aria-selected={period === p}
+            key={option}
+            href={`/admin/reports?month=${option}`}
             className={`rounded border px-3 py-1.5 text-[12px] font-bold tracking-[1px] uppercase transition-colors ${
-              period === p
+              report.selectedMonth === option
                 ? 'border-[#1a1a1a] bg-[#1a1a1a] text-white'
                 : 'border-[#cbccc9] bg-white text-[#666666] hover:border-[#1a1a1a] hover:text-[#1a1a1a]'
             }`}
           >
-            {PERIOD_LABELS[p]}
+            {option}
           </a>
         ))}
       </div>
 
-      {/* Summary stats */}
-      <div className="flex flex-wrap gap-6 text-[13px] text-[#666666]">
-        <span>
-          <span className="font-bold text-[#1a1a1a]">{report.totalDrivers}</span> drivers
-        </span>
-        <span>
-          <span className="font-bold text-[#1a1a1a]">{report.totalPartners}</span> partners
-        </span>
-        <span>
-          <span className="font-bold text-[#1a1a1a]">{report.totalKmPeriod.toLocaleString()}</span>{' '}
-          km in period
-        </span>
-        <span className="text-[#999]">
-          {report.periodStart} → {report.periodEnd}
-        </span>
-      </div>
-
-      {/* KM chart */}
-      <SectionShell title={chartTitle}>
-        {report.weeklyKm.length === 0 ? (
-          <EmptyState
-            kicker="empty"
-            title="No Data"
-            helper="KM data will appear once drivers are active."
-          />
-        ) : (
-          <WeeklyKmChart data={report.weeklyKm} />
-        )}
-      </SectionShell>
-
-      {/* Fraud overview */}
       <section>
         <p className="mb-3 text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
-          Fraud Overview — Period
+          Financial Overview — Period
         </p>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
-          {[
-            {
-              label: 'Photos Pending',
-              value: report.fraud.photosPending,
-              warn: report.fraud.photosPending > 0,
-            },
-            { label: 'Photos Approved', value: report.fraud.photosApproved, warn: false },
-            {
-              label: 'Photos Rejected',
-              value: report.fraud.photosRejected,
-              warn: report.fraud.photosRejected > 0,
-            },
-            {
-              label: 'Auto-reject Rate',
-              value: `${report.fraud.autoRejectRatePct}%`,
-              warn: report.fraud.autoRejectRatePct > 20,
-            },
-            {
-              label: 'Photo Completion',
-              value: `${report.fraud.photoCompletionPct}%`,
-              warn: report.fraud.photoCompletionPct < 80,
-            },
-          ].map((stat) => (
-            <div key={stat.label} className="rounded border border-[#cbccc9] bg-white p-4">
-              <p className="text-[11px] font-bold tracking-[1.5px] text-[#666666] uppercase">
-                {stat.label}
-              </p>
-              <p
-                className={`mt-1 text-[22px] leading-none font-extrabold ${stat.warn ? 'text-red-600' : 'text-[#1a1a1a]'}`}
-              >
-                {stat.value}
-              </p>
-            </div>
-          ))}
+        <div className="mb-3 text-[13px] text-[#999]">
+          {report.periodStart} → {report.periodEnd}
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+          <KpiCard label="Paid to drivers" value={formatVnd(report.totals.driverPaidVnd)} />
+          <KpiCard
+            label="Received from partners"
+            value={formatVnd(report.totals.partnerReceivedVnd)}
+          />
+          <KpiCard label="Paid to garages" value={formatVnd(report.totals.garagePaidVnd)} />
+          <KpiCard label="Net profit" value={formatVnd(report.totals.netProfitVnd)} />
         </div>
       </section>
 
-      {/* CSV download cards */}
+      <SectionShell title="Monthly Finance">
+        <MonthlyFinanceTable rows={report.monthlyFinance} />
+      </SectionShell>
+
       <section>
         <p className="mb-3 text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
-          CSV Exports (full data)
+          Invoice Exports
         </p>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {CSV_REPORTS.map((r) => (
+          {EXPORTS.map((item) => (
             <a
-              key={r.id}
-              href={`/api/v1/admin/reports/${r.id}`}
-              aria-label={`Download ${r.label} as CSV`}
+              key={item.id}
+              href={`/api/v1/admin/reports/${item.id}?month=${report.selectedMonth}`}
+              aria-label={`Download ${item.label} CSV`}
               className="hover:border-primary hover:bg-primary/5 focus-visible:ring-primary flex items-start gap-4 rounded-md border border-[#cbccc9] bg-white p-5 transition-colors focus-visible:ring-2 focus-visible:outline-none"
             >
               <span className="mt-0.5 rounded bg-[#f7f8fa] p-2.5">
@@ -176,11 +101,13 @@ export default async function ReportsPage({ searchParams }: PageProps) {
               </span>
               <div>
                 <p className="font-heading text-[18px] leading-none text-[#1a1a1a] uppercase">
-                  {r.label}
+                  {item.label}
                 </p>
-                <p className="mt-1.5 text-[13px] leading-[1.5] text-[#666666]">{r.description}</p>
+                <p className="mt-1.5 text-[13px] leading-[1.5] text-[#666666]">
+                  {item.description}
+                </p>
                 <p className="text-primary mt-2 text-[11px] font-bold tracking-[1px] uppercase">
-                  Download CSV →
+                  Download CSV
                 </p>
               </div>
             </a>
@@ -189,4 +116,8 @@ export default async function ReportsPage({ searchParams }: PageProps) {
       </section>
     </div>
   )
+}
+
+function formatVnd(amount: number) {
+  return `${amount.toLocaleString('vi-VN')} ₫`
 }

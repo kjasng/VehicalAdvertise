@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
+import { GARAGE_INSTALL_FEE_VND, PARTNER_PLATFORM_FEE_PCT } from '@/lib/partner/constants'
 
 export type PricingSettings = {
   id: string | null
@@ -36,9 +37,9 @@ const DEFAULT_SETTINGS: PricingSettings = {
   baseRatePerKmVnd: 1500,
   evMultiplier: 1.3,
   dailyCapKm: 150,
-  platformFeePct: 20,
-  installFeeVnd: 0,
-  garageMinimumWithdrawalVnd: 2_000_000,
+  platformFeePct: PARTNER_PLATFORM_FEE_PCT,
+  installFeeVnd: GARAGE_INSTALL_FEE_VND,
+  garageMinimumWithdrawalVnd: 100_000,
   partnerMinimumCapVnd: 0,
   minimumDailyKm: 0,
   createdAt: null,
@@ -73,7 +74,7 @@ function rowToSettings(data: PricingRuleRow): PricingSettings {
     evMultiplier: data.ev_multiplier ?? DEFAULT_SETTINGS.evMultiplier,
     dailyCapKm: data.daily_cap_km ?? DEFAULT_SETTINGS.dailyCapKm,
     platformFeePct: data.platform_fee_pct ?? DEFAULT_SETTINGS.platformFeePct,
-    installFeeVnd: data.install_fee_vnd ?? DEFAULT_SETTINGS.installFeeVnd,
+    installFeeVnd: GARAGE_INSTALL_FEE_VND,
     garageMinimumWithdrawalVnd:
       data.garage_minimum_withdrawal_vnd ?? DEFAULT_SETTINGS.garageMinimumWithdrawalVnd,
     partnerMinimumCapVnd: data.partner_minimum_cap_vnd ?? DEFAULT_SETTINGS.partnerMinimumCapVnd,

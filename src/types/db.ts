@@ -1455,6 +1455,38 @@ export type Database = {
         }
         Returns: Database['public']['Enums']['payout_status']
       }
+      process_sepay_partner_topup_webhook: {
+        Args: {
+          p_txn_id: string
+          p_payload: Json
+          p_tax_code: string | null
+          p_amount_vnd: number
+          p_transfer_type: string
+          p_account_number: string
+          p_expected_account_number?: string | null
+          p_min_amount_vnd?: number
+        }
+        Returns: Json
+      }
+      partner_create_campaign_with_reserve: {
+        Args: {
+          p_partner_id: string
+          p_name: string
+          p_brief: string
+          p_creative_url: string
+          p_creative_urls: string[]
+          p_qr_target_url: string
+          p_budget_vnd: number
+          p_start_date: string
+          p_end_date: string
+          p_target_districts: string[]
+          p_monthly_budget_vnd: number
+          p_driver_net_monthly_vnd: number
+          p_active_driver_limit: number
+          p_requested_driver_count: number
+        }
+        Returns: string
+      }
       ensure_driver_monthly_earning_period: {
         Args: {
           p_driver_id: string

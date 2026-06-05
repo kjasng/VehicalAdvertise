@@ -10,18 +10,14 @@ import {
   Camera,
   Building2,
   ShieldCheck,
-  Megaphone,
   FileText,
   GitMerge,
   Receipt,
-  Wallet,
   Landmark,
   Scale,
   SlidersHorizontal,
   Users,
   BarChart2,
-  Map,
-  ScrollText,
 } from 'lucide-react'
 
 import type { NavItem } from '@/components/shared/role-sidebar'
@@ -51,20 +47,16 @@ export const ADMIN_NAV: NavItem[] = [
       { href: '/admin/invoices/driver', label: 'Driver', icon: FileText },
       { href: '/admin/invoices/partner', label: 'Partner', icon: FileText },
       { href: '/admin/invoices/garage', label: 'Garage', icon: FileText },
+      { href: '/admin/reports', label: 'Reports', icon: BarChart2 },
     ],
   },
-  { href: '/admin/campaigns', label: 'Campaigns', icon: Megaphone },
-  { href: '/admin/contracts', label: 'Contracts', icon: GitMerge },
+  { href: '/admin/contracts', label: 'Campaigns', icon: GitMerge },
 
   // ── Money ─────────────────────────────────────────────────────
-  { href: '/admin/payouts', label: 'Payouts', icon: Wallet },
   { href: '/admin/partner-balances', label: 'Partner Balances', icon: Landmark },
   { href: '/admin/ledger-adjustments', label: 'Ledger Adjustments', icon: Scale },
-  { href: '/admin/pricing-settings', label: 'Pricing Settings', icon: SlidersHorizontal },
+  { href: '/admin/pricing-settings', label: 'Settings', icon: SlidersHorizontal },
 
   // ── System ────────────────────────────────────────────────────
   { href: '/admin/users', label: 'Users', icon: Users },
-  { href: '/admin/reports', label: 'Reports', icon: BarChart2 },
-  { href: '/admin/audit-log', label: 'Audit Log', icon: ScrollText },
-  { href: '/admin/map', label: 'Map', icon: Map },
 ]

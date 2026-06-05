@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 
 import { SectionShell } from '@/components/shared/section-shell'
 import type { PricingSettings } from '@/lib/admin/queries-pricing-settings'
+import { GARAGE_INSTALL_FEE_VND, formatVnd } from '@/lib/partner/constants'
 
 import { updatePricingSettings } from './actions'
 
@@ -17,13 +18,9 @@ interface Props {
 export function PricingSettingsClient({ settings }: Props) {
   const [pending, startTransition] = useTransition()
   const [form, setForm] = useState({
-    installFeeVnd: settings.installFeeVnd.toLocaleString('vi-VN'),
     garageMinimumWithdrawalVnd: settings.garageMinimumWithdrawalVnd.toLocaleString('vi-VN'),
     partnerMinimumCapVnd: settings.partnerMinimumCapVnd.toLocaleString('vi-VN'),
-    baseRatePerKmVnd: settings.baseRatePerKmVnd.toLocaleString('vi-VN'),
-    evMultiplier: String(settings.evMultiplier),
     platformFeePct: String(settings.platformFeePct),
-    minimumDailyKm: String(settings.minimumDailyKm),
   })
 
   function setField(key: keyof typeof form, value: string) {
@@ -42,48 +39,36 @@ export function PricingSettingsClient({ settings }: Props) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const evMultiplier = numericValue(form.evMultiplier)
     const platformFeePct = numericValue(form.platformFeePct)
-    const minimumDailyKm = Math.floor(numericValue(form.minimumDailyKm) ?? -1)
 
-    if (!moneyValue(form.baseRatePerKmVnd) || evMultiplier == null || platformFeePct == null) {
-      toast.error('Nhập đầy đủ thông số driver hợp lệ')
-      return
-    }
-    if (minimumDailyKm < 0) {
-      toast.error('Nhập minimum daily km hợp lệ')
+    if (platformFeePct == null) {
+      toast.error('Nhập platform fee hợp lệ')
       return
     }
 
     startTransition(async () => {
       const result = await updatePricingSettings({
-        installFeeVnd: moneyValue(form.installFeeVnd),
         garageMinimumWithdrawalVnd: moneyValue(form.garageMinimumWithdrawalVnd),
         partnerMinimumCapVnd: moneyValue(form.partnerMinimumCapVnd),
-        baseRatePerKmVnd: moneyValue(form.baseRatePerKmVnd),
-        evMultiplier,
         platformFeePct,
-        minimumDailyKm,
       })
       if (result.error) {
         toast.error(result.error)
         return
       }
-      toast.success('Đã cập nhật pricing settings')
+      toast.success('Đã cập nhật settings')
     })
   }
 
   return (
-    <SectionShell title="Pricing by role">
+    <SectionShell title="Settings by role">
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid gap-4 lg:grid-cols-3">
           <RoleGroup title="Garage">
-            <PricingField
-              id="install-fee"
+            <FixedPricingField
               label="Payout each install"
-              value={form.installFeeVnd}
-              onChange={(value) => setField('installFeeVnd', value)}
-              placeholder="500,000"
+              value={formatVnd(GARAGE_INSTALL_FEE_VND)}
+              helper="Fixed platform policy"
             />
             <PricingField
               id="garage-minimum-withdrawal"
@@ -106,21 +91,6 @@ export function PricingSettingsClient({ settings }: Props) {
 
           <RoleGroup title="Driver">
             <PricingField
-              id="driver-rate"
-              label="Driver rate / km"
-              value={form.baseRatePerKmVnd}
-              onChange={(value) => setField('baseRatePerKmVnd', value)}
-              placeholder="1,500"
-            />
-            <PricingField
-              id="ev-multiplier"
-              label="EV multiplier"
-              value={form.evMultiplier}
-              onChange={(value) => setField('evMultiplier', value)}
-              placeholder="1.3"
-              inputMode="decimal"
-            />
-            <PricingField
               id="platform-fee"
               label="Platform fee (%)"
               value={form.platformFeePct}
@@ -128,24 +98,14 @@ export function PricingSettingsClient({ settings }: Props) {
               placeholder="20"
               inputMode="decimal"
             />
-            <PricingField
-              id="minimum-daily-km"
-              label="Minimum daily km reach"
-              value={form.minimumDailyKm}
-              onChange={(value) => setField('minimumDailyKm', value)}
-              placeholder="0"
-            />
           </RoleGroup>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#cbccc9] pt-4">
-          <p className="text-[12px] text-[#666666]">
-            Current rule effective from <span className="font-mono">{settings.effectiveFrom}</span>
-          </p>
+        <div className="flex flex-wrap items-center justify-end gap-3 border-t border-[#cbccc9] pt-4">
           <button
             type="submit"
             disabled={pending}
-            className="flex items-center gap-2 rounded bg-[#1a1a1a] px-4 py-2 text-[13px] font-bold text-white hover:bg-[#333] disabled:opacity-50"
+            className="flex items-end justify-end gap-2 rounded bg-[#1a1a1a] px-4 py-2 text-[13px] font-bold text-white hover:bg-[#333] disabled:opacity-50"
           >
             <Save className="size-3.5" aria-hidden="true" />
             {pending ? 'Đang lưu...' : 'Lưu thông số'}
@@ -164,6 +124,26 @@ function RoleGroup({ title, children }: { title: string; children: React.ReactNo
       </legend>
       {children}
     </fieldset>
+  )
+}
+
+function FixedPricingField({
+  label,
+  value,
+  helper,
+}: {
+  label: string
+  value: string
+  helper: string
+}) {
+  return (
+    <div className="block space-y-1">
+      <span className="text-[11px] font-bold tracking-[2px] text-[#666666] uppercase">{label}</span>
+      <div className="rounded border border-[#cbccc9] bg-[#f7f8fa] px-3 py-2.5 font-mono text-[14px] font-bold text-[#1a1a1a]">
+        {value}
+      </div>
+      <p className="text-[11px] text-[#666666]">{helper}</p>
+    </div>
   )
 }
 

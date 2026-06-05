@@ -31,6 +31,7 @@ type ConfirmAction =
 
 interface Props {
   users: AdminUserRow[]
+  currentUserId: string | null
 }
 
 const ROLE_STYLES: Record<string, string> = {
@@ -86,7 +87,7 @@ function IconBtn({
 
 const ROLES = ['driver', 'partner', 'garage', 'admin', 'pending']
 
-export function UsersTableClient({ users }: Props) {
+export function UsersTableClient({ users, currentUserId }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [refreshing, startRefreshTransition] = useTransition()
@@ -361,78 +362,80 @@ export function UsersTableClient({ users }: Props) {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((user, i) => (
-                <tr
-                  key={user.id}
-                  className={`border-b border-[#cbccc9] last:border-0 ${i % 2 === 1 ? 'bg-[#f7f8fa]' : ''} ${selected.has(user.id) ? 'bg-primary/5' : ''}`}
-                >
-                  <td className="px-3 py-3">
-                    {user.role !== 'admin' && (
-                      <input
-                        type="checkbox"
-                        checked={selected.has(user.id)}
-                        onChange={() => toggle(user.id)}
-                        className="accent-primary size-3.5"
-                        aria-label={`Select ${user.fullName}`}
-                      />
-                    )}
-                  </td>
-                  <td className="px-4 py-3 font-medium text-[#1a1a1a]">{user.fullName}</td>
-                  <td className="px-4 py-3 text-[#666666]">{user.email ?? '—'}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-block rounded px-2 py-0.5 text-[11px] font-bold tracking-[1px] uppercase ${ROLE_STYLES[user.role] ?? ''}`}
-                    >
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-[#666666]">{user.joinedAt.slice(0, 10)}</td>
-                  <td className="px-4 py-3">
-                    {user.blocked ? (
-                      <span className="inline-block rounded bg-red-100 px-2 py-0.5 text-[11px] font-bold tracking-[1px] text-red-600 uppercase">
-                        Suspended
-                      </span>
-                    ) : (
-                      <span className="inline-block rounded bg-green-100 px-2 py-0.5 text-[11px] font-bold tracking-[1px] text-green-700 uppercase">
-                        Active
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-0.5">
+              {filtered.map((user, i) => {
+                const isSelf = user.id === currentUserId
+                return (
+                  <tr
+                    key={user.id}
+                    className={`border-b border-[#cbccc9] last:border-0 ${i % 2 === 1 ? 'bg-[#f7f8fa]' : ''} ${selected.has(user.id) ? 'bg-primary/5' : ''}`}
+                  >
+                    <td className="px-3 py-3">
                       {user.role !== 'admin' && (
+                        <input
+                          type="checkbox"
+                          checked={selected.has(user.id)}
+                          onChange={() => toggle(user.id)}
+                          className="accent-primary size-3.5"
+                          aria-label={`Select ${user.fullName}`}
+                        />
+                      )}
+                    </td>
+                    <td className="px-4 py-3 font-medium text-[#1a1a1a]">{user.fullName}</td>
+                    <td className="px-4 py-3 text-[#666666]">{user.email ?? '—'}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-block rounded px-2 py-0.5 text-[11px] font-bold tracking-[1px] uppercase ${ROLE_STYLES[user.role] ?? ''}`}
+                      >
+                        {user.role}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-[#666666]">{user.joinedAt.slice(0, 10)}</td>
+                    <td className="px-4 py-3">
+                      {user.blocked ? (
+                        <span className="inline-block rounded bg-red-100 px-2 py-0.5 text-[11px] font-bold tracking-[1px] text-red-600 uppercase">
+                          Suspended
+                        </span>
+                      ) : (
+                        <span className="inline-block rounded bg-green-100 px-2 py-0.5 text-[11px] font-bold tracking-[1px] text-green-700 uppercase">
+                          Active
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-0.5">
                         <IconBtn tooltip="Edit" onClick={() => openEdit(user)} disabled={pending}>
                           <Pencil className="size-3.5" />
                         </IconBtn>
-                      )}
-                      <IconBtn
-                        tooltip={user.blocked ? 'Unsuspend' : 'Suspend'}
-                        onClick={() =>
-                          setConfirmAction({ type: user.blocked ? 'unsuspend' : 'suspend', user })
-                        }
-                        disabled={pending}
-                        variant={user.blocked ? 'default' : 'warning'}
-                      >
-                        {user.blocked ? (
-                          <ShieldCheck className="size-3.5" />
-                        ) : (
-                          <ShieldOff className="size-3.5" />
-                        )}
-                      </IconBtn>
-                      {user.role !== 'admin' && (
                         <IconBtn
-                          tooltip="Delete"
-                          onClick={() => setConfirmAction({ type: 'delete', user })}
+                          tooltip={user.blocked ? 'Unsuspend' : 'Suspend'}
+                          onClick={() =>
+                            setConfirmAction({
+                              type: user.blocked ? 'unsuspend' : 'suspend',
+                              user,
+                            })
+                          }
                           disabled={pending}
+                          variant={user.blocked ? 'default' : 'warning'}
+                        >
+                          {user.blocked ? (
+                            <ShieldCheck className="size-3.5" />
+                          ) : (
+                            <ShieldOff className="size-3.5" />
+                          )}
+                        </IconBtn>
+                        <IconBtn
+                          tooltip={isSelf ? 'Cannot delete yourself' : 'Delete'}
+                          onClick={() => setConfirmAction({ type: 'delete', user })}
+                          disabled={pending || isSelf}
                           variant="danger"
                         >
                           <Trash2 className="size-3.5" />
                         </IconBtn>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
