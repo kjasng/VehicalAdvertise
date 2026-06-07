@@ -79,7 +79,7 @@ export async function getWithdrawalRequests(
     garageIds.length
       ? supabase
           .from('garages')
-          .select('id, shop_name, bank_account_number, bank_account_name, bank_name, bank_bin')
+          .select('id, shop_name, bank_account_number, bank_account_name, bank_name')
           .in('id', garageIds)
       : Promise.resolve({ data: [] }),
   ])
@@ -131,7 +131,7 @@ export async function getWithdrawalRequests(
         bankAccountNumber: stringValue(snapshot.bankAccountNumber) ?? garage?.bank_account_number,
         bankAccountName: stringValue(snapshot.bankAccountName) ?? garage?.bank_account_name,
         bankName: stringValue(snapshot.bankName) ?? garage?.bank_name,
-        bankBin: stringValue(snapshot.bankBin) ?? garage?.bank_bin,
+        bankBin: stringValue(snapshot.bankBin) ?? null,
         amountVnd: row.amount_vnd,
         status: row.status,
         createdAt: row.requested_at,

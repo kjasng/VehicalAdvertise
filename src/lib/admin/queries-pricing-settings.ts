@@ -6,42 +6,30 @@ import { GARAGE_INSTALL_FEE_VND, PARTNER_PLATFORM_FEE_PCT } from '@/lib/partner/
 export type PricingSettings = {
   id: string | null
   effectiveFrom: string
-  baseRatePerKmVnd: number
-  evMultiplier: number
-  dailyCapKm: number
   platformFeePct: number
   installFeeVnd: number
   garageMinimumWithdrawalVnd: number
   partnerMinimumCapVnd: number
-  minimumDailyKm: number
   createdAt: string | null
 }
 
 type PricingRuleRow = Partial<{
   id: string
   effective_from: string
-  base_rate_per_km_vnd: number
-  ev_multiplier: number
-  daily_cap_km: number
   platform_fee_pct: number
   install_fee_vnd: number
   garage_minimum_withdrawal_vnd: number
   partner_minimum_cap_vnd: number
-  minimum_daily_km: number
   created_at: string
 }>
 
 const DEFAULT_SETTINGS: PricingSettings = {
   id: null,
   effectiveFrom: new Date().toISOString().slice(0, 10),
-  baseRatePerKmVnd: 1500,
-  evMultiplier: 1.3,
-  dailyCapKm: 150,
   platformFeePct: PARTNER_PLATFORM_FEE_PCT,
   installFeeVnd: GARAGE_INSTALL_FEE_VND,
   garageMinimumWithdrawalVnd: 100_000,
   partnerMinimumCapVnd: 0,
-  minimumDailyKm: 0,
   createdAt: null,
 }
 
@@ -70,15 +58,11 @@ function rowToSettings(data: PricingRuleRow): PricingSettings {
   return {
     id: data.id ?? null,
     effectiveFrom: data.effective_from ?? DEFAULT_SETTINGS.effectiveFrom,
-    baseRatePerKmVnd: data.base_rate_per_km_vnd ?? DEFAULT_SETTINGS.baseRatePerKmVnd,
-    evMultiplier: data.ev_multiplier ?? DEFAULT_SETTINGS.evMultiplier,
-    dailyCapKm: data.daily_cap_km ?? DEFAULT_SETTINGS.dailyCapKm,
     platformFeePct: data.platform_fee_pct ?? DEFAULT_SETTINGS.platformFeePct,
     installFeeVnd: GARAGE_INSTALL_FEE_VND,
     garageMinimumWithdrawalVnd:
       data.garage_minimum_withdrawal_vnd ?? DEFAULT_SETTINGS.garageMinimumWithdrawalVnd,
     partnerMinimumCapVnd: data.partner_minimum_cap_vnd ?? DEFAULT_SETTINGS.partnerMinimumCapVnd,
-    minimumDailyKm: data.minimum_daily_km ?? DEFAULT_SETTINGS.minimumDailyKm,
     createdAt: data.created_at ?? null,
   }
 }

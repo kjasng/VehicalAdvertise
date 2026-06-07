@@ -160,7 +160,7 @@ export async function getGarageWithdrawalHistory(): Promise<GarageWithdrawalAdmi
   const [garagesRes, profilesRes] = await Promise.all([
     supabase
       .from('garages')
-      .select('id, shop_name, bank_account_number, bank_account_name, bank_name, bank_bin')
+      .select('id, shop_name, bank_account_number, bank_account_name, bank_name')
       .in('id', garageIds),
     supabase.from('profiles').select('id, email, phone_e164').in('id', garageIds),
   ])
@@ -184,7 +184,7 @@ export async function getGarageWithdrawalHistory(): Promise<GarageWithdrawalAdmi
       bankAccountName:
         stringValue(bankSnapshot.bankAccountName) ?? garage?.bank_account_name ?? null,
       bankName: stringValue(bankSnapshot.bankName) ?? garage?.bank_name ?? null,
-      bankBin: stringValue(bankSnapshot.bankBin) ?? garage?.bank_bin ?? null,
+      bankBin: stringValue(bankSnapshot.bankBin) ?? null,
       amountVnd: withdrawal.amount_vnd,
       status: withdrawal.status,
       requestedAt: withdrawal.requested_at,

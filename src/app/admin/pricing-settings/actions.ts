@@ -29,27 +29,13 @@ export async function updatePricingSettings(raw: unknown): Promise<{ error: stri
 
   const supabase = createSupabaseAdminClient()
   const today = new Date().toISOString().slice(0, 10)
-  const { data: latest, error: latestError } = await supabase
-    .from('pricing_rules')
-    .select('base_rate_per_km_vnd, ev_multiplier, daily_cap_km, minimum_daily_km')
-    .lte('effective_from', today)
-    .order('effective_from', { ascending: false })
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  if (latestError) return { error: latestError.message }
 
   const { error: insertError } = await supabase.from('pricing_rules').insert({
     effective_from: today,
-    base_rate_per_km_vnd: latest?.base_rate_per_km_vnd ?? 1500,
-    ev_multiplier: latest?.ev_multiplier ?? 1.3,
-    daily_cap_km: latest?.daily_cap_km ?? 150,
     platform_fee_pct: parsed.data.platformFeePct,
     install_fee_vnd: GARAGE_INSTALL_FEE_VND,
     garage_minimum_withdrawal_vnd: parsed.data.garageMinimumWithdrawalVnd,
     partner_minimum_cap_vnd: parsed.data.partnerMinimumCapVnd,
-    minimum_daily_km: latest?.minimum_daily_km ?? 0,
   })
   if (insertError) return { error: insertError.message }
 

@@ -51,7 +51,6 @@ export async function updateGarageProfile(raw: unknown): Promise<{ error: string
       bank_account_name: parsed.data.bankAccountName || null,
       bank_account_number: parsed.data.bankAccountNumber || null,
       bank_name: parsed.data.bankName || null,
-      bank_verified_at: null,
     })
     .eq('id', userId)
 

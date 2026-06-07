@@ -530,10 +530,7 @@ export type Database = {
           balance_vnd: number
           bank_account_name: string | null
           bank_account_number: string | null
-          bank_bin: string | null
-          bank_branch: string | null
           bank_name: string | null
-          bank_verified_at: string | null
           contact_name: string | null
           google_maps_url: string | null
           id: string
@@ -548,10 +545,7 @@ export type Database = {
           balance_vnd?: number
           bank_account_name?: string | null
           bank_account_number?: string | null
-          bank_bin?: string | null
-          bank_branch?: string | null
           bank_name?: string | null
-          bank_verified_at?: string | null
           contact_name?: string | null
           google_maps_url?: string | null
           id: string
@@ -566,10 +560,7 @@ export type Database = {
           balance_vnd?: number
           bank_account_name?: string | null
           bank_account_number?: string | null
-          bank_bin?: string | null
-          bank_branch?: string | null
           bank_name?: string | null
-          bank_verified_at?: string | null
           contact_name?: string | null
           google_maps_url?: string | null
           id?: string
@@ -783,41 +774,29 @@ export type Database = {
       }
       pricing_rules: {
         Row: {
-          base_rate_per_km_vnd: number
           created_at: string
-          daily_cap_km: number
           effective_from: string
-          ev_multiplier: number
           garage_minimum_withdrawal_vnd: number
           id: string
           install_fee_vnd: number
-          minimum_daily_km: number
           partner_minimum_cap_vnd: number
           platform_fee_pct: number
         }
         Insert: {
-          base_rate_per_km_vnd: number
           created_at?: string
-          daily_cap_km: number
           effective_from: string
-          ev_multiplier: number
           garage_minimum_withdrawal_vnd?: number
           id?: string
           install_fee_vnd?: number
-          minimum_daily_km?: number
           partner_minimum_cap_vnd?: number
           platform_fee_pct: number
         }
         Update: {
-          base_rate_per_km_vnd?: number
           created_at?: string
-          daily_cap_km?: number
           effective_from?: string
-          ev_multiplier?: number
           garage_minimum_withdrawal_vnd?: number
           id?: string
           install_fee_vnd?: number
-          minimum_daily_km?: number
           partner_minimum_cap_vnd?: number
           platform_fee_pct?: number
         }

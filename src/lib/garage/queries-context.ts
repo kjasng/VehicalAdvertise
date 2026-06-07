@@ -21,7 +21,7 @@ export async function getGarageProfile(): Promise<GarageProfile | null> {
   const { data, error } = await supabase
     .from('garages')
     .select(
-      'id, shop_name, address, contact_name, phone, service_area, google_maps_url, working_hours, approved, balance_vnd, bank_account_name, bank_account_number, bank_name, bank_branch, bank_bin, bank_verified_at',
+      'id, shop_name, address, contact_name, phone, service_area, google_maps_url, working_hours, approved, balance_vnd, bank_account_name, bank_account_number, bank_name',
     )
     .eq('id', garageId)
     .maybeSingle()
