@@ -55,11 +55,16 @@ export async function getReportsData(month = currentMonthString()): Promise<Repo
       .eq('status', 'paid')
       .gte('paid_at', `${queryStart}-01`)
       .lt('paid_at', queryEnd),
+    // Revenue is recognised when the partner pays the platform — i.e. the
+    // campaign budget charged from the partner wallet (ledger `partner_charge`),
+    // dated by the charge time. Covers reserved (full budget at creation) and
+    // legacy per-period charges alike.
     supabase
-      .from('driver_earning_periods')
-      .select('gross_charge_vnd, period_start')
-      .gte('period_start', `${queryStart}-01`)
-      .lt('period_start', queryEnd),
+      .from('ledger_entries')
+      .select('amount_vnd, ts')
+      .eq('kind', 'partner_charge')
+      .gte('ts', `${queryStart}-01`)
+      .lt('ts', queryEnd),
     supabase
       .from('garage_withdrawals')
       .select('amount_vnd, paid_at')
@@ -68,7 +73,7 @@ export async function getReportsData(month = currentMonthString()): Promise<Repo
       .lt('paid_at', queryEnd),
   ])
   assertNoReportError('driver_invoices', driverInvoices.error)
-  assertNoReportError('driver_earning_periods', partnerCharges.error)
+  assertNoReportError('ledger_entries', partnerCharges.error)
   assertNoReportError('garage_withdrawals', garageWithdrawals.error)
 
   const rows = Object.fromEntries(monthOptions.map((m) => [m, emptyPoint(m)]))
@@ -76,7 +81,7 @@ export async function getReportsData(month = currentMonthString()): Promise<Repo
     if (row.paid_at) pointFor(rows, row.paid_at.slice(0, 7)).driverPaidVnd += row.amount_vnd
   }
   for (const row of partnerCharges.data ?? []) {
-    pointFor(rows, row.period_start.slice(0, 7)).partnerReceivedVnd += row.gross_charge_vnd
+    if (row.ts) pointFor(rows, row.ts.slice(0, 7)).partnerReceivedVnd += Math.abs(row.amount_vnd)
   }
   for (const row of garageWithdrawals.data ?? []) {
     if (row.paid_at) pointFor(rows, row.paid_at.slice(0, 7)).garagePaidVnd += row.amount_vnd
