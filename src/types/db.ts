@@ -918,45 +918,23 @@ export type Database = {
       vehicles: {
         Row: {
           approved: boolean
-          approved_at: string | null
-          approved_by: string | null
-          brand: string | null
           driver_id: string
-          fuel: Database['public']['Enums']['vehicle_fuel']
           id: string
-          model: string | null
           plate: string
         }
         Insert: {
           approved?: boolean
-          approved_at?: string | null
-          approved_by?: string | null
-          brand?: string | null
           driver_id: string
-          fuel: Database['public']['Enums']['vehicle_fuel']
           id?: string
-          model?: string | null
           plate: string
         }
         Update: {
           approved?: boolean
-          approved_at?: string | null
-          approved_by?: string | null
-          brand?: string | null
           driver_id?: string
-          fuel?: Database['public']['Enums']['vehicle_fuel']
           id?: string
-          model?: string | null
           plate?: string
         }
         Relationships: [
-          {
-            foreignKeyName: 'vehicles_approved_by_fkey'
-            columns: ['approved_by']
-            isOneToOne: false
-            referencedRelation: 'profiles'
-            referencedColumns: ['id']
-          },
           {
             foreignKeyName: 'vehicles_driver_id_fkey'
             columns: ['driver_id']
@@ -1218,7 +1196,6 @@ export type Database = {
         | 'periodic_selfie'
       photo_status: 'pending' | 'approved' | 'rejected'
       user_role: 'pending' | 'driver' | 'partner' | 'admin' | 'garage'
-      vehicle_fuel: 'petrol' | 'diesel' | 'electric' | 'hybrid'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1387,7 +1364,6 @@ export const Constants = {
       ],
       photo_status: ['pending', 'approved', 'rejected'],
       user_role: ['pending', 'driver', 'partner', 'admin', 'garage'],
-      vehicle_fuel: ['petrol', 'diesel', 'electric', 'hybrid'],
     },
   },
 } as const

@@ -61,7 +61,7 @@ async function hydrateJobs(contracts: ContractRow[]): Promise<GarageInstallJob[]
       .select('id, name, creative_url, creative_urls')
       .in('id', campaignIds),
     supabase.from('profiles').select('id, full_name, phone_e164').in('id', driverIds),
-    supabase.from('vehicles').select('id, plate, fuel, brand, model').in('id', vehicleIds),
+    supabase.from('vehicles').select('id, plate').in('id', vehicleIds),
     supabase
       .from('photos')
       .select('subject_id, status, reject_reason, created_at')
@@ -88,9 +88,6 @@ async function hydrateJobs(contracts: ContractRow[]): Promise<GarageInstallJob[]
       driverName: profile?.full_name ?? 'Unknown driver',
       driverPhone: profile?.phone_e164 ?? null,
       vehiclePlate: vehicle?.plate ?? '—',
-      vehicleModel:
-        [vehicle?.brand, vehicle?.model].filter(Boolean).join(' ') || vehicle?.fuel || '—',
-      vehicleFuel: vehicle?.fuel ?? '—',
       contractStatus: contract.status,
       status: deriveJobStatus(contract, proofs),
       createdAt: contract.created_at,

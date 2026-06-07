@@ -30,8 +30,6 @@ export type GarageInstallJob = {
   driverName: string
   driverPhone: string | null
   vehiclePlate: string
-  vehicleModel: string
-  vehicleFuel: string
   contractStatus: Database['public']['Enums']['contract_status']
   status: GarageInstallStatus
   createdAt: string

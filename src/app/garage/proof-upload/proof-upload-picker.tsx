@@ -46,8 +46,7 @@ export function ProofUploadPicker({
         <SectionShell title={`Ảnh bằng chứng - ${selectedOrder.vehiclePlate}`}>
           <div className="mb-4 flex flex-wrap gap-x-6 gap-y-1 text-[13px] text-[#666666]">
             <span>
-              <strong className="text-[#1a1a1a]">Xe:</strong> {selectedOrder.vehiclePlate} ·{' '}
-              {selectedOrder.vehicleModel}
+              <strong className="text-[#1a1a1a]">Xe:</strong> {selectedOrder.vehiclePlate}
             </span>
             <span>
               <strong className="text-[#1a1a1a]">Chiến dịch:</strong> {selectedOrder.campaignName}

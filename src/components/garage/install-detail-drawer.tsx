@@ -104,8 +104,6 @@ export function InstallDetailDrawer({ order, onClose }: Props) {
                 </h3>
                 <div className="grid grid-cols-2 gap-4">
                   <DetailRow label="Biển số" value={order.vehiclePlate} />
-                  <DetailRow label="Dòng xe" value={order.vehicleModel} />
-                  <DetailRow label="Nhiên liệu" value={order.vehicleFuel} />
                   <DetailRow label="Contract" value={order.contractStatus.replaceAll('_', ' ')} />
                 </div>
               </section>

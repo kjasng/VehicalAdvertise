@@ -49,8 +49,6 @@ export function InstallCard({ order, onClick }: InstallCardProps) {
       <div className="flex items-center gap-1.5 text-[13px] text-[#1a1a1a]">
         <Car className="size-4 shrink-0 text-[#666666]" aria-hidden="true" />
         <span className="font-mono font-semibold">{order.vehiclePlate}</span>
-        <span className="text-[#666666]">·</span>
-        <span>{order.vehicleModel}</span>
       </div>
 
       {/* Campaign row */}

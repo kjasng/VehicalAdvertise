@@ -49,13 +49,6 @@ const NEXT_LABEL: Record<string, string> = {
   running: 'Mark Completed',
 }
 
-const FUEL_LABEL: Record<string, string> = {
-  petrol: 'Xăng',
-  diesel: 'Dầu',
-  electric: 'Điện',
-  hybrid: 'Hybrid',
-}
-
 type ContractPartyFilter = 'all' | 'partner_admin' | 'driver_admin' | 'garage_admin'
 type FilteredCampaignRow = { campaign: CampaignMatchRow; contracts: ContractRow[] }
 
@@ -186,7 +179,7 @@ function DriverAssignmentModal({
                   <option value="">-- Chọn xe --</option>
                   {approvedVehicles.map((v) => (
                     <option key={v.id} value={v.id}>
-                      {v.plate} ({FUEL_LABEL[v.fuel] ?? v.fuel})
+                      {v.plate}
                     </option>
                   ))}
                 </select>
@@ -264,7 +257,7 @@ export function CampaignAssignmentsTable({
       <table className="w-full text-[13px]">
         <thead className="bg-[#f7f8fa]">
           <tr>
-            {['Driver', 'Biển số', 'Nhiên liệu', 'Garage', 'Status', ''].map((h) => (
+            {['Driver', 'Biển số', 'Garage', 'Status', ''].map((h) => (
               <th
                 key={h}
                 className="px-4 py-2 text-left text-[11px] font-extrabold tracking-[1.5px] text-[#1a1a1a] uppercase"
@@ -281,9 +274,6 @@ export function CampaignAssignmentsTable({
               <tr key={c.id} className="border-t border-[#f0f0ee]">
                 <td className="px-4 py-2 font-medium text-[#1a1a1a]">{c.driverName}</td>
                 <td className="px-4 py-2 font-mono text-[#666666]">{c.vehiclePlate}</td>
-                <td className="px-4 py-2 text-[#666666]">
-                  {FUEL_LABEL[c.vehicleFuel] ?? c.vehicleFuel}
-                </td>
                 <td className="px-4 py-2 text-[#666666]">{c.garageName ?? '—'}</td>
                 <td className="px-4 py-2">
                   <span
@@ -478,7 +468,6 @@ export function ContractsClient({
               contract.campaignName,
               contract.driverName,
               contract.vehiclePlate,
-              contract.vehicleFuel,
               contract.garageName,
               contract.status,
             ],

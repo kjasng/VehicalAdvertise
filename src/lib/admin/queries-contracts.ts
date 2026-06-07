@@ -10,7 +10,6 @@ export type ContractRow = {
   driverName: string
   vehicleId: string
   vehiclePlate: string
-  vehicleFuel: string
   status: string
   garageName: string | null
   installedAt: string | null
@@ -38,7 +37,7 @@ export type AvailableDriverRow = {
   fullName: string
   phone: string | null
   kycStatus: string
-  vehicles: { id: string; plate: string; fuel: string; approved: boolean }[]
+  vehicles: { id: string; plate: string; approved: boolean }[]
 }
 
 /** Campaigns shown in the admin Campaigns workspace. */
@@ -112,7 +111,7 @@ export async function getContractsByCampaign(campaignId: string): Promise<Contra
 
   const [profilesRes, vehiclesRes, garagesRes] = await Promise.all([
     supabase.from('profiles').select('id, full_name').in('id', driverIds),
-    supabase.from('vehicles').select('id, plate, fuel').in('id', vehicleIds),
+    supabase.from('vehicles').select('id, plate').in('id', vehicleIds),
     garageIds.length
       ? supabase.from('garages').select('id, shop_name').in('id', garageIds)
       : { data: [] },
@@ -132,7 +131,6 @@ export async function getContractsByCampaign(campaignId: string): Promise<Contra
     driverName: driverName[c.driver_id] ?? 'Unknown',
     vehicleId: c.vehicle_id,
     vehiclePlate: vehicleById[c.vehicle_id]?.plate ?? '—',
-    vehicleFuel: vehicleById[c.vehicle_id]?.fuel ?? '—',
     status: c.status,
     garageName: c.install_garage_id ? (garageName[c.install_garage_id] ?? null) : null,
     installedAt: c.installed_at,
@@ -158,19 +156,15 @@ export async function getAvailableDrivers(): Promise<AvailableDriverRow[]> {
   const driverIds = profiles.map((p) => p.id)
   const { data: vehicles } = await supabase
     .from('vehicles')
-    .select('id, driver_id, plate, fuel, approved')
+    .select('id, driver_id, plate, approved')
     .in('driver_id', driverIds)
 
-  const vehiclesByDriver: Record<
-    string,
-    { id: string; plate: string; fuel: string; approved: boolean }[]
-  > = {}
+  const vehiclesByDriver: Record<string, { id: string; plate: string; approved: boolean }[]> = {}
   for (const v of vehicles ?? []) {
     if (!vehiclesByDriver[v.driver_id]) vehiclesByDriver[v.driver_id] = []
     vehiclesByDriver[v.driver_id].push({
       id: v.id,
       plate: v.plate,
-      fuel: v.fuel,
       approved: v.approved,
     })
   }
