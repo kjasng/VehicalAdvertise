@@ -17,7 +17,6 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 const CampaignSchema = z.object({
   name: z.string().trim().min(3, 'Campaign name must be at least 3 characters'),
   description: z.string().trim().min(10, 'Description must be at least 10 characters'),
-  districts: z.string().trim().min(1, 'Enter at least one district'),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Start date is required'),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'End date is required'),
   creativeUrls: z.string().trim().min(1, 'Upload or enter at least one creative URL'),
@@ -90,7 +89,6 @@ export async function createPartnerCampaign(raw: unknown): Promise<{ error: stri
     p_budget_vnd: campaignBudgetVnd,
     p_start_date: data.startDate,
     p_end_date: effectiveEndDate,
-    p_target_districts: splitList(data.districts),
     p_monthly_budget_vnd: data.monthlyCapVnd,
     p_driver_net_monthly_vnd: DRIVER_NET_MONTHLY_VND,
     p_active_driver_limit: data.driverCount,

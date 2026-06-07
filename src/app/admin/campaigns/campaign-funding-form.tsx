@@ -7,13 +7,12 @@ import { toast } from 'sonner'
 
 import { updateCampaignFunding } from './actions'
 
-type FundingMode = 'monthly_cap' | 'balance_percent'
+type FundingMode = 'monthly_cap'
 
 type CampaignFundingFormProps = {
   campaignId: string
   fundingMode: string
   monthlyBudgetVnd: number | null
-  balancePercent: number | null
   driverNetMonthlyVnd: number
   platformFeePct: number
   activeDriverLimit: number | null
@@ -21,19 +20,14 @@ type CampaignFundingFormProps = {
 
 export function CampaignFundingForm({
   campaignId,
-  fundingMode,
   monthlyBudgetVnd,
-  balancePercent,
   driverNetMonthlyVnd,
   platformFeePct,
   activeDriverLimit,
 }: CampaignFundingFormProps) {
   const [pending, startTransition] = useTransition()
-  const [mode, setMode] = useState<FundingMode>(
-    fundingMode === 'balance_percent' ? 'balance_percent' : 'monthly_cap',
-  )
+  const mode: FundingMode = 'monthly_cap'
   const [monthlyBudget, setMonthlyBudget] = useState(String(monthlyBudgetVnd ?? ''))
-  const [percent, setPercent] = useState(String(balancePercent ?? ''))
   const [driverNet, setDriverNet] = useState(String(driverNetMonthlyVnd))
   const [fee, setFee] = useState(String(platformFeePct))
   const [driverLimit, setDriverLimit] = useState(String(activeDriverLimit ?? ''))
@@ -43,8 +37,7 @@ export function CampaignFundingForm({
       const result = await updateCampaignFunding({
         campaignId,
         fundingMode: mode,
-        monthlyBudgetVnd: mode === 'monthly_cap' ? Number(monthlyBudget) : null,
-        balancePercent: mode === 'balance_percent' ? Number(percent) : null,
+        monthlyBudgetVnd: Number(monthlyBudget),
         driverNetMonthlyVnd: Number(driverNet),
         platformFeePct: Number(fee),
         activeDriverLimit: driverLimit ? Number(driverLimit) : null,
@@ -64,21 +57,12 @@ export function CampaignFundingForm({
           <span className="text-[10px] font-bold tracking-[1.5px] text-[#666666] uppercase">
             Funding
           </span>
-          <select
-            value={mode}
-            onChange={(event) => setMode(event.target.value as FundingMode)}
-            className="h-9 w-full rounded border border-[#cbccc9] bg-white px-2 text-[12px]"
-          >
-            <option value="monthly_cap">Monthly cap</option>
-            <option value="balance_percent">% balance</option>
-          </select>
+          <div className="flex h-9 w-full items-center rounded border border-[#cbccc9] bg-[#f7f8fa] px-2 text-[12px] text-[#666666]">
+            Monthly cap
+          </div>
         </label>
 
-        <SmallInput
-          label={mode === 'monthly_cap' ? 'Cap VND' : '% balance'}
-          value={mode === 'monthly_cap' ? monthlyBudget : percent}
-          onChange={mode === 'monthly_cap' ? setMonthlyBudget : setPercent}
-        />
+        <SmallInput label="Cap VND" value={monthlyBudget} onChange={setMonthlyBudget} />
 
         <button
           type="button"

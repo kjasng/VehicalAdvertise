@@ -19,7 +19,6 @@ import { cn } from '@/lib/utils'
 export interface WizardFormValues {
   name: string
   description: string
-  districts: string
   startDate: string
   endDate: string
   creativeUrls: string
@@ -62,19 +61,6 @@ export function WizardStepFields({ step, control, getValues }: StepFieldsProps) 
               <FormLabel>Description</FormLabel>
               <FormControl>
                 <Input placeholder="Campaign objective, offer, target audience..." {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={control}
-          name="districts"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Districts (comma-separated)</FormLabel>
-              <FormControl>
-                <Input placeholder="Hoàn Kiếm, Đống Đa, Ba Đình" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -211,7 +197,6 @@ function ReviewSummary({ getValues }: { getValues: (key: keyof WizardFormValues)
   const rows: [string, string][] = [
     ['Name', getValues('name')],
     ['Description', getValues('description')],
-    ['Districts', getValues('districts')],
     ['Dates', `${getValues('startDate')} → ${getValues('endDate')}`],
     ['Creatives', `${getValues('creativeUrls').split(/\n|,/).filter(Boolean).length}`],
     ['Package', packageLabel(getValues('planPackage'))],

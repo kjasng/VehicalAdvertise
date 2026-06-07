@@ -63,11 +63,6 @@ export function CampaignCard({ campaign }: CampaignCardProps) {
         </span>
       </div>
 
-      {/* Districts */}
-      {campaign.districts.length > 0 && (
-        <p className="text-[12px] text-[#666666]">{campaign.districts.join(' · ')}</p>
-      )}
-
       {/* Driver setup */}
       <div className="space-y-1.5">
         <div className="flex justify-between text-[11px] font-bold tracking-[1.5px] text-[#666666] uppercase">

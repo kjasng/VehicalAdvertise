@@ -13,7 +13,6 @@ export type CampaignAnalyticsRow = {
   spentVnd: number
   fundingMode: string
   monthlyBudgetVnd: number | null
-  balancePercent: number | null
   driverNetMonthlyVnd: number
   platformFeePct: number
   activeDriverLimit: number | null
@@ -30,7 +29,7 @@ export async function getCampaignAnalytics(): Promise<CampaignAnalyticsRow[]> {
     supabase
       .from('campaigns')
       .select(
-        'id, name, partner_id, status, start_date, end_date, budget_vnd, spent_vnd, funding_mode, monthly_budget_vnd, balance_percent, driver_net_monthly_vnd, platform_fee_pct, active_driver_limit',
+        'id, name, partner_id, status, start_date, end_date, budget_vnd, spent_vnd, funding_mode, monthly_budget_vnd, driver_net_monthly_vnd, platform_fee_pct, active_driver_limit',
       )
       .order('created_at', { ascending: false })
       .limit(500),
@@ -86,7 +85,6 @@ export async function getCampaignAnalytics(): Promise<CampaignAnalyticsRow[]> {
       spentVnd: c.spent_vnd,
       fundingMode: c.funding_mode ?? 'monthly_cap',
       monthlyBudgetVnd: c.monthly_budget_vnd,
-      balancePercent: c.balance_percent,
       driverNetMonthlyVnd: c.driver_net_monthly_vnd ?? 1_100_000,
       platformFeePct: Number(c.platform_fee_pct ?? 20),
       activeDriverLimit: c.active_driver_limit,
@@ -106,7 +104,7 @@ export async function getCampaignAnalyticsById(
     supabase
       .from('campaigns')
       .select(
-        'id, name, partner_id, status, start_date, end_date, budget_vnd, spent_vnd, funding_mode, monthly_budget_vnd, balance_percent, driver_net_monthly_vnd, platform_fee_pct, active_driver_limit',
+        'id, name, partner_id, status, start_date, end_date, budget_vnd, spent_vnd, funding_mode, monthly_budget_vnd, driver_net_monthly_vnd, platform_fee_pct, active_driver_limit',
       )
       .eq('id', campaignId)
       .maybeSingle(),
@@ -153,7 +151,6 @@ export async function getCampaignAnalyticsById(
     spentVnd: campaign.spent_vnd,
     fundingMode: campaign.funding_mode ?? 'monthly_cap',
     monthlyBudgetVnd: campaign.monthly_budget_vnd,
-    balancePercent: campaign.balance_percent,
     driverNetMonthlyVnd: campaign.driver_net_monthly_vnd ?? 1_100_000,
     platformFeePct: Number(campaign.platform_fee_pct ?? 20),
     activeDriverLimit: campaign.active_driver_limit,

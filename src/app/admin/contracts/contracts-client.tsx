@@ -448,7 +448,7 @@ export function ContractsClient({
         const contracts = contractsByCampaign[campaign.id] ?? []
         const campaignMatchesStatus = !status || campaign.status === status
         const campaignMatchesSearch = matchesText(
-          [campaign.name, campaign.partnerName, campaign.status, campaign.ratePerKmVnd],
+          [campaign.name, campaign.partnerName, campaign.status],
           normalizedSearch,
         )
         const matchingContracts = contracts.filter((contract) => {

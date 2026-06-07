@@ -17,7 +17,6 @@ export type PartnerCampaignRow = {
   spentVnd: number
   startDate: string
   endDate: string
-  districts: string[]
 }
 
 export type PartnerLedgerRow = {
@@ -64,7 +63,7 @@ export async function getPartnerData(): Promise<PartnerData | null> {
     supabase
       .from('campaigns')
       .select(
-        'id, name, status, budget_vnd, spent_vnd, start_date, end_date, target_districts, requested_driver_count, active_driver_limit, monthly_budget_vnd',
+        'id, name, status, budget_vnd, spent_vnd, start_date, end_date, requested_driver_count, active_driver_limit, monthly_budget_vnd',
       )
       .eq('partner_id', user.id)
       .order('created_at', { ascending: false }),
@@ -93,7 +92,6 @@ export async function getPartnerData(): Promise<PartnerData | null> {
       spentVnd: campaign.spent_vnd,
       startDate: campaign.start_date,
       endDate: campaign.end_date,
-      districts: campaign.target_districts ?? [],
     }
   })
 

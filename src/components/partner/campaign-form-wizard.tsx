@@ -29,7 +29,6 @@ const campaignSchema = z
   .object({
     name: z.string().min(3, 'Name must be at least 3 characters'),
     description: z.string().min(10, 'Description must be at least 10 characters'),
-    districts: z.string().min(1, 'Enter at least one district'),
     startDate: z.string().min(1, 'Start date is required'),
     endDate: z.string().min(1, 'End date is required'),
     creativeUrls: z.string().min(1, 'Upload at least one creative image'),
@@ -57,7 +56,7 @@ const STEPS = ['Brief', 'Creative', 'Budget', 'Review'] as const
 type StepIndex = 0 | 1 | 2 | 3
 
 const STEP_FIELDS: Record<StepIndex, (keyof WizardFormValues)[]> = {
-  0: ['name', 'description', 'districts', 'startDate', 'endDate'],
+  0: ['name', 'description', 'startDate', 'endDate'],
   1: ['creativeUrls'],
   2: ['planPackage', 'driverCount', 'monthlyCapVnd', 'qrTargetUrl'],
   3: [],
@@ -76,7 +75,6 @@ export function CampaignFormWizard({ onSuccess }: Props) {
     defaultValues: {
       name: '',
       description: '',
-      districts: '',
       startDate: '',
       endDate: '',
       creativeUrls: '',

@@ -11,7 +11,6 @@ export type Database = {
       campaigns: {
         Row: {
           active_driver_limit: number | null
-          balance_percent: number | null
           brief: string | null
           budget_vnd: number
           created_at: string
@@ -26,7 +25,6 @@ export type Database = {
           partner_id: string
           platform_fee_pct: number
           qr_target_url: string
-          rate_per_km_vnd: number
           reject_reason: string | null
           requested_driver_count: number | null
           reviewed_at: string | null
@@ -34,11 +32,9 @@ export type Database = {
           spent_vnd: number
           start_date: string
           status: Database['public']['Enums']['campaign_status']
-          target_districts: string[] | null
         }
         Insert: {
           active_driver_limit?: number | null
-          balance_percent?: number | null
           brief?: string | null
           budget_vnd: number
           created_at?: string
@@ -53,7 +49,6 @@ export type Database = {
           partner_id: string
           platform_fee_pct?: number
           qr_target_url: string
-          rate_per_km_vnd: number
           reject_reason?: string | null
           requested_driver_count?: number | null
           reviewed_at?: string | null
@@ -61,11 +56,9 @@ export type Database = {
           spent_vnd?: number
           start_date: string
           status?: Database['public']['Enums']['campaign_status']
-          target_districts?: string[] | null
         }
         Update: {
           active_driver_limit?: number | null
-          balance_percent?: number | null
           brief?: string | null
           budget_vnd?: number
           created_at?: string
@@ -80,7 +73,6 @@ export type Database = {
           partner_id?: string
           platform_fee_pct?: number
           qr_target_url?: string
-          rate_per_km_vnd?: number
           reject_reason?: string | null
           requested_driver_count?: number | null
           reviewed_at?: string | null
@@ -88,7 +80,6 @@ export type Database = {
           spent_vnd?: number
           start_date?: string
           status?: Database['public']['Enums']['campaign_status']
-          target_districts?: string[] | null
         }
         Relationships: [
           {
@@ -1015,7 +1006,6 @@ export type Database = {
           p_qr_target_url: string
           p_requested_driver_count: number
           p_start_date: string
-          p_target_districts: string[]
         }
         Returns: string
       }
@@ -1053,7 +1043,6 @@ export type Database = {
         }
         Returns: {
           active_driver_limit: number | null
-          balance_percent: number | null
           brief: string | null
           budget_vnd: number
           created_at: string
@@ -1068,7 +1057,6 @@ export type Database = {
           partner_id: string
           platform_fee_pct: number
           qr_target_url: string
-          rate_per_km_vnd: number
           reject_reason: string | null
           requested_driver_count: number | null
           reviewed_at: string | null
@@ -1076,7 +1064,6 @@ export type Database = {
           spent_vnd: number
           start_date: string
           status: Database['public']['Enums']['campaign_status']
-          target_districts: string[] | null
         }
         SetofOptions: {
           from: '*'
