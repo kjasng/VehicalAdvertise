@@ -9,27 +9,13 @@ import {
   PARTNER_PLATFORM_FEE_PCT,
   calculateGrossMonthlyCharge,
 } from './constants'
-
-export type PartnerCampaignInvoiceRow = {
-  id: string
-  name: string
-  status: string
-  packageLabel: string
-  driverCount: number
-  budgetVnd: number
-  driverPaidVnd: number
-  garagePaidVnd: number
-  platformFeeVnd: number
-  remainingVnd: number
-  estimatedDriverVnd: number
-  estimatedGarageVnd: number
-  estimatedPlatformFeeVnd: number
-}
-
-export type PartnerCampaignInvoiceData = {
-  rows: PartnerCampaignInvoiceRow[]
-  totals: Omit<PartnerCampaignInvoiceRow, 'id' | 'name' | 'status' | 'packageLabel' | 'driverCount'>
-}
+import type { PartnerCampaignInvoiceData } from './invoice-breakdown-types'
+import {
+  buildPartnerInvoiceBreakdown,
+  countBillingMonths,
+  emptyPartnerInvoiceTotals,
+  partnerPackageLabel,
+} from './invoice-breakdown-utils'
 
 export async function getPartnerCampaignInvoices(): Promise<PartnerCampaignInvoiceData | null> {
   const serverClient = await createSupabaseServerClient()
@@ -39,27 +25,46 @@ export async function getPartnerCampaignInvoices(): Promise<PartnerCampaignInvoi
   if (!user) return null
 
   const supabase = createSupabaseAdminClient()
-  const { data: campaigns, error } = await supabase
-    .from('campaigns')
-    .select(
-      'id, name, status, budget_vnd, start_date, end_date, requested_driver_count, active_driver_limit, driver_net_monthly_vnd, platform_fee_pct',
-    )
-    .eq('partner_id', user.id)
-    .order('created_at', { ascending: false })
+  const [partnerRes, campaignsRes] = await Promise.all([
+    supabase
+      .from('partners')
+      .select('company_name, tax_code, billing_address')
+      .eq('id', user.id)
+      .maybeSingle(),
+    supabase
+      .from('campaigns')
+      .select(
+        'id, name, status, budget_vnd, start_date, end_date, created_at, requested_driver_count, active_driver_limit, driver_net_monthly_vnd, platform_fee_pct',
+      )
+      .eq('partner_id', user.id)
+      .order('created_at', { ascending: false }),
+  ])
 
-  if (error) {
-    console.error('[getPartnerCampaignInvoices] campaigns error:', error.message)
-    return { rows: [], totals: emptyTotals() }
+  const partner = {
+    companyName: partnerRes.data?.company_name ?? 'Partner',
+    taxCode: partnerRes.data?.tax_code ?? null,
+    billingAddress: partnerRes.data?.billing_address ?? '',
   }
-  if (!campaigns?.length) return { rows: [], totals: emptyTotals() }
+
+  if (campaignsRes.error) {
+    console.error('[getPartnerCampaignInvoices] campaigns error:', campaignsRes.error.message)
+    return { partner, rows: [], totals: emptyPartnerInvoiceTotals() }
+  }
+  const campaigns = campaignsRes.data ?? []
+  if (!campaigns?.length) return { partner, rows: [], totals: emptyPartnerInvoiceTotals() }
 
   const campaignIds = campaigns.map((campaign) => campaign.id)
   const [periodsRes, contractsRes] = await Promise.all([
     supabase
       .from('driver_earning_periods')
-      .select('campaign_id, driver_net_vnd, platform_fee_vnd, status')
+      .select(
+        'id, campaign_id, contract_id, driver_id, period_start, period_end, driver_net_vnd, gross_charge_vnd, platform_fee_vnd, status, created_at',
+      )
       .in('campaign_id', campaignIds),
-    supabase.from('contracts').select('id, campaign_id').in('campaign_id', campaignIds),
+    supabase
+      .from('contracts')
+      .select('id, campaign_id, driver_id, vehicle_id, install_garage_id')
+      .in('campaign_id', campaignIds),
   ])
 
   const contracts = contractsRes.data ?? []
@@ -67,26 +72,51 @@ export async function getPartnerCampaignInvoices(): Promise<PartnerCampaignInvoi
   const garageRes = contractIds.length
     ? await supabase
         .from('garage_earnings')
-        .select('contract_id, amount_vnd')
+        .select('id, contract_id, garage_id, amount_vnd, approved_at, source')
         .in('contract_id', contractIds)
-    : { data: [] }
+    : { data: [], error: null }
 
-  const campaignByContract = Object.fromEntries(
-    contracts.map((contract) => [contract.id, contract.campaign_id]),
-  )
-  const actualByCampaign: Record<string, { driver: number; garage: number; platform: number }> = {}
-  for (const period of periodsRes.data ?? []) {
-    if (period.status === 'void') continue
-    const current = (actualByCampaign[period.campaign_id] ??= { driver: 0, garage: 0, platform: 0 })
-    current.driver += period.driver_net_vnd
-    current.platform += period.platform_fee_vnd
+  for (const result of [periodsRes, contractsRes, garageRes]) {
+    if (result.error) {
+      console.error('[getPartnerCampaignInvoices] detail error:', result.error.message)
+    }
   }
-  for (const earning of garageRes.data ?? []) {
-    const campaignId = campaignByContract[earning.contract_id]
-    if (!campaignId) continue
-    const current = (actualByCampaign[campaignId] ??= { driver: 0, garage: 0, platform: 0 })
-    current.garage += earning.amount_vnd
+
+  const periods = (periodsRes.data ?? []).filter((period) => period.status !== 'void')
+  const driverIds = [
+    ...new Set([
+      ...periods.map((period) => period.driver_id),
+      ...contracts.map((contract) => contract.driver_id),
+    ]),
+  ]
+  const vehicleIds = [...new Set(contracts.map((contract) => contract.vehicle_id))]
+  const garageIds = [...new Set((garageRes.data ?? []).map((earning) => earning.garage_id))]
+  const [profilesRes, vehiclesRes, garagesRes] = await Promise.all([
+    driverIds.length
+      ? supabase.from('profiles').select('id, full_name, email').in('id', driverIds)
+      : Promise.resolve({ data: [], error: null }),
+    vehicleIds.length
+      ? supabase.from('vehicles').select('id, plate').in('id', vehicleIds)
+      : Promise.resolve({ data: [], error: null }),
+    garageIds.length
+      ? supabase.from('garages').select('id, shop_name').in('id', garageIds)
+      : Promise.resolve({ data: [], error: null }),
+  ])
+
+  for (const result of [profilesRes, vehiclesRes, garagesRes]) {
+    if (result.error) {
+      console.error('[getPartnerCampaignInvoices] lookup error:', result.error.message)
+    }
   }
+
+  const { actualByCampaign, linesByCampaign } = buildPartnerInvoiceBreakdown({
+    periods,
+    garageEarnings: garageRes.data ?? [],
+    contracts,
+    profiles: profilesRes.data ?? [],
+    vehicles: vehiclesRes.data ?? [],
+    garages: garagesRes.data ?? [],
+  })
 
   const rows = campaigns.map((campaign) => {
     const actual = actualByCampaign[campaign.id] ?? { driver: 0, garage: 0, platform: 0 }
@@ -104,7 +134,10 @@ export async function getPartnerCampaignInvoices(): Promise<PartnerCampaignInvoi
       id: campaign.id,
       name: campaign.name,
       status: campaign.status,
-      packageLabel: packageLabel(months),
+      createdAt: campaign.created_at,
+      startDate: campaign.start_date,
+      endDate: campaign.end_date,
+      packageLabel: partnerPackageLabel(months),
       driverCount,
       budgetVnd: campaign.budget_vnd,
       driverPaidVnd: actual.driver,
@@ -114,10 +147,12 @@ export async function getPartnerCampaignInvoices(): Promise<PartnerCampaignInvoi
       estimatedDriverVnd,
       estimatedGarageVnd,
       estimatedPlatformFeeVnd,
+      lines: linesByCampaign[campaign.id] ?? [],
     }
   })
 
   return {
+    partner,
     rows,
     totals: rows.reduce(
       (acc, row) => ({
@@ -130,43 +165,7 @@ export async function getPartnerCampaignInvoices(): Promise<PartnerCampaignInvoi
         estimatedGarageVnd: acc.estimatedGarageVnd + row.estimatedGarageVnd,
         estimatedPlatformFeeVnd: acc.estimatedPlatformFeeVnd + row.estimatedPlatformFeeVnd,
       }),
-      emptyTotals(),
+      emptyPartnerInvoiceTotals(),
     ),
   }
-}
-
-function emptyTotals(): PartnerCampaignInvoiceData['totals'] {
-  return {
-    budgetVnd: 0,
-    driverPaidVnd: 0,
-    garagePaidVnd: 0,
-    platformFeeVnd: 0,
-    remainingVnd: 0,
-    estimatedDriverVnd: 0,
-    estimatedGarageVnd: 0,
-    estimatedPlatformFeeVnd: 0,
-  }
-}
-
-function packageLabel(months: number) {
-  return [3, 6, 12].includes(months) ? `${months} months` : 'Business'
-}
-
-function countBillingMonths(startDate: string, endDate: string) {
-  let cursor = startDate
-  let months = 0
-  while (cursor < endDate && months < 120) {
-    months += 1
-    cursor = addMonths(cursor, 1)
-  }
-  return Math.max(3, months)
-}
-
-function addMonths(date: string, months: number) {
-  const [year, month, day] = date.split('-').map(Number)
-  const value = new Date(Date.UTC(year, month - 1, day))
-  const originalDay = value.getUTCDate()
-  value.setUTCMonth(value.getUTCMonth() + months)
-  if (value.getUTCDate() !== originalDay) value.setUTCDate(0)
-  return value.toISOString().slice(0, 10)
 }

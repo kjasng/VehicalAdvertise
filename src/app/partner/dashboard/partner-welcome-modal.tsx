@@ -48,7 +48,7 @@ export function PartnerWelcomeModal({ partnerId }: { partnerId: string }) {
             'Nạp tối thiểu 10.000.000 VNĐ',
             'Tạo Campaign',
             'Thiết lập số lượng Driver',
-            'Upload Creative',
+            'Upload Creative trong Campaign',
             'Publish Campaign',
           ].map((item, index) => (
             <li key={item} className="flex gap-3">

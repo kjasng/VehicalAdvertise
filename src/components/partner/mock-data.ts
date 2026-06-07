@@ -4,7 +4,6 @@
  */
 
 export type CampaignStatus = 'draft' | 'submitted' | 'approved' | 'active' | 'paused'
-export type CreativeStatus = 'pending' | 'approved' | 'rejected'
 
 // ── Campaigns ──────────────────────────────────────────────────────────────────
 export interface CampaignRow {
@@ -92,66 +91,6 @@ export const MOCK_CAMPAIGNS: CampaignRow[] = [
     startDate: '',
     endDate: '',
     districts: [],
-  },
-]
-
-// ── Creatives ──────────────────────────────────────────────────────────────────
-export interface CreativeAsset {
-  id: string
-  name: string
-  imageUrl: string
-  widthPx: number
-  heightPx: number
-  dpi: number
-  fileSizeKb: number
-  status: CreativeStatus
-  uploadedAt: string
-}
-
-export const MOCK_CREATIVES: CreativeAsset[] = [
-  {
-    id: 'asset-001',
-    name: 'grab-summer-hero.jpg',
-    imageUrl: 'https://placehold.co/400x200/ff5c00/fff?text=Grab+Summer',
-    widthPx: 1200,
-    heightPx: 600,
-    dpi: 300,
-    fileSizeKb: 420,
-    status: 'approved',
-    uploadedAt: '2026-04-28 10:00',
-  },
-  {
-    id: 'asset-002',
-    name: 'shopee-flash-banner.jpg',
-    imageUrl: 'https://placehold.co/400x200/ee4d2d/fff?text=Shopee+Flash',
-    widthPx: 1200,
-    heightPx: 600,
-    dpi: 300,
-    fileSizeKb: 380,
-    status: 'approved',
-    uploadedAt: '2026-05-08 14:30',
-  },
-  {
-    id: 'asset-003',
-    name: 'vinmart-q2-brand.png',
-    imageUrl: 'https://placehold.co/400x200/00843d/fff?text=VinMart+Q2',
-    widthPx: 1200,
-    heightPx: 600,
-    dpi: 300,
-    fileSizeKb: 510,
-    status: 'pending',
-    uploadedAt: '2026-05-20 09:15',
-  },
-  {
-    id: 'asset-004',
-    name: 'momo-cashback-creative.jpg',
-    imageUrl: 'https://placehold.co/400x200/a64dff/fff?text=MoMo+Cashback',
-    widthPx: 1000,
-    heightPx: 500,
-    dpi: 200,
-    fileSizeKb: 290,
-    status: 'rejected',
-    uploadedAt: '2026-04-10 16:00',
   },
 ]
 
