@@ -380,40 +380,28 @@ export type Database = {
         Row: {
           bank_account_name: string | null
           bank_account_number: string | null
-          bank_bin: string | null
-          bank_branch: string | null
           bank_name: string | null
-          bank_verified_at: string | null
           body_type: string | null
           cccd_number: string | null
           id: string
-          operating_districts: string[] | null
           primary_city: string
         }
         Insert: {
           bank_account_name?: string | null
           bank_account_number?: string | null
-          bank_bin?: string | null
-          bank_branch?: string | null
           bank_name?: string | null
-          bank_verified_at?: string | null
           body_type?: string | null
           cccd_number?: string | null
           id: string
-          operating_districts?: string[] | null
           primary_city?: string
         }
         Update: {
           bank_account_name?: string | null
           bank_account_number?: string | null
-          bank_bin?: string | null
-          bank_branch?: string | null
           bank_name?: string | null
-          bank_verified_at?: string | null
           body_type?: string | null
           cccd_number?: string | null
           id?: string
-          operating_districts?: string[] | null
           primary_city?: string
         }
         Relationships: [

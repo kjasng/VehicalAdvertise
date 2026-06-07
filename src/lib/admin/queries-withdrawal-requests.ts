@@ -70,7 +70,7 @@ export async function getWithdrawalRequests(
     driverIds.length
       ? supabase
           .from('drivers')
-          .select('id, bank_account_number, bank_account_name, bank_name, bank_bin')
+          .select('id, bank_account_number, bank_account_name, bank_name')
           .in('id', driverIds)
       : Promise.resolve({ data: [] }),
     garageIds.length
@@ -107,7 +107,7 @@ export async function getWithdrawalRequests(
         bankAccountNumber: stringValue(snapshot.bankAccountNumber) ?? bank?.bank_account_number,
         bankAccountName: stringValue(snapshot.bankAccountName) ?? bank?.bank_account_name,
         bankName: stringValue(snapshot.bankName) ?? bank?.bank_name,
-        bankBin: stringValue(snapshot.bankBin) ?? bank?.bank_bin,
+        bankBin: stringValue(snapshot.bankBin) ?? null,
         amountVnd: row.amount_vnd,
         status: normalizeDriverStatus(row.status),
         createdAt: row.requested_at,

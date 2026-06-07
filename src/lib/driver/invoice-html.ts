@@ -21,7 +21,6 @@ export type DriverInvoiceHtmlInput = {
   bankAccountName: string
   bankAccountNumber: string
   bankName: string
-  bankBin: string | null
 }
 
 /** Vietnamese-style payment document for a driver's monthly withdrawal (no tax). */
@@ -45,7 +44,7 @@ export function buildDriverInvoiceHtml(input: DriverInvoiceHtmlInput) {
     ['Email', input.driverEmail ?? '—'],
     ['Chủ tài khoản', input.bankAccountName],
     ['Số tài khoản', input.bankAccountNumber],
-    ['Ngân hàng', input.bankBin ? `${input.bankName} (${input.bankBin})` : input.bankName],
+    ['Ngân hàng', input.bankName],
   ])}
 
   <h2>Nội dung thanh toán</h2>

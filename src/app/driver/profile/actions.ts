@@ -15,8 +15,6 @@ const UpdateDriverProfileSchema = z.object({
   bankAccountName: z.string().trim().min(2).max(120),
   bankAccountNumber: z.string().trim().min(5).max(40),
   bankName: z.string().trim().min(2).max(120),
-  bankBranch: z.string().trim().max(120).optional(),
-  bankBin: z.string().trim().max(20).optional(),
   vehicleId: z.string().uuid().nullable(),
   vehiclePlate: z.string().trim().max(20).optional(),
 })
@@ -55,9 +53,6 @@ export async function updateDriverProfile(raw: unknown): Promise<{ error: string
       bank_account_name: parsed.data.bankAccountName,
       bank_account_number: parsed.data.bankAccountNumber,
       bank_name: parsed.data.bankName,
-      bank_branch: parsed.data.bankBranch || null,
-      bank_bin: parsed.data.bankBin || null,
-      bank_verified_at: null,
     })
     .eq('id', user.id)
   if (driverError) return { error: driverError.message }

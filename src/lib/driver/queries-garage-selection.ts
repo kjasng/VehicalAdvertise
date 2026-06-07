@@ -34,11 +34,7 @@ export async function getDriverGarageSelectionData(): Promise<DriverGarageSelect
 
   const supabase = createSupabaseAdminClient()
   const [driverRes, contractRes, garagesRes] = await Promise.all([
-    supabase
-      .from('drivers')
-      .select('primary_city, operating_districts')
-      .eq('id', user.id)
-      .maybeSingle(),
+    supabase.from('drivers').select('primary_city').eq('id', user.id).maybeSingle(),
     supabase
       .from('contracts')
       .select('id, campaign_id, vehicle_id, status, install_garage_id, created_at')
@@ -59,7 +55,7 @@ export async function getDriverGarageSelectionData(): Promise<DriverGarageSelect
   const garages = sortGarages(
     (garagesRes.data ?? []).map((garage) => toGarageOption(garage, false)),
     driverRes.data?.primary_city ?? '',
-    driverRes.data?.operating_districts ?? [],
+    [],
   )
 
   const contract = contractRes.data

@@ -25,7 +25,7 @@ export async function createDriverWithdrawalInvoice(): Promise<{ error: string |
     supabase.from('profiles').select('full_name, email').eq('id', user.id).maybeSingle(),
     supabase
       .from('drivers')
-      .select('bank_account_name, bank_account_number, bank_name, bank_bin, cccd_number')
+      .select('bank_account_name, bank_account_number, bank_name, cccd_number')
       .eq('id', user.id)
       .maybeSingle(),
     supabase
@@ -88,7 +88,6 @@ export async function createDriverWithdrawalInvoice(): Promise<{ error: string |
     bankAccountName: driver.bank_account_name,
     bankAccountNumber: driver.bank_account_number,
     bankName: driver.bank_name,
-    bankBin: driver.bank_bin,
   }
   const now = new Date().toISOString()
 
@@ -118,7 +117,6 @@ export async function createDriverWithdrawalInvoice(): Promise<{ error: string |
     bankAccountName: driver.bank_account_name,
     bankAccountNumber: driver.bank_account_number,
     bankName: driver.bank_name,
-    bankBin: driver.bank_bin,
   })
   const invoiceHtml = `${contractHtml}<div class="page-break"></div>${invoiceDocHtml}`
 

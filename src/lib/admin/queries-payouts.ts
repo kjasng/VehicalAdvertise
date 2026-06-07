@@ -102,7 +102,7 @@ export async function getDriverBalances(): Promise<DriverBalance[]> {
     supabase.from('profiles').select('id, full_name, email, phone_e164').in('id', positiveIds),
     supabase
       .from('drivers')
-      .select('id, bank_account_number, bank_account_name, bank_bin')
+      .select('id, bank_account_number, bank_account_name')
       .in('id', positiveIds),
   ])
 
@@ -127,7 +127,7 @@ export async function getDriverBalances(): Promise<DriverBalance[]> {
           stringValue(bankSnapshot.bankAccountNumber) ?? driver?.bank_account_number ?? null,
         bankAccountName:
           stringValue(bankSnapshot.bankAccountName) ?? driver?.bank_account_name ?? null,
-        bankBin: stringValue(bankSnapshot.bankBin) ?? driver?.bank_bin ?? null,
+        bankBin: stringValue(bankSnapshot.bankBin) ?? null,
         totalAccrualVnd: accrual,
         totalPaidVnd: paid,
         netBalanceVnd: accrual - paid,

@@ -11,9 +11,6 @@ export type DriverProfileData = {
   bankAccountName: string
   bankAccountNumber: string
   bankName: string
-  bankBranch: string
-  bankBin: string
-  bankVerified: boolean
   vehicleId: string | null
   vehiclePlate: string
 }
@@ -35,9 +32,7 @@ export async function getDriverProfileData(): Promise<DriverProfileData | null> 
       .maybeSingle(),
     supabase
       .from('drivers')
-      .select(
-        'id, bank_account_name, bank_account_number, bank_name, bank_branch, bank_bin, bank_verified_at',
-      )
+      .select('id, bank_account_name, bank_account_number, bank_name')
       .eq('id', user.id)
       .maybeSingle(),
     supabase
@@ -62,9 +57,6 @@ export async function getDriverProfileData(): Promise<DriverProfileData | null> 
     bankAccountName: driver.bank_account_name ?? '',
     bankAccountNumber: driver.bank_account_number ?? '',
     bankName: driver.bank_name ?? '',
-    bankBranch: driver.bank_branch ?? '',
-    bankBin: driver.bank_bin ?? '',
-    bankVerified: Boolean(driver.bank_verified_at),
     vehicleId: vehicle?.id ?? null,
     vehiclePlate: vehicle?.plate ?? '',
   }
