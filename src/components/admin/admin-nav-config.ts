@@ -14,7 +14,6 @@ import {
   GitMerge,
   Receipt,
   Landmark,
-  Scale,
   SlidersHorizontal,
   Users,
   BarChart2,
@@ -54,7 +53,6 @@ export const ADMIN_NAV: NavItem[] = [
 
   // ── Money ─────────────────────────────────────────────────────
   { href: '/admin/partner-balances', label: 'Partner Balances', icon: Landmark },
-  { href: '/admin/ledger-adjustments', label: 'Ledger Adjustments', icon: Scale },
   { href: '/admin/pricing-settings', label: 'Settings', icon: SlidersHorizontal },
 
   // ── System ────────────────────────────────────────────────────

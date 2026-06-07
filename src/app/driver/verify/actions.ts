@@ -90,7 +90,13 @@ export async function submitKyc(formData: FormData): Promise<{ error: string | n
   // Update profile name + phone
   const { error: profileErr } = await supabase
     .from('profiles')
-    .update({ full_name: fullName, phone_e164: phone })
+    .update({
+      full_name: fullName,
+      phone_e164: phone,
+      kyc_status: 'pending',
+      kyc_reviewed_by: null,
+      kyc_reviewed_at: null,
+    })
     .eq('id', uid)
   if (profileErr) {
     // Postgres unique_violation code 23505 — phone already used by another account

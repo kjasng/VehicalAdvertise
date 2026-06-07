@@ -5,7 +5,6 @@ import { z } from 'zod'
 
 import { getCurrentUserRole } from '@/lib/auth/role-gate'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 const CampaignFundingSchema = z
   .object({
@@ -31,12 +30,6 @@ export async function updateCampaignFunding(raw: unknown): Promise<{ error: stri
   const role = await getCurrentUserRole()
   if (role !== 'admin') return { error: 'Forbidden' }
 
-  const serverClient = await createSupabaseServerClient()
-  const {
-    data: { user },
-  } = await serverClient.auth.getUser()
-  if (!user) return { error: 'Not authenticated' }
-
   const data = parsed.data
   const supabase = createSupabaseAdminClient()
   const { error } = await supabase
@@ -52,15 +45,6 @@ export async function updateCampaignFunding(raw: unknown): Promise<{ error: stri
     .eq('id', data.campaignId)
 
   if (error) return { error: error.message }
-
-  const { error: auditError } = await supabase.from('audit_log').insert({
-    actor_id: user.id,
-    action: 'campaign_funding_updated',
-    entity_type: 'campaigns',
-    entity_id: data.campaignId,
-    diff: data,
-  })
-  if (auditError) console.error('[updateCampaignFunding] audit insert failed:', auditError.message)
 
   revalidatePath('/admin/campaigns')
   revalidatePath('/admin/contracts')

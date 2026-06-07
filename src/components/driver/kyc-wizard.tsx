@@ -9,6 +9,7 @@
  */
 import { useState, useTransition } from 'react'
 
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 import { submitKyc } from '@/app/driver/verify/actions'
@@ -67,6 +68,7 @@ interface KycWizardProps {
 }
 
 export function KycWizard({ rejected = false }: KycWizardProps) {
+  const router = useRouter()
   const [step, setStep] = useState<Step>(1)
   const [pending, startTransition] = useTransition()
   // Step 1 state
@@ -98,8 +100,8 @@ export function KycWizard({ rejected = false }: KycWizardProps) {
         if (result.error.includes('điện thoại')) setStep(1)
         toast.error(result.error)
       } else {
-        // Server page re-renders on next load and shows waiting screen from DB state
         toast.success('Hồ sơ đã được gửi. Chúng tôi sẽ phản hồi trong 24 giờ.')
+        router.refresh()
       }
     })
   }

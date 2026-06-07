@@ -1,179 +1,110 @@
 # Codebase Summary
 
-**Overview:** Next.js 16 + TypeScript monolith. Supabase (Postgres, Auth, Storage) + SePay. Four role panels (driver, partner, garage, admin) with shared shell architecture (sidebar + multi-page layout). RLS-enforced security; current earning flow is monthly driver accrual after admin-approved decal installation.
+**Overview:** VehicalAdvertise là ứng dụng Next.js 16 + TypeScript dùng Supabase Auth, Postgres và Storage. Scope hiện tại tập trung vào 4 nhóm actor: Driver, Garage, Partner, Platform/Admin. Luồng tiền gồm nạp tự động cho Partner và payout Driver/Garage do Admin duyệt, ghi nhận chuyển khoản thủ công.
 
-## App Routes
+## Scope Chính Hiện Tại
 
-| Route                                | Purpose                                                                                                              |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| `/driver`                            | Driver panel — dashboard, KYC verification, garage selection, monthly withdrawal invoices, profile + payout settings |
-| `/partner`                           | Partner web — approved-only dashboard, Plan/top-up QR, campaign invoices, real campaign publish flow, ledger         |
-| `/garage`                            | Garage web — real install jobs, 4-angle install proof upload, balance, profile/payout settings, withdrawal history   |
-| `/admin`                             | Admin panel — dashboard, verification queues, campaigns, money ops, pricing, invoices/reports, users                 |
-| `/(public)`                          | Landing, OAuth login (Google + GitHub), QR redirect                                                                  |
-| `/onboarding`                        | Role selection & CCCD upload (pending users post-signup)                                                             |
-| `/api/v1/*`                          | Route handlers — SePay auto top-up webhook, reports, QR tracking, state transitions                                  |
-| `/api/v1/admin/reports/[type]` (GET) | Monthly CSV export for driver, partner, garage invoices and net profit; admin-auth guarded                           |
+| Actor          | Chức năng chính                                                                                                                                                                                                                                         |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Driver         | Đăng ký bằng email/password, đăng nhập, chọn vai trò và hoàn thiện hồ sơ ban đầu, gửi/cập nhật thông tin cá nhân, chờ Admin duyệt hồ sơ, tài khoản nhận tiền, chọn garage, xác thực decal sau dán, gửi ảnh xác minh decal hằng tháng, thống kê thu nhập |
+| Garage         | Đăng nhập, cập nhật thông tin garage và thanh toán, xem lịch lắp decal, đăng ảnh sau khi dán decal, xem nguồn thu theo tháng                                                                                                                            |
+| Partner        | Đăng ký bằng email/password, đăng nhập, chọn vai trò và hoàn thiện hồ sơ ban đầu, gửi thông tin doanh nghiệp, chờ Admin duyệt hồ sơ, nạp tiền tự động, tạo/chỉnh campaign, dashboard/chi phí                                                            |
+| Platform/Admin | Đăng nhập, xem dashboard hệ thống, duyệt hồ sơ Driver/Partner, duyệt ảnh decal sau dán, duyệt ảnh xác minh decal hằng tháng, xem hóa đơn/lợi nhuận, gán Driver vào campaign, quản lý rút tiền, chỉnh thông số hệ thống, users/roles                     |
 
-## Shared Shell Primitives
+## Phần Đã Lược Khỏi Summary
 
-Located in `src/components/shared/`. All pure server components except noted.
+| Phần cũ                               | Trạng thái trình bày                               |
+| ------------------------------------- | -------------------------------------------------- |
+| Theo dõi vị trí hành trình            | Không mô tả như use case chính                     |
+| Ảnh kiểm tra theo lịch kiểu cũ        | Thay bằng Driver gửi ảnh xác minh decal hằng tháng |
+| Cập nhật thông tin xe như UC riêng    | Không có thao tác demo rõ                          |
+| Campaign hết gói như UC riêng         | Chỉ là rule/trạng thái của campaign                |
+| Nhật ký kỹ thuật                      | Không đưa thành actor/lifeline                     |
+| Biểu đồ km/route/attribution chi tiết | Không đưa vào dashboard scope mới                  |
+| Các mở rộng hậu kỳ khác               | Ngoài scope summary hiện tại                       |
 
-| Component             | Purpose                                                                     |
-| --------------------- | --------------------------------------------------------------------------- |
-| `role-shell.tsx`      | Entrypoint — discriminated union (sidebar or bottom-nav variant)            |
-| `role-sidebar.tsx`    | Dark desktop sidebar with nav items + user menu (active state via pathname) |
-| `role-bottom-nav.tsx` | Fixed-bottom mobile tab bar, 2px accent border on active item               |
-| `role-topbar.tsx`     | h-[64px] header for bottom-nav layout                                       |
-| `role-user-menu.tsx`  | **Client component.** Avatar initials + dropdown (signOut action)           |
-| `page-header.tsx`     | Kicker + Anton h1 + optional CTA button                                     |
-| `kpi-card.tsx`        | Big-number card with green/red delta badge                                  |
-| `section-shell.tsx`   | Bordered container; light/dark variant                                      |
-| `empty-state.tsx`     | Pencil placeholder illustration (replaces old PlaceholderCard)              |
+## App Routes Theo Actor
 
-## Admin Shared Components
+| Route                          | Purpose                                                                                                                |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `/driver`                      | Driver workspace: dashboard thu nhập, chọn garage, hóa đơn/rút tiền, hồ sơ cá nhân/xe/tài khoản nhận tiền              |
+| `/garage`                      | Garage workspace: dashboard nguồn thu, lịch lắp decal, upload proof sau dán decal, hồ sơ garage/thanh toán             |
+| `/partner`                     | Partner workspace: hồ sơ doanh nghiệp, nạp tiền, tạo campaign, dashboard, hóa đơn/chi phí                              |
+| `/admin`                       | Platform/Admin workspace: dashboard hệ thống, campaign/contract, xác thực decal, hóa đơn, payout, pricing, users/roles |
+| `/onboarding`                  | Chọn vai trò và hoàn thiện thông tin ban đầu sau đăng ký                                                               |
+| `/api/v1/webhooks/sepay`       | Webhook nạp tiền tự động cho Partner                                                                                   |
+| `/api/v1/admin/reports/[type]` | Export báo cáo tháng cho Admin                                                                                         |
 
-Located in `src/components/admin/` and `src/app/admin/*/`. Admin pages wire real Supabase data via query library; no mock data in pages.
+## Workflow Theo Actor
 
-| Component                        | Purpose                                                                                                            |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `admin-nav-config.ts`            | ADMIN_NAV: sidebar groups/items for dashboard, verification, invoices, campaigns, money, and users                 |
-| `data-table.tsx`                 | **Client component.** Generic `<DataTable<T>>` — sticky header, zebra rows, click-to-sort, pencil border colors    |
-| `review-drawer.tsx`              | **Client component.** Slide-in-from-right with backdrop + Escape close, role=dialog a11y                           |
-| `kyc-review-content.tsx`         | **Client component.** KYC review drawer body — CCCD photos, selfie, approve/reject actions                         |
-| `creative-review-content.tsx`    | **Client component.** Creative review drawer body — image preview, spec list, approve/reject actions               |
-| `photo-verif-review-content.tsx` | **Client component.** Photo verification drawer body — verify image, approve/reject with reason                    |
-| `invoice-filters.tsx`            | **Client component.** Date range + search; lifted state via callback                                               |
-| `invoice-table.tsx`              | **Client component.** InvoiceFilters + DataTable with real invoice rows, print links, and client-side filtering    |
-| `monthly-finance-table.tsx`      | **Client component.** Monthly finance table with selectable invoice/profit metrics                                 |
-| `weekly-km-chart.tsx`            | **Client component.** Recharts line chart accepting real data prop from dashboard                                  |
-| `demo-badge.tsx`                 | Inline "DEMO" label; renders only when `NODE_ENV !== 'production'`                                                 |
-| `kyc-queue-client.tsx`           | **Client component.** Drawer + DataTable for KYC queue; handles row selection and reviewer actions                 |
-| `creatives-queue-client.tsx`     | **Client component.** Drawer + DataTable for creatives review; handles approval workflow                           |
-| `install-proofs-client.tsx`      | **Client component.** Batch review drawer for 4-photo install proof submissions                                    |
-| `photo-verif-queue-client.tsx`   | **Client component.** Drawer + DataTable for photo verification queue; interactive review + rejection handling     |
-| `pricing-settings-client.tsx`    | **Client component.** Role-grouped settings; garage install payout is fixed 3.2m VND                               |
-| `contracts-client.tsx`           | **Client component.** Campaign workspace with assignment filters and links to per-campaign analytics detail        |
-| `payouts-client.tsx`             | **Client component.** Withdrawal request table reused inside Driver/Garage invoice pages with search/month filters |
-| `garage-withdrawals-table.tsx`   | **Client component.** Garage withdrawal queue: approve, mark paid, or reject and refund balance                    |
-| `users-table-client.tsx`         | **Client component.** DataTable with search params (?q=) for user filtering and status management                  |
-| `mock-data.ts`                   | Reference data (not imported in any page; used only for component development and tests)                           |
+### Driver
 
-## Admin Query Library
+- Đăng ký bằng email/password qua Supabase Auth, sau đó vào trang chọn vai trò Driver và hoàn thiện hồ sơ ban đầu.
+- Gửi/cập nhật thông tin cá nhân trong `profiles` và `drivers`.
+- Sau đăng ký, hồ sơ Driver cần Platform/Admin duyệt trước khi vào luồng vận hành chính.
+- Cập nhật tài khoản nhận tiền để đủ điều kiện tạo yêu cầu rút.
+- Chọn garage đã được duyệt cho contract đang chờ lắp.
+- Theo dõi trạng thái xác thực decal sau khi Garage upload proof và Admin duyệt.
+- Gửi ảnh xác minh decal định kỳ hằng tháng để Platform/Admin duyệt.
+- Xem thu nhập, hóa đơn và trạng thái payout.
 
-Located in `src/lib/admin/`. Server-side query helpers for dashboard, review queues, and reporting.
+### Garage
 
-| Query                   | Purpose                                                                      |
-| ----------------------- | ---------------------------------------------------------------------------- |
-| `getDashboardStats`     | KPIs and recent request feed for admin dashboard                             |
-| `getKycQueue`           | Pending KYC reviews with profile + document URLs                             |
-| `getCreativesQueue`     | Campaign creatives awaiting approval                                         |
-| `getInstallProofs`      | Contract-level 4-photo installation verification submissions                 |
-| `getPhotoVerifications` | Photo verification queue                                                     |
-| `getDriverInvoices`     | Driver withdrawal invoices from `driver_invoices` with print href            |
-| `getPartnerInvoices`    | Partner campaign charge invoices from monthly earning periods                |
-| `getGarageInvoices`     | Garage withdrawal invoices from `garage_withdrawals` with print href         |
-| `getWithdrawalRequests` | Driver/Garage withdrawal request rows and nav badge counts for invoice pages |
-| `getPricingSettings`    | Current role pricing rule for garage payout, partner cap, and driver rates   |
-| `getRecentAdjustments`  | Recent manual `adjustment` / `refund` ledger entries                         |
-| `getLedgerTargets`      | Partner + driver target list for admin ledger adjustments                    |
-| `getUsers`              | Users list with role + status filtering                                      |
-| `getReportsData(month)` | Monthly finance reports: driver paid, partner charges, garage paid, profit   |
+- Đăng nhập qua Supabase Auth.
+- Cập nhật tên garage, địa chỉ, Google Maps, thông tin liên hệ và tài khoản thanh toán.
+- Xem lịch/job lắp decal được Driver chọn hoặc Admin gán.
+- Upload ảnh proof sau khi dán decal.
+- Xem nguồn thu theo tháng và trạng thái withdrawal.
 
-## Admin Utilities
+### Partner
 
-CSV export and report helpers in `src/lib/admin/`.
+- Đăng ký bằng email/password qua Supabase Auth, sau đó vào trang chọn vai trò Partner và hoàn thiện hồ sơ ban đầu.
+- Gửi thông tin doanh nghiệp: tên công ty, mã số thuế, địa chỉ, liên hệ.
+- Sau đăng ký, hồ sơ doanh nghiệp cần Platform/Admin duyệt trước khi tạo campaign.
+- Nạp tiền tự động; webhook/cơ chế xác nhận giao dịch cộng balance và ghi ledger.
+- Tạo campaign với creative, thời gian, số Driver, monthly cap và budget reserve.
+- Chỉnh sửa campaign trước khi Admin duyệt: thuộc scope nghiệp vụ, cần action/rule rõ nếu triển khai đầy đủ.
+- Campaign hết gói chỉ mô tả như rule/trạng thái của campaign, không đưa thành use case riêng.
+- Xem dashboard: số tiền hiện tại, tổng campaign, tổng Driver, monthly budget usage, danh sách campaign.
+- Xem thống kê chi phí tháng: tiền Driver, công Garage, chi phí khác.
 
-| Module           | Purpose                                                                     |
-| ---------------- | --------------------------------------------------------------------------- |
-| `csv-helpers.ts` | `toCsv()` (RFC 4180 + formula injection defense), `csvResponse()` (headers) |
+### Platform/Admin
 
-## Driver Shared Components
+- Đăng nhập qua Supabase Auth.
+- Xem dashboard hệ thống: active drivers, campaigns, doanh thu, lợi nhuận.
+- Duyệt hoặc từ chối hồ sơ Driver/Partner sau đăng ký.
+- Duyệt ảnh decal sau dán từ proof Garage upload.
+- Duyệt ảnh xác minh decal hằng tháng do Driver gửi.
+- Xem hóa đơn Driver, Partner, Garage và báo cáo lợi nhuận.
+- Gán Driver/xe/Garage vào campaign để tạo contract.
+- Quản lý rút tiền Driver/Garage: duyệt, từ chối, đánh dấu đã chuyển khoản.
+- Điều chỉnh thông số hệ thống: giá dán decal, số tiền rút tối thiểu, số tiền nạp tối thiểu, phí dịch vụ.
+- Quản lý người dùng và phân quyền role.
 
-Located in `src/components/driver/`. Support the driver panel (dashboard, KYC, invoices, profile).
+## Actor Phụ
 
-| Component                         | Purpose                                                                                |
-| --------------------------------- | -------------------------------------------------------------------------------------- |
-| `driver-nav-config.ts`            | DRIVER_NAV: Dashboard, Verify, Garage, Invoice, Profile with href + label + icon       |
-| `today-card.tsx`                  | Dark SectionShell — km numeral (Anton 72px), earnings, campaign badge, "Go online" CTA |
-| `weekly-km-chart.tsx`             | Recharts AreaChart, 7-day mock data, primary fill + stroke                             |
-| `kyc-wizard.tsx`                  | 3-step state machine, StepIndicator, FileInput w/ camera capture, sonner toast stub    |
-| `invoice-list-item.tsx`           | Expand/collapse `<details>` — monthly invoice number, period, amount, status pill      |
-| `profile-vehicle-photo-input.tsx` | Isolated client component for camera file input (extracted to keep profile page ≤200)  |
-| `mock-data.ts`                    | TodayStats, DailyKmPoint, VerificationPrompt, DriverInvoiceRow — VN realistic data     |
+| Actor phụ             | Vai trò                                                 |
+| --------------------- | ------------------------------------------------------- |
+| Supabase Auth         | Xác thực đăng ký/đăng nhập                              |
+| Supabase Database/RPC | Lưu hồ sơ, campaign, contract, invoice, ledger, setting |
+| Supabase Storage      | Lưu ảnh creative và proof decal                         |
+| Dịch vụ email         | Thông báo kết quả duyệt khi cấu hình gửi email bật      |
 
-## Partner Shared Components
+Ghi chú: các dịch vụ thanh toán và cơ chế nội bộ tạm thời không trình bày như actor trong tài liệu UML/summary. Khi cần mô tả triển khai, đưa vào phần kiến trúc hoặc integration detail.
 
-Located in `src/components/partner/`. Support the partner panel (campaigns, contracts, verification, ledger).
+## Shared UI And Data Modules
 
-| Component                  | Purpose                                                                                             |
-| -------------------------- | --------------------------------------------------------------------------------------------------- |
-| `partner-nav-config.ts`    | PARTNER_NAV: flat sidebar items for partner workflows, including separate Plan and Invoices         |
-| `campaign-form-wizard.tsx` | Real publish wizard: 3/6/12-month + Business packages, creative URLs, driver count, cap validation  |
-| `campaign-card.tsx`        | Real campaign card with status mapping, requested drivers, monthly cap, and budget usage            |
-| `campaign-budget-hint.tsx` | Partner budget hint for driver net, 10% platform fee, and 3.2m VND garage install reserve           |
-| `plan-package-grid.tsx`    | Partner Plan cards: 3/6/12-month packages, Business option, fixed 1m driver/month modal QR checkout |
-| `plan-checkout-modal.tsx`  | Plan checkout modal with selected package, QR payment, and bank transfer details                    |
-| `topup-qr-card.tsx`        | SePay-compatible VietQR top-up image with 10m VND minimum deposit                                   |
-| `ledger-table.tsx`         | Real partner ledger rows from `ledger_entries`                                                      |
+| Area         | Main files                                                                                                                 |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| Shared shell | `src/components/shared/role-shell.tsx`, `role-sidebar.tsx`, `role-bottom-nav.tsx`, `role-topbar.tsx`, `role-user-menu.tsx` |
+| Driver       | `src/app/driver/*`, `src/components/driver/*`, `src/lib/driver/*`                                                          |
+| Garage       | `src/app/garage/*`, `src/components/garage/*`, `src/lib/garage/*`                                                          |
+| Partner      | `src/app/partner/*`, `src/components/partner/*`, `src/lib/partner/*`                                                       |
+| Admin        | `src/app/admin/*`, `src/components/admin/*`, `src/lib/admin/*`                                                             |
+| Auth/gating  | `src/lib/auth/role-gate.ts`, `src/proxy.ts`                                                                                |
+| Supabase     | `src/lib/supabase/server.ts`, `src/lib/supabase/admin.ts`, `supabase/migrations/*`                                         |
 
-## Garage Shared Components
+## Unresolved Questions
 
-Located in `src/components/garage/`. Support real garage install and payout workflows.
-
-| Component                         | Purpose                                                                                               |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `garage-nav-config.ts`            | GARAGE_NAV: Dashboard, Installs, Proof Upload, Invoices, Profile                                      |
-| `install-card.tsx`                | Real install job summary card                                                                         |
-| `install-detail-drawer.tsx`       | Install job detail drawer with driver, vehicle, campaign, proof state, upload CTA                     |
-| `photo-capture-grid.tsx`          | 4-photo install proof uploader wired to Supabase Storage + `photos`                                   |
-| `garage-payout-settings-form.tsx` | Garage profile + payout settings on `/garage/profile`                                                 |
-| `garage-invoices-client.tsx`      | `/garage/payout` Invoices view: paid-invoices table + period filter + recent requests + modal trigger |
-| `garage-invoice-table.tsx`        | Paid withdrawals rendered as a printable invoices table                                               |
-| `garage-withdrawal-modal.tsx`     | Request payout modal: amount + read-only bank info from profile                                       |
-| `payout-row.tsx`                  | Non-paid (recent) withdrawal request row with status pill + print link                                |
-
-## Vietnamese Documents (invoices & contracts)
-
-Printed money documents render as Vietnamese-style HTML (`dangerouslySetInnerHTML` on `/print` routes). **No tax/VAT/withholding** is applied for any party — amounts are unchanged. Shared primitives in `src/lib/shared/vn-doc/`.
-
-| Module                              | Purpose                                                                                              |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `shared/vn-doc/format.ts`           | `escapeHtml`, `formatVndDong` ("1.000.000 đồng")                                                     |
-| `shared/vn-doc/amount-in-words.ts`  | `amountInWords` — "số tiền bằng chữ" via `vn-num2words`                                              |
-| `shared/vn-doc/doc-styles.ts`       | `BASE_DOC_CSS`, `vnNationalHeader()` (Quốc hiệu), `vnSignatureRow()`                                 |
-| `shared/vn-doc/company-info.ts`     | `getCompanyInfo()` — seller "Bên A" identity (static + `COMPANY_*` env)                              |
-| `driver/ad-lease-contract-html.ts`  | "Hợp đồng thuê vị trí quảng cáo trên xe ô tô" (Bên A/Bên B, CCCD + biển số; no tax clause)           |
-| `driver/invoice-html.ts`            | VN driver payment invoice; stored combined with the lease contract in `driver_invoices.invoice_html` |
-| `partner/invoice-html.ts`           | VN simple partner invoice (no VAT)                                                                   |
-| `partner/acceptance-record-html.ts` | "Biên bản nghiệm thu" — vehicle plate list + signed install-proof photos                             |
-| `garage/withdrawal-html.ts`         | "Hóa đơn dịch vụ thi công decal" (garage = bên bán, company = bên mua; no VAT)                       |
-
-Print routes: `/driver/invoice/[id]/print` (RLS, own only), `/admin/invoices/{driver,partner}/[id]/print` (admin), `/garage/payout/[id]/print`.
-
-## Auth & Gating
-
-| Module                         | Purpose                                                                                                                                                                              |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `src/lib/auth/role-gate.ts`    | `getProfileRole(userId)` — reads `profiles.role` via service-role client; `requireRole(role)` — guards server pages                                                                  |
-| `src/lib/auth/admin-bypass.ts` | `isAdminBypassEnabled()` — strict check `process.env.ADMIN_PANEL_BYPASS === 'true'`; `canAdminBypassPath(profileRole, requiredRole)` — allows admin to view other role panels in dev |
-| `src/proxy.ts`                 | Middleware — session refresh, role check, redirect to `/onboarding` for pending, optional admin bypass, **sets `x-pathname` header for server layout pathname access**               |
-
-## Design Reference
-
-**Source of truth:** `plans/260525-2201-role-panels-pencil-redesign/design-tokens.md`
-
-All components use:
-
-- Colors: `#1a1a1a` (dark), `#cbccc9` (border), `#f7f8fa` (light bg), `#666666` (muted text)
-- Typography: `font-heading` (Anton, uppercase, tight tracking), `text-sm`/`text-base` for body
-- Borders: 1px `#cbccc9`, light pencil-sketch aesthetic
-- Icons: Lucide React
-
-## Key Conventions
-
-1. **`x-pathname` header:** Set early in `proxy.ts`. Server layouts read via `headers().get('x-pathname')` to determine active nav item without client-side hooks.
-2. **File size:** New garage flow files stay ≤ 200 lines.
-3. **Real data wiring:** All admin pages fetch via `src/lib/admin/` query library (getKycQueue, getCreativesQueue, getInstallProofs, etc.). Mock-data.ts retained for reference only.
-4. **Server/client boundary:** Pages are server components that fetch data; client wrapper components (e.g., kyc-queue-client) handle interactivity (drawers, state, actions).
-5. **Action handlers:** Approve/reject/suspend now call real server actions (reviewDriverKyc, reviewCampaign, etc.) wired to Supabase security-definer RPCs.
+1. Partner chỉnh sửa campaign trước duyệt sẽ dùng server action nào và giới hạn sửa theo status nào?
+2. Ảnh xác minh decal hằng tháng sẽ dùng bảng/request/status nào khi triển khai đầy đủ?

@@ -57,11 +57,11 @@ export async function POST(request: NextRequest) {
   const { data, error } = await supabase.rpc('process_sepay_partner_topup_webhook', {
     p_txn_id: payload.id,
     p_payload: payload as Json,
-    p_tax_code: taxCode,
+    p_tax_code: taxCode ?? '',
     p_amount_vnd: payload.transferAmount,
     p_transfer_type: payload.transferType,
     p_account_number: payload.accountNumber,
-    p_expected_account_number: process.env.SEPAY_TOPUP_BANK_ACCOUNT?.trim() || null,
+    p_expected_account_number: process.env.SEPAY_TOPUP_BANK_ACCOUNT?.trim() || undefined,
     p_min_amount_vnd: getMinimumTopupVnd(),
   })
 

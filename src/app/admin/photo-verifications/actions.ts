@@ -49,15 +49,6 @@ export async function reviewPhotoVerif(raw: unknown): Promise<{ error: string | 
   if (updateError) return { error: updateError.message }
   if (!updated?.length) return { error: 'Photo already reviewed or not found' }
 
-  const { error: auditError } = await supabase.from('audit_log').insert({
-    actor_id: user.id,
-    action: `photo_verif_${decision}`,
-    entity_type: 'photos',
-    entity_id: photoId,
-    diff: { reason: reason ?? null },
-  })
-  if (auditError) console.error('[reviewPhotoVerif] audit_log insert failed:', auditError.message)
-
   revalidatePath('/admin/photo-verifications')
   return { error: null }
 }

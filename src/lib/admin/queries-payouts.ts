@@ -20,24 +20,6 @@ export type DriverBalance = {
   periodEnd: string
 }
 
-export type PayoutRow = {
-  id: string
-  driverId: string
-  driverName: string
-  email: string | null
-  phone: string | null
-  bankAccountNumber: string | null
-  bankAccountName: string | null
-  bankBin: string | null
-  periodStart: string
-  periodEnd: string
-  amountVnd: number
-  status: 'pending' | 'processing' | 'paid' | 'failed'
-  paidAt: string | null
-  failureReason: string | null
-  createdAt: string
-}
-
 export type GarageWithdrawalAdminRow = {
   id: string
   withdrawalNumber: string
@@ -90,7 +72,7 @@ export async function getDriverBalances(): Promise<DriverBalance[]> {
   const { data: entries, error: entriesError } = await supabase
     .from('ledger_entries')
     .select('driver_id, kind, amount_vnd')
-    .in('kind', ['driver_accrual', 'driver_payout', 'adjustment', 'refund'])
+    .in('kind', ['driver_accrual', 'driver_payout'])
     .in('driver_id', requestedDriverIds)
 
   if (entriesError) {
@@ -155,78 +137,6 @@ export async function getDriverBalances(): Promise<DriverBalance[]> {
       }
     })
     .sort((a, b) => a.periodStart.localeCompare(b.periodStart))
-}
-
-/** Fetches payout history ordered by newest first. */
-export async function getPayoutHistory(): Promise<PayoutRow[]> {
-  const supabase = createSupabaseAdminClient()
-
-  const { data: payouts, error } = await supabase
-    .from('payouts')
-    .select(
-      'id, driver_id, period_start, period_end, amount_vnd, status, paid_at, failure_reason, created_at',
-    )
-    .order('created_at', { ascending: false })
-    .limit(200)
-
-  if (error) {
-    console.error('[getPayoutHistory] payouts query error:', error.message)
-    return []
-  }
-  if (!payouts?.length) return []
-
-  const driverIds = [...new Set(payouts.map((p) => p.driver_id))]
-  const payoutIds = payouts.map((p) => p.id)
-  const [profilesRes, driversRes, invoicesRes] = await Promise.all([
-    driverIds.length
-      ? supabase.from('profiles').select('id, full_name, email, phone_e164').in('id', driverIds)
-      : Promise.resolve({ data: [] }),
-    driverIds.length
-      ? supabase
-          .from('drivers')
-          .select('id, bank_account_number, bank_account_name, bank_bin')
-          .in('id', driverIds)
-      : Promise.resolve({ data: [] }),
-    payoutIds.length
-      ? supabase
-          .from('driver_invoices')
-          .select('payout_id, bank_snapshot')
-          .in('payout_id', payoutIds)
-      : Promise.resolve({ data: [] }),
-  ])
-
-  const profileById = Object.fromEntries((profilesRes.data ?? []).map((p) => [p.id, p]))
-  const driverById = Object.fromEntries((driversRes.data ?? []).map((d) => [d.id, d]))
-  const invoiceByPayoutId = Object.fromEntries(
-    (invoicesRes.data ?? [])
-      .filter((invoice) => invoice.payout_id)
-      .map((invoice) => [invoice.payout_id!, invoice]),
-  )
-
-  return payouts.map((p) => {
-    const profile = profileById[p.driver_id]
-    const driver = driverById[p.driver_id]
-    const bankSnapshot = (invoiceByPayoutId[p.id]?.bank_snapshot ?? {}) as Record<string, unknown>
-    return {
-      id: p.id,
-      driverId: p.driver_id,
-      driverName: profile?.full_name ?? 'Unknown',
-      email: profile?.email ?? null,
-      phone: profile?.phone_e164 ?? null,
-      bankAccountNumber:
-        stringValue(bankSnapshot.bankAccountNumber) ?? driver?.bank_account_number ?? null,
-      bankAccountName:
-        stringValue(bankSnapshot.bankAccountName) ?? driver?.bank_account_name ?? null,
-      bankBin: stringValue(bankSnapshot.bankBin) ?? driver?.bank_bin ?? null,
-      periodStart: p.period_start,
-      periodEnd: p.period_end,
-      amountVnd: p.amount_vnd,
-      status: p.status as PayoutRow['status'],
-      paidAt: p.paid_at,
-      failureReason: p.failure_reason,
-      createdAt: p.created_at,
-    }
-  })
 }
 
 /** Garage withdrawal requests for manual admin review and transfer tracking. */

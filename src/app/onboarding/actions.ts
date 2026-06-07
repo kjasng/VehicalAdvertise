@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import { homeForRole } from '@/lib/auth/role-gate'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
-import type { UserRole } from '@/types/db'
+import type { UserRole } from '@/types/db-aliases'
 
 // Garage is handled manually by admin — not self-assignable
 const SELF_ASSIGNABLE: UserRole[] = ['driver', 'partner']

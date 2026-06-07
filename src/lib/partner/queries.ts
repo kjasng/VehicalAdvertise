@@ -2,7 +2,7 @@ import 'server-only'
 
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import type { CampaignStatus } from '@/types/db'
+import type { CampaignStatus } from '@/types/db-aliases'
 
 import { DRIVER_GROSS_MONTHLY_VND, formatVnd } from './constants'
 

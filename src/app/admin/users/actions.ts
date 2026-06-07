@@ -87,15 +87,6 @@ export async function deleteUser(raw: unknown): Promise<{ error: string | null }
   const { error: deleteError } = await supabase.auth.admin.deleteUser(targetId)
   if (deleteError) return { error: deleteError.message }
 
-  const { error: auditError } = await supabase.from('audit_log').insert({
-    actor_id: user.id,
-    action: 'user_deleted',
-    entity_type: 'profiles',
-    entity_id: targetId,
-    diff: { name: target?.full_name ?? null },
-  })
-  if (auditError) console.error('[deleteUser] audit_log insert failed:', auditError.message)
-
   revalidatePath('/admin/users')
   return { error: null }
 }
@@ -111,17 +102,7 @@ export async function changeUserRole(raw: unknown): Promise<{ error: string | nu
   const callerRole = await getCurrentUserRole()
   if (callerRole !== 'admin') return { error: 'Forbidden' }
 
-  // Resolve uid for audit_log (service-role client has no session)
-  const serverClient = await createSupabaseServerClient()
-  const {
-    data: { user },
-  } = await serverClient.auth.getUser()
-  if (!user) return { error: 'Not authenticated' }
-
   const supabase = createSupabaseAdminClient()
-
-  // Fetch previous role for audit diff
-  const { data: prev } = await supabase.from('profiles').select('role').eq('id', targetId).single()
 
   // profiles.role is revoked from authenticated; service-role client bypasses the revoke
   const { error: updateError } = await supabase
@@ -130,15 +111,6 @@ export async function changeUserRole(raw: unknown): Promise<{ error: string | nu
     .eq('id', targetId)
 
   if (updateError) return { error: updateError.message }
-
-  const { error: auditError } = await supabase.from('audit_log').insert({
-    actor_id: user.id,
-    action: 'user_role_changed',
-    entity_type: 'profiles',
-    entity_id: targetId,
-    diff: { from: prev?.role ?? null, to: newRole },
-  })
-  if (auditError) console.error('[changeUserRole] audit_log insert failed:', auditError.message)
 
   revalidatePath('/admin/users')
   return { error: null }

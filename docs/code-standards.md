@@ -11,7 +11,7 @@ Enforced via lint + review. Non-negotiable rules first; conventions second.
 5. **Toasts:** `sonner`. No alternative toast libraries.
 6. **Icons:** `lucide-react`.
 7. **Service-role key:** `SUPABASE_SERVICE_ROLE_KEY` server-only. `src/lib/supabase/admin.ts` MUST NOT be imported from a `'use client'` file or any code path that ships to the browser. The file imports `'server-only'` to enforce this at bundle time.
-8. **RLS:** Every Supabase table has RLS enabled. Default policy is deny. Add explicit `select` / `insert` / `update` / `delete` policies in `supabase/migrations/000N_rls.sql`. Money / GPS writes go through service-role API routes — never client → Postgres direct.
+8. **RLS:** Every Supabase table has RLS enabled. Default policy is deny. Add explicit `select` / `insert` / `update` / `delete` policies in `supabase/migrations/000N_rls.sql`. Money writes go through service-role API routes — never client → Postgres direct.
 9. **State transitions:** Never `UPDATE status` directly. Call `transition_campaign` / `transition_contract` RPCs (defined in `0003_functions.sql`). RLS blocks direct writes.
 10. **File size:** Keep individual code files under 200 LOC. Split into focused modules; extract utilities to `src/lib/*` or `src/server/*`.
 11. **Naming:** kebab-case for `.ts` / `.tsx` (e.g. `role-gate.ts`, `login-form.tsx`). Next.js framework filenames (`page.tsx`, `layout.tsx`, `route.ts`) are mandatory and not subject to this rule. SQL migrations follow Supabase convention `NNNN_name.sql`.
@@ -27,7 +27,7 @@ Enforced via lint + review. Non-negotiable rules first; conventions second.
 - **Commits:** Conventional commits (`feat:`, `fix:`, `chore:`, `refactor:`, `test:`, `docs:`). No AI references in commit messages.
 - **Money:** All currency in `bigint` VND. Never floats. Format via `src/lib/money/format`.
 - **Time:** Store UTC. Compute day boundary in `Asia/Saigon` for rollups and payouts.
-- **Geo:** Store points as `geography(point,4326)`. Use PostGIS `st_distance` / `st_dwithin`.
+- **Geo/GPS:** Out of current scope. Do not reintroduce PostGIS or route tracking tables unless the product scope explicitly restores GPS-based earnings.
 
 ## Folder ownership
 

@@ -20,7 +20,6 @@ export type CampaignAnalyticsRow = {
   burnPct: number
   kmTotal: number
   activeDrivers: number
-  qrScans: number
 }
 
 export async function getCampaignAnalytics(): Promise<CampaignAnalyticsRow[]> {
@@ -73,22 +72,6 @@ export async function getCampaignAnalytics(): Promise<CampaignAnalyticsRow[]> {
     contractsByCampaign.set(c.campaign_id, agg)
   }
 
-  // Fetch QR scans per campaign via contract_daily_stats
-  const campaignIds = campaigns.map((c) => c.id)
-  const { data: dailyStats } = campaignIds.length
-    ? await supabase.from('contract_daily_stats').select('contract_id, qr_scans')
-    : { data: [] }
-
-  // Map contract_id → campaign_id via contractsRes
-  const contractToCampaign = Object.fromEntries(
-    (contractsRes.data ?? []).map((c) => [c.id, c.campaign_id]),
-  )
-  const qrByCampaign = new Map<string, number>()
-  for (const stat of dailyStats ?? []) {
-    const campId = contractToCampaign[stat.contract_id]
-    if (campId) qrByCampaign.set(campId, (qrByCampaign.get(campId) ?? 0) + (stat.qr_scans ?? 0))
-  }
-
   return campaigns.map((c) => {
     const agg = contractsByCampaign.get(c.id)
     const burnPct = c.budget_vnd > 0 ? Math.round((c.spent_vnd / c.budget_vnd) * 100) : 0
@@ -110,7 +93,6 @@ export async function getCampaignAnalytics(): Promise<CampaignAnalyticsRow[]> {
       burnPct,
       kmTotal: Math.round(agg?.kmTotal ?? 0),
       activeDrivers: agg?.drivers.size ?? 0,
-      qrScans: qrByCampaign.get(c.id) ?? 0,
     }
   })
 }
@@ -144,29 +126,19 @@ export async function getCampaignAnalyticsById(
     console.error('[getCampaignAnalyticsById] contracts error:', contractsRes.error.message)
   }
 
-  const [{ data: partner }, { data: dailyStats }] = await Promise.all([
-    supabase.from('partners').select('company_name').eq('id', campaign.partner_id).maybeSingle(),
-    contractsRes.data?.length
-      ? supabase
-          .from('contract_daily_stats')
-          .select('contract_id, qr_scans')
-          .in(
-            'contract_id',
-            contractsRes.data.map((contract) => contract.id),
-          )
-      : Promise.resolve({ data: [] }),
-  ])
+  const { data: partner } = await supabase
+    .from('partners')
+    .select('company_name')
+    .eq('id', campaign.partner_id)
+    .maybeSingle()
 
   const driverIds = new Set<string>()
-  const vehicleIds = new Set<string>()
   let kmTotal = 0
   for (const contract of contractsRes.data ?? []) {
     driverIds.add(contract.driver_id)
-    vehicleIds.add(contract.vehicle_id)
     kmTotal += Number(contract.km_total ?? 0)
   }
 
-  const qrScans = (dailyStats ?? []).reduce((sum, row) => sum + Number(row.qr_scans ?? 0), 0)
   const burnPct =
     campaign.budget_vnd > 0 ? Math.round((campaign.spent_vnd / campaign.budget_vnd) * 100) : 0
 
@@ -188,6 +160,5 @@ export async function getCampaignAnalyticsById(
     burnPct,
     kmTotal: Math.round(kmTotal),
     activeDrivers: driverIds.size,
-    qrScans,
   }
 }

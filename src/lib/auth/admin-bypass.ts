@@ -10,7 +10,7 @@
  */
 import 'server-only'
 
-import type { UserRole } from '@/types/db'
+import type { UserRole } from '@/types/db-aliases'
 
 /**
  * Returns true only when the env var is explicitly "true".

@@ -25,8 +25,6 @@ const KIND_STYLES: Record<string, string> = {
   platform_fee: 'bg-[#f0f0ee] text-[#666666]',
   garage_install_payout: 'bg-green-100 text-green-700',
   garage_withdrawal: 'bg-green-100 text-green-700',
-  adjustment: 'bg-yellow-100 text-yellow-700',
-  refund: 'bg-red-100 text-red-600',
 }
 
 const STATUS_STYLES: Record<string, string> = {

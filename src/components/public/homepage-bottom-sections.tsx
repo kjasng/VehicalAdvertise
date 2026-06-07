@@ -19,8 +19,8 @@ const asset = '/landing/pencil/'
 
 const advertiserFeatures = [
   [MapPin, 'Target by route & area'],
-  [Activity, 'Real-time GPS analytics'],
-  [QrCode, 'QR code interaction tracking'],
+  [Activity, 'Campaign status dashboard'],
+  [QrCode, 'VietQR top-up support'],
   [Wallet, 'Flexible budget management'],
 ] as const
 
@@ -42,15 +42,15 @@ const garageNavigator = [
 const testimonials = [
   [
     ['I earn an extra 3 million VND per month just from my daily commute. The decal installation was quick and professional. I barely notice it is there. Best decision I made this year.', 'Nguyen Minh Tuan', 'Driver - Thanh Xuan', 'avatar-tuan.jpg', 'dark'],
-    ['The GPS tracking is incredibly accurate. I always know exactly how much I have earned.', 'Pham Lan Anh', 'Driver - Dong Da', 'avatar-lan-anh.jpg', 'light'],
+    ['The monthly income records are clear. I always know which campaign and payout period I am waiting on.', 'Pham Lan Anh', 'Driver - Dong Da', 'avatar-lan-anh.jpg', 'light'],
   ],
   [
-    ['Our brand visibility increased 40% after a 3-month campaign with VehicalAdvertise. The tracking dashboard makes ROI measurement effortless.', 'Tran Thi Mai', 'Marketing Director - VinaTech', 'avatar-mai.jpg', 'light'],
+    ['Our brand visibility increased 40% after a 3-month campaign with VehicalAdvertise. The campaign dashboard keeps budget and install progress easy to follow.', 'Tran Thi Mai', 'Marketing Director - VinaTech', 'avatar-mai.jpg', 'light'],
     ['We ran campaigns across 200 vehicles in Hanoi for 6 months. The reach was phenomenal and cost per impression was 5x lower than billboards. VehicalAdvertise changed our marketing strategy entirely.', 'Hoang Duc Minh', 'CEO - GreenFood Vietnam', 'avatar-minh.jpg', 'orange'],
   ],
   [
     ['As a Grab driver, this is the easiest side income I have ever had. Just drive like normal and get paid every month. No hassle at all.', 'Le Van Hung', 'Driver - Cau Giay', 'avatar-hung.jpg', 'light'],
-    ['We placed ads on 50 vehicles targeting the airport route. Within 2 months our app downloads from Hanoi increased by 28%. The QR code tracking was a game changer for attribution.', 'Do Thanh Hoa', 'Growth Lead - RideShare VN', 'avatar-hoa.jpg', 'muted'],
+    ['We placed ads on 50 vehicles targeting the airport route. Within 2 months our app downloads from Hanoi increased by 28%. The install proof workflow made rollout transparent.', 'Do Thanh Hoa', 'Growth Lead - RideShare VN', 'avatar-hoa.jpg', 'muted'],
   ],
 ] as const
 
@@ -68,8 +68,8 @@ export function HomeAdvertiserSection() {
           ON THE MOVE
         </h2>
         <p className="max-w-xl text-base leading-[1.6] text-[#666666]">
-          Launch targeted campaigns across Hanoi&apos;s busiest routes. Track real-time impressions, QR
-          code interactions, and cost-per-kilometer from one dashboard.
+          Launch targeted campaigns across Hanoi&apos;s busiest routes. Track approved installs,
+          monthly budget usage, and invoice status from one dashboard.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           {advertiserFeatures.map(([Icon, label]) => (

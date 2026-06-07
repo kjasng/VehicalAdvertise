@@ -51,3 +51,7 @@ release-manifest.json
 # supabase local CLI scratch
 supabase/.temp
 supabase/.branches
+# Personal thesis docs — keep local, do not commit.
+/docs/do-an-tot-nghiep-*.md
+# Local test recordings (videos, screenshots, fixtures)
+/recordings/

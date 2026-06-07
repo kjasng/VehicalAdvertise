@@ -16,8 +16,6 @@ export type DriverProfileData = {
   bankVerified: boolean
   vehicleId: string | null
   vehiclePlate: string
-  vehicleFuel: string
-  vehicleBrand: string
 }
 
 export async function getDriverProfileData(): Promise<DriverProfileData | null> {
@@ -44,7 +42,7 @@ export async function getDriverProfileData(): Promise<DriverProfileData | null> 
       .maybeSingle(),
     supabase
       .from('vehicles')
-      .select('id, plate, fuel, brand')
+      .select('id, plate')
       .eq('driver_id', user.id)
       .order('approved', { ascending: false })
       .order('id', { ascending: true })
@@ -69,7 +67,5 @@ export async function getDriverProfileData(): Promise<DriverProfileData | null> 
     bankVerified: Boolean(driver.bank_verified_at),
     vehicleId: vehicle?.id ?? null,
     vehiclePlate: vehicle?.plate ?? '',
-    vehicleFuel: vehicle?.fuel ?? '',
-    vehicleBrand: vehicle?.brand ?? '',
   }
 }

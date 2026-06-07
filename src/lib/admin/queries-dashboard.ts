@@ -20,7 +20,6 @@ export type DashboardStats = {
   activePartners: number
   pendingPartners: number
   activeCampaigns: number
-  weeklyKmSum: number
   pendingPayouts: number
   recentRequests: RecentRequestRow[]
 }
@@ -28,15 +27,12 @@ export type DashboardStats = {
 export async function getDashboardStats(): Promise<DashboardStats> {
   const supabase = createSupabaseAdminClient()
 
-  const sevenDaysAgo = new Date(Date.now() - 7 * 86_400_000).toISOString().split('T')[0]
-
   const [
     driversRes,
     pendingKycCount,
     partnersRes,
     pendingPartnersRes,
     campaignsRes,
-    weeklyKmRes,
     driverWithdrawalsRes,
     garageWithdrawalsRes,
     recentDriverInvoicesRes,
@@ -50,7 +46,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     // Pending partner reviews
     supabase.from('partners').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
     supabase.from('campaigns').select('*', { count: 'exact', head: true }).eq('status', 'active'),
-    supabase.from('contract_daily_stats').select('km_valid').gte('day', sevenDaysAgo),
     supabase
       .from('driver_invoices')
       .select('*', { count: 'exact', head: true })
@@ -85,7 +80,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     partnersRes.error,
     pendingPartnersRes.error,
     campaignsRes.error,
-    weeklyKmRes.error,
     driverWithdrawalsRes.error,
     garageWithdrawalsRes.error,
     recentDriverInvoicesRes.error,
@@ -98,14 +92,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       queryErrors.map((e) => e!.message),
     )
   }
-
-  // NOTE: contract_daily_stats is fetched without SUM aggregation; PostgREST
-  // default page size (1000) may truncate rows for large datasets. A dedicated
-  // aggregate RPC should replace this JS-side sum in a future migration.
-  const weeklyKmSum = (weeklyKmRes.data ?? []).reduce(
-    (acc, row) => acc + Number(row.km_valid ?? 0),
-    0,
-  )
 
   const submittedKycProfiles = await filterSubmittedKycProfiles(recentKycRes.data ?? [])
   const recentRequests = await hydrateRecentRequests({
@@ -120,7 +106,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     activePartners: partnersRes.count ?? 0,
     pendingPartners: pendingPartnersRes.count ?? 0,
     activeCampaigns: campaignsRes.count ?? 0,
-    weeklyKmSum,
     pendingPayouts: (driverWithdrawalsRes.count ?? 0) + (garageWithdrawalsRes.count ?? 0),
     recentRequests,
   }

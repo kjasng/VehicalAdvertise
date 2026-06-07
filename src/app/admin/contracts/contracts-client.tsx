@@ -18,7 +18,6 @@ import type {
 import {
   advanceContractStatus,
   createContract,
-  createVehicle,
   removeContractAssignment,
   terminateContract,
   updateContractAssignment,
@@ -90,14 +89,10 @@ function DriverAssignmentModal({
   const [pending, startTransition] = useTransition()
   const [driverId, setDriverId] = useState(contract?.driverId ?? '')
   const [vehicleId, setVehicleId] = useState(contract?.vehicleId ?? '')
-  const [newPlate, setNewPlate] = useState('')
-  const [newFuel, setNewFuel] = useState<'petrol' | 'diesel' | 'electric' | 'hybrid'>('petrol')
-  const [newBrand, setNewBrand] = useState('')
 
   const selected = drivers.find((d) => d.id === driverId)
   const approvedVehicles =
     selected?.vehicles.filter((v) => v.approved || v.id === contract?.vehicleId) ?? []
-  const useNewVehicle = vehicleId === '__new__' || approvedVehicles.length === 0
   const modalTitle = contract ? 'Edit Driver' : 'Match Driver'
   const modalSubtitle = contract?.campaignName || campaign?.name || ''
 
@@ -108,26 +103,7 @@ function DriverAssignmentModal({
       return
     }
     startTransition(async () => {
-      let finalVehicleId = vehicleId
-      // Register new vehicle if needed
-      if (useNewVehicle) {
-        if (!newPlate.trim()) {
-          toast.error('Nhập biển số xe')
-          return
-        }
-        const vr = await createVehicle({
-          driverId,
-          plate: newPlate.trim().toUpperCase(),
-          fuel: newFuel,
-          brand: newBrand || undefined,
-        })
-        if (vr.error) {
-          toast.error(vr.error)
-          return
-        }
-        finalVehicleId = vr.vehicleId!
-      }
-      if (!finalVehicleId) {
+      if (!vehicleId) {
         toast.error('Chọn xe')
         return
       }
@@ -136,12 +112,12 @@ function DriverAssignmentModal({
         ? await updateContractAssignment({
             contractId: contract.id,
             driverId,
-            vehicleId: finalVehicleId,
+            vehicleId,
           })
         : await createContract({
             campaignId: campaign?.id,
             driverId,
-            vehicleId: finalVehicleId,
+            vehicleId,
           })
       if (cr.error) toast.error(cr.error)
       else {
@@ -196,71 +172,30 @@ function DriverAssignmentModal({
             </select>
           </div>
 
-          {/* Vehicle select */}
-          {selected && approvedVehicles.length > 0 && (
+          {selected && (
             <div className="space-y-1">
               <label className="block text-[11px] font-bold tracking-[2px] text-[#666666] uppercase">
                 Xe *
               </label>
-              <select
-                value={vehicleId}
-                onChange={(e) => setVehicleId(e.target.value)}
-                className="focus:ring-primary h-[40px] w-full rounded border border-[#cbccc9] bg-white px-3 text-[13px] focus:ring-2 focus:outline-none"
-              >
-                <option value="">-- Chọn xe --</option>
-                {approvedVehicles.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.plate} ({FUEL_LABEL[v.fuel] ?? v.fuel})
-                  </option>
-                ))}
-                <option value="__new__">+ Đăng ký xe mới</option>
-              </select>
-            </div>
-          )}
-
-          {/* New vehicle form */}
-          {selected && (approvedVehicles.length === 0 || vehicleId === '__new__') && (
-            <div className="space-y-3 rounded-lg border border-[#cbccc9] bg-[#f7f8fa] p-3">
-              <p className="text-[11px] font-bold tracking-[2px] text-[#666666] uppercase">
-                Đăng ký xe mới
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[11px] text-[#666666]">Biển số *</label>
-                  <input
-                    type="text"
-                    value={newPlate}
-                    onChange={(e) => setNewPlate(e.target.value.toUpperCase())}
-                    placeholder="51A-12345"
-                    required={approvedVehicles.length === 0}
-                    className="focus:ring-primary mt-0.5 h-[36px] w-full rounded border border-[#cbccc9] px-2 font-mono text-[13px] focus:ring-2 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] text-[#666666]">Loại nhiên liệu</label>
-                  <select
-                    value={newFuel}
-                    onChange={(e) => setNewFuel(e.target.value as typeof newFuel)}
-                    className="focus:ring-primary mt-0.5 h-[36px] w-full rounded border border-[#cbccc9] bg-white px-2 text-[13px] focus:ring-2 focus:outline-none"
-                  >
-                    {Object.entries(FUEL_LABEL).map(([v, l]) => (
-                      <option key={v} value={v}>
-                        {l}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-[11px] text-[#666666]">Hãng xe (tùy chọn)</label>
-                <input
-                  type="text"
-                  value={newBrand}
-                  onChange={(e) => setNewBrand(e.target.value)}
-                  placeholder="Toyota, Honda…"
-                  className="focus:ring-primary mt-0.5 h-[36px] w-full rounded border border-[#cbccc9] px-2 text-[13px] focus:ring-2 focus:outline-none"
-                />
-              </div>
+              {approvedVehicles.length > 0 ? (
+                <select
+                  value={vehicleId}
+                  onChange={(e) => setVehicleId(e.target.value)}
+                  className="focus:ring-primary h-[40px] w-full rounded border border-[#cbccc9] bg-white px-3 text-[13px] focus:ring-2 focus:outline-none"
+                >
+                  <option value="">-- Chọn xe --</option>
+                  {approvedVehicles.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.plate} ({FUEL_LABEL[v.fuel] ?? v.fuel})
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="rounded border border-yellow-200 bg-yellow-50 px-3 py-2 text-[12px] text-yellow-800">
+                  Driver chưa có xe approved. Driver cần cập nhật xe trong hồ sơ cá nhân trước khi
+                  assign vào campaign.
+                </p>
+              )}
             </div>
           )}
 
@@ -274,7 +209,7 @@ function DriverAssignmentModal({
             </button>
             <button
               type="submit"
-              disabled={pending || !driverId}
+              disabled={pending || !driverId || !vehicleId}
               className="flex-1 rounded bg-[#1a1a1a] py-2 text-[13px] font-bold text-white hover:bg-[#333] disabled:opacity-50"
             >
               {pending ? 'Đang lưu…' : contract ? 'Lưu assignment' : 'Tạo assignment'}
@@ -449,9 +384,7 @@ function CampaignCard({
             <span className="truncate">{campaign.name}</span>
             <ExternalLink className="size-3.5 shrink-0" aria-hidden="true" />
           </Link>
-          <p className="text-[12px] text-[#666666]">
-            {campaign.ratePerKmVnd.toLocaleString('vi-VN')} ₫/km · {campaign.contractCount} drivers
-          </p>
+          <p className="text-[12px] text-[#666666]">{campaign.contractCount} drivers</p>
         </div>
         <span
           className={`shrink-0 rounded px-2 py-0.5 text-[11px] font-bold uppercase ${STATUS_STYLE[campaign.status] ?? 'bg-[#f0f0ee] text-[#666]'}`}

@@ -12,7 +12,7 @@ Vietnamese commuter drivers underutilise their cars as an advertising surface. B
 | ------- | ---------------------------------------------- | -------------------------------------------- |
 | Driver  | Passive income on top of normal commute        | No app fatigue: PWA, 4 photo prompts/day max |
 | Partner | Pre-fund campaign exposure                     | Self-serve top-up + analytics dashboard      |
-| Admin   | Approve KYC, payouts, fraud — keep funnel safe | One queue, full audit log                    |
+| Admin   | Approve KYC, payouts, fraud — keep funnel safe | Queues with explicit approval state          |
 | Garage  | Install / remove decals, take photo proof      | Single-screen install workflow               |
 
 ## 3. Locked product decisions
@@ -56,14 +56,14 @@ Driver app + Partner dashboard + minimal Admin + Garage v0. Deferred to post-pil
 
 ## 7. Risks → mitigations
 
-| Risk                        | Mitigation                                                           |
-| --------------------------- | -------------------------------------------------------------------- |
-| Overpaying inactive drivers | Earning starts only after garage proof + admin decal approval        |
-| Partner budget overrun      | Monthly cap / balance-percent funding checks before monthly accrual  |
-| Photo-prompt fatigue        | Cap at 4 prompts/day, 30-min grace window, freeze (not kill) on miss |
-| SePay disputes              | `ledger_entries` adjustment kind + admin reversal tool               |
-| CCCD/PII exposure           | Private storage bucket, signed URLs only, RLS, audit log             |
-| Time-zone bugs              | Store UTC, day boundary in Asia/Saigon                               |
+| Risk                        | Mitigation                                                          |
+| --------------------------- | ------------------------------------------------------------------- |
+| Overpaying inactive drivers | Earning starts only after garage proof + admin decal approval       |
+| Partner budget overrun      | Monthly cap / balance-percent funding checks before monthly accrual |
+| Photo verification fatigue  | Monthly decal verification cadence; no daily GPS/photo prompt loop  |
+| SePay disputes              | Manual finance SOP; no generic ledger adjustment tool               |
+| CCCD/PII exposure           | Private storage bucket, signed URLs only, RLS, reviewer state       |
+| Time-zone bugs              | Store UTC, day boundary in Asia/Saigon                              |
 
 ## 8. Phase roadmap (overview — details in `plans/`)
 
@@ -76,7 +76,7 @@ Driver app + Partner dashboard + minimal Admin + Garage v0. Deferred to post-pil
 | P4 Driver earning                | 2     | Monthly accrual, funding checks, withdrawal invoice                      |
 | P5 Photo verification            | 1     | Install proof + admin photo review                                       |
 | P6 Payouts                       | 1     | Admin-approved manual driver + garage payout tracking                    |
-| P7 Analytics + QR                | 1     | Partner analytics, QR redirect tracking                                  |
+| P7 Analytics                     | 1     | Partner campaign analytics without QR scan tracking                      |
 | P8 Hardening + pilot             | 1     | Lighthouse, load tests, pilot kickoff                                    |
 
 ## 9. Open questions (resolve as they unblock work)

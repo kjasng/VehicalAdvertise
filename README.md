@@ -42,7 +42,7 @@ pnpm dlx supabase db execute --file supabase/seed.sql
 pnpm dlx supabase gen types typescript --linked > src/types/db.ts
 ```
 
-Region: `ap-southeast-1` (Singapore). Extensions: `postgis`, `pgcrypto`.
+Region: `ap-southeast-1` (Singapore). Extensions: `pgcrypto`. PostGIS was removed after GPS/QR tracking tables were dropped from the current web-only scope.
 
 ## Conventions
 

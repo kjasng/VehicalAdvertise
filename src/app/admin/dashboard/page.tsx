@@ -19,7 +19,6 @@ export default async function AdminDashboardPage() {
     { label: 'Active Campaigns', value: stats.activeCampaigns.toLocaleString() },
     { label: 'Pending KYC', value: stats.pendingKyc.toLocaleString() },
     { label: 'Active Partners', value: stats.activePartners.toLocaleString() },
-    { label: 'Weekly KM', value: Math.round(stats.weeklyKmSum).toLocaleString() },
     { label: 'Pending Payouts', value: stats.pendingPayouts.toLocaleString() },
   ]
 
@@ -32,7 +31,7 @@ export default async function AdminDashboardPage() {
         <p className="mb-2 text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">
           Key Metrics
         </p>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
           {KPI_DATA.map((kpi) => (
             <KpiCard key={kpi.label} label={kpi.label} value={kpi.value} />
           ))}

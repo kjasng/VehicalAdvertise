@@ -9,7 +9,7 @@ import Link from 'next/link'
 import type { LucideIcon } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
-import type { UserRole } from '@/types/db'
+import type { UserRole } from '@/types/db-aliases'
 
 import { NavGroup } from './nav-group'
 import { RoleUserMenu } from './role-user-menu'

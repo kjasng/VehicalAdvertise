@@ -5,17 +5,9 @@ import { z } from 'zod'
 
 import { getCurrentUserRole } from '@/lib/auth/role-gate'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
 import type { Database } from '@/types/db'
 
 type ContractStatus = Database['public']['Enums']['contract_status']
-type VehicleFuel = Database['public']['Enums']['vehicle_fuel']
-
-async function getActorId(): Promise<string | null> {
-  const sc = await createSupabaseServerClient()
-  const { data } = await sc.auth.getUser()
-  return data.user?.id ?? null
-}
 
 type ContractMutationContext = {
   id: string
@@ -86,57 +78,22 @@ async function revalidateContractWorkspace(campaignId: string, partnerId?: strin
   if (partnerId) revalidatePath(`/admin/${partnerId}/contracts`)
 }
 
-// ── Create or register vehicle for a driver (auto-approved) ───────────────
-
-export async function createVehicle(
-  raw: unknown,
-): Promise<{ error: string | null; vehicleId?: string }> {
-  const parsed = z
-    .object({
-      driverId: z.string().uuid(),
-      plate: z.string().min(5, 'Biển số xe tối thiểu 5 ký tự').max(20).toUpperCase(),
-      fuel: z.enum(['petrol', 'diesel', 'electric', 'hybrid']),
-      brand: z.string().max(50).optional(),
-      model: z.string().max(50).optional(),
-    })
-    .safeParse(raw)
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' }
-  const { driverId, plate, fuel, brand, model } = parsed.data
-
-  const role = await getCurrentUserRole()
-  if (role !== 'admin') return { error: 'Forbidden' }
-
-  const actorId = await getActorId()
-  if (!actorId) return { error: 'Not authenticated' }
-
-  const supabase = createSupabaseAdminClient()
-
+async function validateApprovedDriverVehicle(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  driverId: string,
+  vehicleId: string,
+): Promise<string | null> {
   const { data: vehicle, error } = await supabase
     .from('vehicles')
-    .insert({
-      driver_id: driverId,
-      plate,
-      fuel: fuel as VehicleFuel,
-      brand: brand ?? null,
-      model: model ?? null,
-      approved: true,
-      approved_by: actorId,
-    })
-    .select('id')
-    .single()
+    .select('id, approved')
+    .eq('id', vehicleId)
+    .eq('driver_id', driverId)
+    .maybeSingle()
 
-  if (error) return { error: error.message }
-
-  await supabase.from('audit_log').insert({
-    actor_id: actorId,
-    action: 'vehicle_registered',
-    entity_type: 'vehicles',
-    entity_id: vehicle.id,
-    diff: { driver_id: driverId, plate, fuel },
-  })
-
-  revalidatePath('/admin/contracts')
-  return { error: null, vehicleId: vehicle.id }
+  if (error) return error.message
+  if (!vehicle) return 'Selected vehicle does not belong to this driver'
+  if (!vehicle.approved) return 'Selected vehicle is not approved'
+  return null
 }
 
 // ── Create contract (match driver to campaign) ────────────────────────────
@@ -156,22 +113,17 @@ export async function createContract(raw: unknown): Promise<{ error: string | nu
   const role = await getCurrentUserRole()
   if (role !== 'admin') return { error: 'Forbidden' }
 
-  const actorId = await getActorId()
-  if (!actorId) return { error: 'Not authenticated' }
-
   const supabase = createSupabaseAdminClient()
+  const vehicleError = await validateApprovedDriverVehicle(supabase, driverId, vehicleId)
+  if (vehicleError) return { error: vehicleError }
 
-  const { data: contract, error } = await supabase
-    .from('contracts')
-    .insert({
-      campaign_id: campaignId,
-      driver_id: driverId,
-      vehicle_id: vehicleId,
-      install_garage_id: garageId ?? null,
-      status: 'matched',
-    })
-    .select('id')
-    .single()
+  const { error } = await supabase.from('contracts').insert({
+    campaign_id: campaignId,
+    driver_id: driverId,
+    vehicle_id: vehicleId,
+    install_garage_id: garageId ?? null,
+    status: 'matched',
+  })
 
   if (error) return { error: error.message }
 
@@ -181,14 +133,6 @@ export async function createContract(raw: unknown): Promise<{ error: string | nu
     .update({ status: 'awaiting_install' })
     .eq('id', campaignId)
     .eq('status', 'approved')
-
-  await supabase.from('audit_log').insert({
-    actor_id: actorId,
-    action: 'contract_created',
-    entity_type: 'contracts',
-    entity_id: contract.id,
-    diff: { campaign_id: campaignId, driver_id: driverId, vehicle_id: vehicleId },
-  })
 
   const { data: campaign } = await supabase
     .from('campaigns')
@@ -214,9 +158,6 @@ export async function updateContractAssignment(raw: unknown): Promise<{ error: s
   const role = await getCurrentUserRole()
   if (role !== 'admin') return { error: 'Forbidden' }
 
-  const actorId = await getActorId()
-  if (!actorId) return { error: 'Not authenticated' }
-
   const supabase = createSupabaseAdminClient()
   const contract = await getContractForMutation(supabase, parsed.data.contractId)
   if (!contract) return { error: 'Contract not found' }
@@ -230,15 +171,12 @@ export async function updateContractAssignment(raw: unknown): Promise<{ error: s
     return { error: 'Cannot edit assignment after financial records exist' }
   }
 
-  const { data: vehicle, error: vehicleError } = await supabase
-    .from('vehicles')
-    .select('id, driver_id, approved')
-    .eq('id', parsed.data.vehicleId)
-    .eq('driver_id', parsed.data.driverId)
-    .maybeSingle()
-  if (vehicleError) return { error: vehicleError.message }
-  if (!vehicle) return { error: 'Selected vehicle does not belong to this driver' }
-  if (!vehicle.approved) return { error: 'Selected vehicle is not approved' }
+  const vehicleError = await validateApprovedDriverVehicle(
+    supabase,
+    parsed.data.driverId,
+    parsed.data.vehicleId,
+  )
+  if (vehicleError) return { error: vehicleError }
 
   const { error } = await supabase
     .from('contracts')
@@ -259,17 +197,6 @@ export async function updateContractAssignment(raw: unknown): Promise<{ error: s
     .eq('subject_type', 'contract')
     .eq('subject_id', contract.id)
 
-  await supabase.from('audit_log').insert({
-    actor_id: actorId,
-    action: 'contract_assignment_updated',
-    entity_type: 'contracts',
-    entity_id: contract.id,
-    diff: {
-      from: { driver_id: contract.driver_id, vehicle_id: contract.vehicle_id },
-      to: { driver_id: parsed.data.driverId, vehicle_id: parsed.data.vehicleId },
-    },
-  })
-
   await revalidateContractWorkspace(contract.campaign_id, contract.campaigns?.partner_id)
   return { error: null }
 }
@@ -283,9 +210,6 @@ export async function removeContractAssignment(raw: unknown): Promise<{ error: s
   const role = await getCurrentUserRole()
   if (role !== 'admin') return { error: 'Forbidden' }
 
-  const actorId = await getActorId()
-  if (!actorId) return { error: 'Not authenticated' }
-
   const supabase = createSupabaseAdminClient()
   const contract = await getContractForMutation(supabase, parsed.data.contractId)
   if (!contract) return { error: 'Contract not found' }
@@ -296,9 +220,6 @@ export async function removeContractAssignment(raw: unknown): Promise<{ error: s
     return { error: 'Cannot remove assignment after financial records exist; terminate it instead' }
   }
 
-  await supabase.from('qr_scans').delete().eq('contract_id', contract.id)
-  await supabase.from('gps_logs').delete().eq('contract_id', contract.id)
-  await supabase.from('contract_daily_stats').delete().eq('contract_id', contract.id)
   await supabase
     .from('photos')
     .delete()
@@ -320,14 +241,6 @@ export async function removeContractAssignment(raw: unknown): Promise<{ error: s
       .eq('status', 'awaiting_install')
   }
 
-  await supabase.from('audit_log').insert({
-    actor_id: actorId,
-    action: 'contract_assignment_removed',
-    entity_type: 'contracts',
-    entity_id: contract.id,
-    diff: { campaign_id: contract.campaign_id, driver_id: contract.driver_id },
-  })
-
   await revalidateContractWorkspace(contract.campaign_id, contract.campaigns?.partner_id)
   return { error: null }
 }
@@ -347,9 +260,6 @@ export async function advanceContractStatus(raw: unknown): Promise<{ error: stri
 
   const role = await getCurrentUserRole()
   if (role !== 'admin') return { error: 'Forbidden' }
-
-  const actorId = await getActorId()
-  if (!actorId) return { error: 'Not authenticated' }
 
   const supabase = createSupabaseAdminClient()
 
@@ -382,14 +292,6 @@ export async function advanceContractStatus(raw: unknown): Promise<{ error: stri
       .eq('status', 'awaiting_install')
   }
 
-  await supabase.from('audit_log').insert({
-    actor_id: actorId,
-    action: 'contract_status_advanced',
-    entity_type: 'contracts',
-    entity_id: contract.id,
-    diff: { from: contract.status, to: next },
-  })
-
   await revalidateContractWorkspace(contract.campaign_id)
   return { error: null }
 }
@@ -403,9 +305,6 @@ export async function terminateContract(raw: unknown): Promise<{ error: string |
   const role = await getCurrentUserRole()
   if (role !== 'admin') return { error: 'Forbidden' }
 
-  const actorId = await getActorId()
-  if (!actorId) return { error: 'Not authenticated' }
-
   const supabase = createSupabaseAdminClient()
   const { data: contract } = await supabase
     .from('contracts')
@@ -418,14 +317,6 @@ export async function terminateContract(raw: unknown): Promise<{ error: string |
     .update({ status: 'terminated' })
     .eq('id', parsed.data.contractId)
   if (error) return { error: error.message }
-
-  await supabase.from('audit_log').insert({
-    actor_id: actorId,
-    action: 'contract_terminated',
-    entity_type: 'contracts',
-    entity_id: parsed.data.contractId,
-    diff: { reason: parsed.data.reason ?? null },
-  })
 
   if (contract?.campaign_id) await revalidateContractWorkspace(contract.campaign_id)
   else revalidatePath('/admin/contracts')

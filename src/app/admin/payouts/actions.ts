@@ -98,7 +98,7 @@ export async function reviewGarageWithdrawal(raw: unknown): Promise<{ error: str
     p_actor_id: actorId,
     p_withdrawal_id: parsed.data.withdrawalId,
     p_decision: parsed.data.decision,
-    p_reason: parsed.data.reason ?? null,
+    p_reason: parsed.data.reason ?? undefined,
   })
   if (error) return { error: error.message }
 

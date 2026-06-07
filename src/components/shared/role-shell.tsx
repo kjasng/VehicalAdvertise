@@ -10,7 +10,7 @@
  */
 import type { ReactNode } from 'react'
 
-import type { UserRole } from '@/types/db'
+import type { UserRole } from '@/types/db-aliases'
 
 import type { BottomNavItem } from './role-bottom-nav'
 import { RoleBottomNav } from './role-bottom-nav'

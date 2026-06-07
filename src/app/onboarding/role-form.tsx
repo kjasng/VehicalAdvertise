@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 
 import { chooseRoleAction } from './actions'
 
-import type { UserRole } from '@/types/db'
+import type { UserRole } from '@/types/db-aliases'
 
 // Garage is intentionally excluded — handled manually by admin
 type SelfAssignable = Exclude<UserRole, 'admin' | 'pending' | 'garage'>

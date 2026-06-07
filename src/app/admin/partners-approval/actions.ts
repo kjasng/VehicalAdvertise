@@ -6,18 +6,11 @@ import { z } from 'zod'
 import { sendPartnerApproved, sendPartnerRejected } from '@/lib/email/send-notifications'
 import { getCurrentUserRole } from '@/lib/auth/role-gate'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 const RejectSchema = z.object({
   partnerId: z.string().uuid(),
   reason: z.string().min(5, 'Please provide a reason (min 5 characters)').max(500),
 })
-
-async function getActorId(): Promise<string | null> {
-  const sc = await createSupabaseServerClient()
-  const { data } = await sc.auth.getUser()
-  return data.user?.id ?? null
-}
 
 export async function approvePartner(raw: unknown): Promise<{ error: string | null }> {
   const parsed = z.object({ partnerId: z.string().uuid() }).safeParse(raw)
@@ -26,9 +19,6 @@ export async function approvePartner(raw: unknown): Promise<{ error: string | nu
 
   const role = await getCurrentUserRole()
   if (role !== 'admin') return { error: 'Forbidden' }
-
-  const actorId = await getActorId()
-  if (!actorId) return { error: 'Not authenticated' }
 
   const supabase = createSupabaseAdminClient()
 
@@ -39,14 +29,6 @@ export async function approvePartner(raw: unknown): Promise<{ error: string | nu
     .eq('status', 'pending')
 
   if (error) return { error: error.message }
-
-  await supabase.from('audit_log').insert({
-    actor_id: actorId,
-    action: 'partner_approved',
-    entity_type: 'partners',
-    entity_id: partnerId,
-    diff: {},
-  })
 
   // Fire-and-forget email
   const { data: profile } = await supabase
@@ -71,9 +53,6 @@ export async function rejectPartner(raw: unknown): Promise<{ error: string | nul
   const role = await getCurrentUserRole()
   if (role !== 'admin') return { error: 'Forbidden' }
 
-  const actorId = await getActorId()
-  if (!actorId) return { error: 'Not authenticated' }
-
   const supabase = createSupabaseAdminClient()
 
   const { error } = await supabase
@@ -83,14 +62,6 @@ export async function rejectPartner(raw: unknown): Promise<{ error: string | nul
     .eq('status', 'pending')
 
   if (error) return { error: error.message }
-
-  await supabase.from('audit_log').insert({
-    actor_id: actorId,
-    action: 'partner_rejected',
-    entity_type: 'partners',
-    entity_id: partnerId,
-    diff: { reason },
-  })
 
   const { data: profile } = await supabase
     .from('profiles')

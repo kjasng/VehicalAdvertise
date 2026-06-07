@@ -67,6 +67,16 @@ export function DriverProfileForm({ profile }: { profile: DriverProfileData }) {
             autoComplete="tel"
             inputMode="numeric"
           />
+          <Field
+            id="vehicle-plate"
+            label="License plate"
+            value={form.vehiclePlate}
+            onChange={(value) => setField('vehiclePlate', value.toUpperCase())}
+            required={Boolean(profile.vehicleId)}
+          />
+          <p className="text-[12px] text-[#666666]">
+            Đổi biển số sẽ đưa xe về trạng thái cần admin kiểm tra lại.
+          </p>
         </Panel>
 
         <Panel title="Payout Settings">
@@ -96,23 +106,6 @@ export function DriverProfileForm({ profile }: { profile: DriverProfileData }) {
           </p>
         </Panel>
       </div>
-
-      <Panel title="Vehicle">
-        <div className="grid gap-3 sm:grid-cols-3">
-          <Field
-            id="vehicle-plate"
-            label="License plate"
-            value={form.vehiclePlate}
-            onChange={(value) => setField('vehiclePlate', value.toUpperCase())}
-            required={Boolean(profile.vehicleId)}
-          />
-          <Readonly label="Fuel" value={profile.vehicleFuel || '—'} />
-          <Readonly label="Brand" value={profile.vehicleBrand || '—'} />
-        </div>
-        <p className="text-[12px] text-[#666666]">
-          Đổi biển số sẽ đưa xe về trạng thái cần admin kiểm tra lại.
-        </p>
-      </Panel>
 
       <div className="flex flex-wrap justify-end gap-3 border-t border-[#cbccc9] pt-4">
         <button
@@ -178,16 +171,5 @@ function Field({
         className="focus:ring-primary h-12 w-full rounded border border-[#cbccc9] px-3 text-[13px] text-[#1a1a1a] focus:ring-2 focus:outline-none"
       />
     </label>
-  )
-}
-
-function Readonly({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="space-y-1">
-      <p className="text-[11px] font-bold tracking-[2.5px] text-[#666666] uppercase">{label}</p>
-      <p className="flex h-12 items-center rounded border border-[#cbccc9] bg-[#f7f8fa] px-3 text-[13px] text-[#666666]">
-        {value}
-      </p>
-    </div>
   )
 }

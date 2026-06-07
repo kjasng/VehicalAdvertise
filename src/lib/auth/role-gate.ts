@@ -15,7 +15,7 @@ import { canAdminBypassPath } from '@/lib/auth/admin-bypass'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
-import type { UserRole } from '@/types/db'
+import type { UserRole } from '@/types/db-aliases'
 
 export async function getProfileRole(userId: string): Promise<UserRole | null> {
   const admin = createSupabaseAdminClient()

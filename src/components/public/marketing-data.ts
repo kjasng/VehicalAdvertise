@@ -27,7 +27,7 @@ export const processCards = [
   },
   {
     title: 'Track',
-    text: 'GPS trails, photo verification, QR engagement, and invoice states stay visible.',
+    text: 'Install proofs, monthly decal verification, and invoice states stay visible.',
   },
 ]
 
@@ -57,7 +57,7 @@ export const advertiserCards = [
   },
   {
     title: 'Live campaign proof',
-    text: 'Track verified installs, GPS movement, QR scans, and invoice progress.',
+    text: 'Track verified installs, campaign budget usage, and invoice progress.',
   },
 ]
 

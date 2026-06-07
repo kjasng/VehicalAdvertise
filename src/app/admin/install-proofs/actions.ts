@@ -26,7 +26,6 @@ export async function reviewInstallProof(raw: unknown): Promise<{ error: string 
   const role = await getCurrentUserRole()
   if (role !== 'admin') return { error: 'Forbidden' }
 
-  // Resolve caller uid for audit_log (service-role client has no session)
   const serverClient = await createSupabaseServerClient()
   const {
     data: { user },
@@ -62,7 +61,7 @@ export async function reviewInstallProof(raw: unknown): Promise<{ error: string 
     p_actor_id: user.id,
     p_photo_id: anchorPhoto.id,
     p_decision: decision,
-    p_reason: reason ?? null,
+    p_reason: reason ?? undefined,
   })
   if (reviewError) return { error: reviewError.message }
 

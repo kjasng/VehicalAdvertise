@@ -54,19 +54,6 @@ export async function updatePricingSettings(raw: unknown): Promise<{ error: stri
   })
   if (insertError) return { error: insertError.message }
 
-  const { error: auditError } = await supabase.from('audit_log').insert({
-    actor_id: user.id,
-    action: 'pricing_settings_updated',
-    entity_type: 'pricing_rules',
-    diff: {
-      install_fee_vnd: GARAGE_INSTALL_FEE_VND,
-      garage_minimum_withdrawal_vnd: parsed.data.garageMinimumWithdrawalVnd,
-      partner_minimum_cap_vnd: parsed.data.partnerMinimumCapVnd,
-      platform_fee_pct: parsed.data.platformFeePct,
-    },
-  })
-  if (auditError) console.error('[updatePricingSettings] audit insert failed:', auditError.message)
-
   revalidatePath('/admin/pricing-settings')
   revalidatePath('/admin/install-proofs')
   revalidatePath('/garage/payout')

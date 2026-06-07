@@ -59,12 +59,11 @@ export default async function CampaignDetailPage({ params }: PageProps) {
         }
       />
 
-      <section className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
         {[
           ['Partner', campaign.partnerName],
           ['Budget burn', `${campaign.burnPct}%`],
           ['Drivers', campaign.activeDrivers.toLocaleString('vi-VN')],
-          ['QR scans', campaign.qrScans.toLocaleString('vi-VN')],
         ].map(([label, value]) => (
           <div key={label} className="rounded-md border border-[#cbccc9] bg-white p-4">
             <p className="text-[11px] font-bold tracking-[2px] text-[#666666] uppercase">{label}</p>

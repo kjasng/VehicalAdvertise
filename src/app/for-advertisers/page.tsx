@@ -23,7 +23,7 @@ const proofCards = [
   [
     Activity,
     'Live Reporting',
-    'Dashboard access for GPS movement, proof status, and heatmap-ready campaign activity.',
+    'Dashboard access for budget usage, proof status, and campaign activity.',
     true,
   ],
   [
@@ -67,7 +67,7 @@ export default function ForAdvertisersPage() {
             THAT MOVE
           </h1>
           <p className="max-w-xl text-[17px] leading-[1.6] text-white/80">
-            Launch vehicle campaigns with district targeting, verified installs, live GPS reports,
+            Launch vehicle campaigns with district targeting, verified installs, live proof reports,
             and spend control built for Hanoi streets.
           </p>
           <Link
