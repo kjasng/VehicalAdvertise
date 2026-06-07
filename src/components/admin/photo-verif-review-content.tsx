@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import { useState, useTransition } from 'react'
 
-import { CheckCircle, MapPin, XCircle } from 'lucide-react'
+import { CheckCircle, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { reviewPhotoVerif } from '@/app/admin/photo-verifications/actions'
@@ -70,14 +70,6 @@ export function PhotoVerifReviewContent({ row, onClose }: Props) {
             </div>
           ))}
         </dl>
-        {row.gpsDeltaM !== null && (
-          <p
-            className={`flex items-center gap-1 text-[13px] font-medium ${row.gpsDeltaM > 100 ? 'text-red-600' : 'text-green-600'}`}
-          >
-            <MapPin className="size-3.5" aria-hidden="true" />
-            GPS delta: {row.gpsDeltaM}m {row.gpsDeltaM > 100 ? '(out of range)' : '(within 100m)'}
-          </p>
-        )}
       </section>
 
       {/* Photo */}

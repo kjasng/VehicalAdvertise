@@ -190,7 +190,6 @@ function ProofImage({ photo, large = false }: { photo: InstallProofPhoto; large?
       {large && (
         <span className="absolute right-2 bottom-2 rounded bg-white/90 px-2 py-0.5 text-[10px] font-bold text-[#1a1a1a] uppercase">
           {photo.status}
-          {photo.gpsDeltaM !== null ? ` · ${photo.gpsDeltaM}m` : ''}
         </span>
       )}
     </div>

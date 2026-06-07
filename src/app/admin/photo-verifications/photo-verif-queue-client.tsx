@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 
-import { MapPin } from 'lucide-react'
 import Image from 'next/image'
 
 import { PhotoVerifReviewContent } from '@/components/admin/photo-verif-review-content'
@@ -60,22 +59,6 @@ export function PhotoVerifQueueClient({ rows }: Props) {
       cell: (r: PhotoVerifRow) => (
         <span className="text-[#666666]">{r.promptDate.slice(0, 10)}</span>
       ),
-    },
-    {
-      key: 'gpsDeltaM' as const,
-      header: 'GPS Delta',
-      sortValue: (r: PhotoVerifRow) => r.gpsDeltaM ?? Infinity,
-      cell: (r: PhotoVerifRow) =>
-        r.gpsDeltaM !== null ? (
-          <span
-            className={`flex items-center gap-1 font-bold ${r.gpsDeltaM > 100 ? 'text-red-600' : 'text-green-600'}`}
-          >
-            <MapPin className="size-3" aria-hidden="true" />
-            {r.gpsDeltaM}m
-          </span>
-        ) : (
-          <span className="text-[#666666]">—</span>
-        ),
     },
     {
       key: 'disposition' as const,

@@ -176,7 +176,6 @@ export interface InstallProofRow {
   garage: string
   submittedAt: string
   photoUrl: string
-  gpsDeltaM: number
   status: 'pending' | 'approved' | 'rejected'
 }
 
@@ -187,7 +186,6 @@ export const MOCK_INSTALL_PROOF_ROWS: InstallProofRow[] = [
     garage: 'Garage Hoàn Kiếm',
     submittedAt: '2026-05-25 07:30',
     photoUrl: 'https://placehold.co/300x200/1a1a1a/fff?text=Install+1',
-    gpsDeltaM: 12,
     status: 'pending',
   },
   {
@@ -196,7 +194,6 @@ export const MOCK_INSTALL_PROOF_ROWS: InstallProofRow[] = [
     garage: 'Garage Đống Đa',
     submittedAt: '2026-05-25 08:10',
     photoUrl: 'https://placehold.co/300x200/1a1a1a/fff?text=Install+2',
-    gpsDeltaM: 4,
     status: 'pending',
   },
   {
@@ -205,7 +202,6 @@ export const MOCK_INSTALL_PROOF_ROWS: InstallProofRow[] = [
     garage: 'Garage Cầu Giấy',
     submittedAt: '2026-05-25 08:55',
     photoUrl: 'https://placehold.co/300x200/1a1a1a/fff?text=Install+3',
-    gpsDeltaM: 250,
     status: 'pending',
   },
   {
@@ -214,7 +210,6 @@ export const MOCK_INSTALL_PROOF_ROWS: InstallProofRow[] = [
     garage: 'Garage Thanh Xuân',
     submittedAt: '2026-05-25 09:40',
     photoUrl: 'https://placehold.co/300x200/1a1a1a/fff?text=Install+4',
-    gpsDeltaM: 8,
     status: 'pending',
   },
   {
@@ -223,7 +218,6 @@ export const MOCK_INSTALL_PROOF_ROWS: InstallProofRow[] = [
     garage: 'Garage Hai Bà Trưng',
     submittedAt: '2026-05-25 10:20',
     photoUrl: 'https://placehold.co/300x200/1a1a1a/fff?text=Install+5',
-    gpsDeltaM: 31,
     status: 'pending',
   },
   {
@@ -232,7 +226,6 @@ export const MOCK_INSTALL_PROOF_ROWS: InstallProofRow[] = [
     garage: 'Garage Tây Hồ',
     submittedAt: '2026-05-25 11:00',
     photoUrl: 'https://placehold.co/300x200/1a1a1a/fff?text=Install+6',
-    gpsDeltaM: 7,
     status: 'pending',
   },
 ]
@@ -253,7 +246,6 @@ export interface PhotoVerificationRow {
   driverName: string
   promptDate: string
   photoUrl: string
-  gpsDeltaM: number
   disposition: DispositionType
   dispositionResult: 'pass' | 'fail' | 'pending'
 }
@@ -264,7 +256,6 @@ export const MOCK_PHOTO_VERIFICATION_ROWS: PhotoVerificationRow[] = [
     driverName: 'Nguyễn Văn An',
     promptDate: '2026-05-25',
     photoUrl: 'https://placehold.co/80x80/1a1a1a/fff?text=PV',
-    gpsDeltaM: 5,
     disposition: 'auto',
     dispositionResult: 'pass',
   },
@@ -273,7 +264,6 @@ export const MOCK_PHOTO_VERIFICATION_ROWS: PhotoVerificationRow[] = [
     driverName: 'Trần Thị Bích',
     promptDate: '2026-05-25',
     photoUrl: 'https://placehold.co/80x80/1a1a1a/fff?text=PV',
-    gpsDeltaM: 312,
     disposition: 'manual',
     dispositionResult: 'pending',
   },
@@ -282,7 +272,6 @@ export const MOCK_PHOTO_VERIFICATION_ROWS: PhotoVerificationRow[] = [
     driverName: 'Lê Hoàng Nam',
     promptDate: '2026-05-25',
     photoUrl: 'https://placehold.co/80x80/1a1a1a/fff?text=PV',
-    gpsDeltaM: 9,
     disposition: 'auto',
     dispositionResult: 'pass',
   },
@@ -291,7 +280,6 @@ export const MOCK_PHOTO_VERIFICATION_ROWS: PhotoVerificationRow[] = [
     driverName: 'Phạm Minh Tuấn',
     promptDate: '2026-05-24',
     photoUrl: 'https://placehold.co/80x80/1a1a1a/fff?text=PV',
-    gpsDeltaM: 500,
     disposition: 'manual',
     dispositionResult: 'fail',
   },
@@ -300,7 +288,6 @@ export const MOCK_PHOTO_VERIFICATION_ROWS: PhotoVerificationRow[] = [
     driverName: 'Vũ Thị Lan',
     promptDate: '2026-05-24',
     photoUrl: 'https://placehold.co/80x80/1a1a1a/fff?text=PV',
-    gpsDeltaM: 3,
     disposition: 'auto',
     dispositionResult: 'pass',
   },

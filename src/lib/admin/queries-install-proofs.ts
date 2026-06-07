@@ -2,13 +2,12 @@ import 'server-only'
 
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
-import { batchSignUrls, gpsDelta } from './photo-query-utils'
+import { batchSignUrls } from './photo-query-utils'
 
 export type InstallProofPhoto = {
   id: string
   submittedAt: string
   signedPhotoUrl: string | null
-  gpsDeltaM: number | null
   status: 'pending' | 'approved' | 'rejected'
   angle: string
 }
@@ -26,9 +25,7 @@ export async function getInstallProofs(): Promise<InstallProofRow[]> {
   const supabase = createSupabaseAdminClient()
   const { data: photos, error } = await supabase
     .from('photos')
-    .select(
-      'id, subject_id, subject_type, storage_path, status, created_at, exif_lat, exif_lng, client_lat, client_lng',
-    )
+    .select('id, subject_id, subject_type, storage_path, status, created_at')
     .eq('kind', 'install_proof')
     .eq('subject_type', 'contract')
     .order('created_at', { ascending: false })
@@ -61,7 +58,6 @@ export async function getInstallProofs(): Promise<InstallProofRow[]> {
         id: photo.id,
         submittedAt: photo.created_at,
         signedPhotoUrl: signedByPath[photo.storage_path] ?? null,
-        gpsDeltaM: gpsDelta(photo),
         status: photo.status as InstallProofPhoto['status'],
         angle: angleFromPath(photo.storage_path),
       })),

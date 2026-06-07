@@ -83,7 +83,6 @@ export async function submitGarageInstallProof(
       subject_type: 'contract',
       kind: 'install_proof' as const,
       storage_path: path,
-      client_ts: new Date().toISOString(),
     })
   }
 

@@ -50,7 +50,6 @@ export async function updatePricingSettings(raw: unknown): Promise<{ error: stri
     garage_minimum_withdrawal_vnd: parsed.data.garageMinimumWithdrawalVnd,
     partner_minimum_cap_vnd: parsed.data.partnerMinimumCapVnd,
     minimum_daily_km: latest?.minimum_daily_km ?? 0,
-    created_by: user.id,
   })
   if (insertError) return { error: insertError.message }
 

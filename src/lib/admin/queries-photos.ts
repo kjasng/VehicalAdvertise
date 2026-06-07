@@ -2,7 +2,7 @@ import 'server-only'
 
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
-import { batchSignUrls, gpsDelta } from './photo-query-utils'
+import { batchSignUrls } from './photo-query-utils'
 export { getInstallProofs } from './queries-install-proofs'
 export type { InstallProofPhoto, InstallProofRow } from './queries-install-proofs'
 
@@ -11,7 +11,6 @@ export type PhotoVerifRow = {
   driverName: string
   promptDate: string
   signedPhotoUrl: string | null
-  gpsDeltaM: number | null
   disposition: 'auto' | 'manual'
   dispositionResult: 'pass' | 'fail' | 'pending'
 }
@@ -21,9 +20,7 @@ export async function getPhotoVerifications(): Promise<PhotoVerifRow[]> {
 
   const { data: photos, error } = await supabase
     .from('photos')
-    .select(
-      'id, subject_id, storage_path, status, created_at, exif_lat, exif_lng, client_lat, client_lng',
-    )
+    .select('id, subject_id, storage_path, status, created_at')
     .in('kind', ['periodic_vehicle', 'periodic_selfie'])
     .eq('status', 'pending') // only show actionable items in the review queue
     .order('created_at', { ascending: false })
@@ -50,22 +47,14 @@ export async function getPhotoVerifications(): Promise<PhotoVerifRow[]> {
     photos.map((p) => p.storage_path),
   )
 
-  return photos.map((photo) => {
-    const delta = gpsDelta(photo)
-    // Disposition: auto if GPS coordinates present, manual otherwise
-    const disposition = delta != null ? 'auto' : 'manual'
-    // Pass/fail: auto-pass if delta < 100m, auto-fail if >= 100m, pending if no GPS data
-    const dispositionResult: PhotoVerifRow['dispositionResult'] =
-      delta == null ? 'pending' : delta < 100 ? 'pass' : 'fail'
-
-    return {
-      id: photo.id,
-      driverName: nameById[photo.subject_id] ?? 'Unknown',
-      promptDate: photo.created_at,
-      signedPhotoUrl: signedByPath[photo.storage_path] ?? null,
-      gpsDeltaM: delta,
-      disposition,
-      dispositionResult,
-    }
-  })
+  // GPS auto-disposition removed (location metadata no longer captured) —
+  // every pending photo is reviewed manually.
+  return photos.map((photo) => ({
+    id: photo.id,
+    driverName: nameById[photo.subject_id] ?? 'Unknown',
+    promptDate: photo.created_at,
+    signedPhotoUrl: signedByPath[photo.storage_path] ?? null,
+    disposition: 'manual' as const,
+    dispositionResult: 'pending' as const,
+  }))
 }

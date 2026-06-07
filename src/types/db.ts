@@ -6,31 +6,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: '14.5'
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       campaigns: {
@@ -62,7 +37,6 @@ export type Database = {
           start_date: string
           status: Database['public']['Enums']['campaign_status']
           target_districts: string[] | null
-          target_vehicle_types: Database['public']['Enums']['vehicle_fuel'][] | null
         }
         Insert: {
           active_driver_limit?: number | null
@@ -92,7 +66,6 @@ export type Database = {
           start_date: string
           status?: Database['public']['Enums']['campaign_status']
           target_districts?: string[] | null
-          target_vehicle_types?: Database['public']['Enums']['vehicle_fuel'][] | null
         }
         Update: {
           active_driver_limit?: number | null
@@ -122,7 +95,6 @@ export type Database = {
           start_date?: string
           status?: Database['public']['Enums']['campaign_status']
           target_districts?: string[] | null
-          target_vehicle_types?: Database['public']['Enums']['vehicle_fuel'][] | null
         }
         Relationships: [
           {
@@ -146,7 +118,6 @@ export type Database = {
           campaign_id: string
           created_at: string
           driver_id: string
-          earned_vnd: number
           earning_approved_at: string | null
           earning_approved_by: string | null
           earning_start_date: string | null
@@ -164,7 +135,6 @@ export type Database = {
           campaign_id: string
           created_at?: string
           driver_id: string
-          earned_vnd?: number
           earning_approved_at?: string | null
           earning_approved_by?: string | null
           earning_start_date?: string | null
@@ -182,7 +152,6 @@ export type Database = {
           campaign_id?: string
           created_at?: string
           driver_id?: string
-          earned_vnd?: number
           earning_approved_at?: string | null
           earning_approved_by?: string | null
           earning_start_date?: string | null
@@ -420,7 +389,6 @@ export type Database = {
           id: string
           operating_districts: string[] | null
           primary_city: string
-          rating: number | null
         }
         Insert: {
           bank_account_name?: string | null
@@ -434,7 +402,6 @@ export type Database = {
           id: string
           operating_districts?: string[] | null
           primary_city?: string
-          rating?: number | null
         }
         Update: {
           bank_account_name?: string | null
@@ -448,7 +415,6 @@ export type Database = {
           id?: string
           operating_districts?: string[] | null
           primary_city?: string
-          rating?: number | null
         }
         Relationships: [
           {
@@ -589,10 +555,7 @@ export type Database = {
           contact_name: string | null
           google_maps_url: string | null
           id: string
-          lat: number | null
-          lng: number | null
           phone: string | null
-          rating: number | null
           service_area: string | null
           shop_name: string
           working_hours: string | null
@@ -610,10 +573,7 @@ export type Database = {
           contact_name?: string | null
           google_maps_url?: string | null
           id: string
-          lat?: number | null
-          lng?: number | null
           phone?: string | null
-          rating?: number | null
           service_area?: string | null
           shop_name: string
           working_hours?: string | null
@@ -631,10 +591,7 @@ export type Database = {
           contact_name?: string | null
           google_maps_url?: string | null
           id?: string
-          lat?: number | null
-          lng?: number | null
           phone?: string | null
-          rating?: number | null
           service_area?: string | null
           shop_name?: string
           working_hours?: string | null
@@ -761,7 +718,6 @@ export type Database = {
           paid_at: string | null
           period_end: string
           period_start: string
-          sepay_qr_url: string | null
           status: Database['public']['Enums']['payout_status']
         }
         Insert: {
@@ -773,7 +729,6 @@ export type Database = {
           paid_at?: string | null
           period_end: string
           period_start: string
-          sepay_qr_url?: string | null
           status?: Database['public']['Enums']['payout_status']
         }
         Update: {
@@ -785,7 +740,6 @@ export type Database = {
           paid_at?: string | null
           period_end?: string
           period_start?: string
-          sepay_qr_url?: string | null
           status?: Database['public']['Enums']['payout_status']
         }
         Relationships: [
@@ -800,13 +754,7 @@ export type Database = {
       }
       photos: {
         Row: {
-          client_lat: number | null
-          client_lng: number | null
-          client_ts: string | null
           created_at: string
-          exif_lat: number | null
-          exif_lng: number | null
-          exif_taken_at: string | null
           id: string
           kind: Database['public']['Enums']['photo_kind']
           reject_reason: string | null
@@ -818,13 +766,7 @@ export type Database = {
           subject_type: string
         }
         Insert: {
-          client_lat?: number | null
-          client_lng?: number | null
-          client_ts?: string | null
           created_at?: string
-          exif_lat?: number | null
-          exif_lng?: number | null
-          exif_taken_at?: string | null
           id?: string
           kind: Database['public']['Enums']['photo_kind']
           reject_reason?: string | null
@@ -836,13 +778,7 @@ export type Database = {
           subject_type: string
         }
         Update: {
-          client_lat?: number | null
-          client_lng?: number | null
-          client_ts?: string | null
           created_at?: string
-          exif_lat?: number | null
-          exif_lng?: number | null
-          exif_taken_at?: string | null
           id?: string
           kind?: Database['public']['Enums']['photo_kind']
           reject_reason?: string | null
@@ -867,7 +803,6 @@ export type Database = {
         Row: {
           base_rate_per_km_vnd: number
           created_at: string
-          created_by: string | null
           daily_cap_km: number
           effective_from: string
           ev_multiplier: number
@@ -881,7 +816,6 @@ export type Database = {
         Insert: {
           base_rate_per_km_vnd: number
           created_at?: string
-          created_by?: string | null
           daily_cap_km: number
           effective_from: string
           ev_multiplier: number
@@ -895,7 +829,6 @@ export type Database = {
         Update: {
           base_rate_per_km_vnd?: number
           created_at?: string
-          created_by?: string | null
           daily_cap_km?: number
           effective_from?: string
           ev_multiplier?: number
@@ -906,15 +839,7 @@ export type Database = {
           partner_minimum_cap_vnd?: number
           platform_fee_pct?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: 'pricing_rules_created_by_fkey'
-            columns: ['created_by']
-            isOneToOne: false
-            referencedRelation: 'profiles'
-            referencedColumns: ['id']
-          },
-        ]
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -1001,8 +926,6 @@ export type Database = {
           id: string
           model: string | null
           plate: string
-          registration_doc_url: string | null
-          year: number | null
         }
         Insert: {
           approved?: boolean
@@ -1014,8 +937,6 @@ export type Database = {
           id?: string
           model?: string | null
           plate: string
-          registration_doc_url?: string | null
-          year?: number | null
         }
         Update: {
           approved?: boolean
@@ -1027,8 +948,6 @@ export type Database = {
           id?: string
           model?: string | null
           plate?: string
-          registration_doc_url?: string | null
-          year?: number | null
         }
         Relationships: [
           {
@@ -1221,7 +1140,6 @@ export type Database = {
           start_date: string
           status: Database['public']['Enums']['campaign_status']
           target_districts: string[] | null
-          target_vehicle_types: Database['public']['Enums']['vehicle_fuel'][] | null
         }
         SetofOptions: {
           from: '*'
@@ -1239,7 +1157,6 @@ export type Database = {
           campaign_id: string
           created_at: string
           driver_id: string
-          earned_vnd: number
           earning_approved_at: string | null
           earning_approved_by: string | null
           earning_start_date: string | null
@@ -1425,9 +1342,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       campaign_status: [
