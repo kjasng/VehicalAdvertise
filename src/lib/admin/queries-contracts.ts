@@ -25,7 +25,6 @@ export type CampaignMatchRow = {
   budgetVnd: number
   spentVnd: number
   ratePerKmVnd: number
-  dailyCapKm: number
   status: string
   startDate: string
   endDate: string
@@ -47,7 +46,7 @@ export async function getCampaignsForMatching(): Promise<CampaignMatchRow[]> {
   const { data: campaigns, error } = await supabase
     .from('campaigns')
     .select(
-      'id, name, partner_id, budget_vnd, spent_vnd, rate_per_km_vnd, daily_cap_km, status, start_date, end_date',
+      'id, name, partner_id, budget_vnd, spent_vnd, rate_per_km_vnd, status, start_date, end_date',
     )
     .order('created_at', { ascending: false })
     .limit(500)
@@ -83,7 +82,6 @@ export async function getCampaignsForMatching(): Promise<CampaignMatchRow[]> {
     budgetVnd: c.budget_vnd,
     spentVnd: c.spent_vnd,
     ratePerKmVnd: c.rate_per_km_vnd,
-    dailyCapKm: c.daily_cap_km,
     status: c.status,
     startDate: c.start_date,
     endDate: c.end_date,

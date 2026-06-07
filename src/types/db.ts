@@ -17,10 +17,8 @@ export type Database = {
           created_at: string
           creative_url: string | null
           creative_urls: string[]
-          daily_cap_km: number
           driver_net_monthly_vnd: number
           end_date: string
-          ev_multiplier: number
           funding_mode: string
           id: string
           monthly_budget_vnd: number | null
@@ -46,10 +44,8 @@ export type Database = {
           created_at?: string
           creative_url?: string | null
           creative_urls?: string[]
-          daily_cap_km?: number
           driver_net_monthly_vnd?: number
           end_date: string
-          ev_multiplier?: number
           funding_mode?: string
           id?: string
           monthly_budget_vnd?: number | null
@@ -75,10 +71,8 @@ export type Database = {
           created_at?: string
           creative_url?: string | null
           creative_urls?: string[]
-          daily_cap_km?: number
           driver_net_monthly_vnd?: number
           end_date?: string
-          ev_multiplier?: number
           funding_mode?: string
           id?: string
           monthly_budget_vnd?: number | null
@@ -1086,10 +1080,8 @@ export type Database = {
           created_at: string
           creative_url: string | null
           creative_urls: string[]
-          daily_cap_km: number
           driver_net_monthly_vnd: number
           end_date: string
-          ev_multiplier: number
           funding_mode: string
           id: string
           monthly_budget_vnd: number | null
