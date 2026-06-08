@@ -93,9 +93,10 @@ export async function submitKyc(formData: FormData): Promise<{ error: string | n
     .update({
       full_name: fullName,
       phone_e164: phone,
-      kyc_status: 'pending',
+      // Auto-approve on submit — manual admin KYC review removed.
+      kyc_status: 'approved',
       kyc_reviewed_by: null,
-      kyc_reviewed_at: null,
+      kyc_reviewed_at: new Date().toISOString(),
     })
     .eq('id', uid)
   if (profileErr) {
