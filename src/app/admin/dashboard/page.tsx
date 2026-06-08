@@ -17,7 +17,6 @@ export default async function AdminDashboardPage() {
   const KPI_DATA = [
     { label: 'Active Drivers', value: stats.totalDrivers.toLocaleString() },
     { label: 'Active Campaigns', value: stats.activeCampaigns.toLocaleString() },
-    { label: 'Pending KYC', value: stats.pendingKyc.toLocaleString() },
     { label: 'Active Partners', value: stats.activePartners.toLocaleString() },
     { label: 'Pending Payouts', value: stats.pendingPayouts.toLocaleString() },
   ]

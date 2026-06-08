@@ -1,9 +1,6 @@
 export type { DashboardStats, RecentRequestRow } from './queries-dashboard'
 export { getDashboardStats } from './queries-dashboard'
 
-export type { KycQueueRow } from './queries-kyc'
-export { getKycQueue } from './queries-kyc'
-
 export type { CreativeQueueRow } from './queries-creatives'
 export { getCreativesQueue } from './queries-creatives'
 

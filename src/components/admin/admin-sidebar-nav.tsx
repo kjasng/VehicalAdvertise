@@ -107,14 +107,12 @@ function NavGroupItem({
 // ── Mobile nav strip (horizontal scroll, flattens groups) ─────────────────
 
 export function AdminMobileNav({
-  pendingDriverKycCount = 0,
   withdrawalRequestCounts = { driver: 0, garage: 0, total: 0 },
 }: {
-  pendingDriverKycCount?: number
   withdrawalRequestCounts?: WithdrawalRequestBadgeCounts
 }) {
   const pathname = usePathname()
-  const badgeByHref = buildBadgeByHref(pendingDriverKycCount, withdrawalRequestCounts)
+  const badgeByHref = buildBadgeByHref(withdrawalRequestCounts)
   const badgeByGroupLabel = buildBadgeByGroupLabel(withdrawalRequestCounts)
 
   const flatItems: MobileNavLink[] = ADMIN_NAV.flatMap((item) =>
@@ -167,14 +165,12 @@ export function AdminMobileNav({
 // ── Main nav list ──────────────────────────────────────────────────────────
 
 export function AdminSidebarNav({
-  pendingDriverKycCount = 0,
   withdrawalRequestCounts = { driver: 0, garage: 0, total: 0 },
 }: {
-  pendingDriverKycCount?: number
   withdrawalRequestCounts?: WithdrawalRequestBadgeCounts
 }) {
   const pathname = usePathname()
-  const badgeByHref = buildBadgeByHref(pendingDriverKycCount, withdrawalRequestCounts)
+  const badgeByHref = buildBadgeByHref(withdrawalRequestCounts)
   const badgeByGroupLabel = buildBadgeByGroupLabel(withdrawalRequestCounts)
 
   return (
@@ -218,11 +214,9 @@ export function AdminSidebarNav({
 }
 
 function buildBadgeByHref(
-  pendingDriverKycCount: number,
   withdrawalRequestCounts: WithdrawalRequestBadgeCounts,
 ): Record<string, number> {
   return {
-    '/admin/drivers-kyc': pendingDriverKycCount,
     '/admin/invoices/driver': withdrawalRequestCounts.driver,
     '/admin/invoices/garage': withdrawalRequestCounts.garage,
   }

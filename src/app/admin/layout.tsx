@@ -8,7 +8,6 @@ import type { ReactNode } from 'react'
 import { AdminMobileNav, AdminSidebarNav } from '@/components/admin/admin-sidebar-nav'
 import { ADMIN_NAV } from '@/components/admin/admin-nav-config'
 import { RoleShell } from '@/components/shared/role-shell'
-import { getPendingDriverKycRequestCount } from '@/lib/admin/queries-kyc'
 import { getWithdrawalRequestCounts } from '@/lib/admin/queries-withdrawal-requests'
 import { requireRole } from '@/lib/auth/role-gate'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
@@ -16,9 +15,8 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   await requireRole('admin')
 
-  const [supabase, pendingDriverKycCount, withdrawalRequestCounts] = await Promise.all([
+  const [supabase, withdrawalRequestCounts] = await Promise.all([
     createSupabaseServerClient(),
-    getPendingDriverKycRequestCount(),
     getWithdrawalRequestCounts(),
   ])
   const { data } = await supabase.auth.getUser()
@@ -28,21 +26,13 @@ export default async function AdminLayout({ children }: { children: ReactNode })
       role="admin"
       nav="sidebar"
       navItems={ADMIN_NAV}
-      navContent={
-        <AdminSidebarNav
-          pendingDriverKycCount={pendingDriverKycCount}
-          withdrawalRequestCounts={withdrawalRequestCounts}
-        />
-      }
+      navContent={<AdminSidebarNav withdrawalRequestCounts={withdrawalRequestCounts} />}
       pathname="/admin"
       userEmail={data.user?.email ?? null}
       brandLabel="VehicalAdvertise"
     >
       {/* Mobile nav — client component so usePathname() stays current */}
-      <AdminMobileNav
-        pendingDriverKycCount={pendingDriverKycCount}
-        withdrawalRequestCounts={withdrawalRequestCounts}
-      />
+      <AdminMobileNav withdrawalRequestCounts={withdrawalRequestCounts} />
 
       {children}
     </RoleShell>
