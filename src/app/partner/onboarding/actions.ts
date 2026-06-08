@@ -28,14 +28,15 @@ export async function submitPartnerProfile(raw: unknown): Promise<{ error: strin
 
   const supabase = createSupabaseAdminClient()
 
-  // Upsert partners row — set status back to 'pending' if resubmitting after rejection
+  // Auto-approve on submit — manual admin approval removed.
   const { error } = await supabase.from('partners').upsert(
     {
       id: user.id,
       company_name: companyName,
       tax_code: taxCode,
       billing_address: billingAddress,
-      status: 'pending',
+      status: 'approved',
+      approved_at: new Date().toISOString(),
       reject_reason: null,
     },
     { onConflict: 'id' },
