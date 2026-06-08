@@ -2,23 +2,24 @@
 
 ## 1. Phạm Vi
 
-Biểu đồ lớp này mô tả các lớp nghiệp vụ chính của demo VehicalAdvertise dựa trên bảng CSDL Supabase và các RPC/server action đang tác động lên dữ liệu. Cách trình bày theo kiểu UML class box: tên lớp, thuộc tính, phương thức và quan hệ bội số.
+Biểu đồ lớp mô tả các lớp nghiệp vụ chính của demo VehicalAdvertise sau khi scout lại codebase. Nguồn chính là `src/types/db.ts`; các migration cuối dùng để xác nhận bảng/cột cũ đã bị loại. File import draw.io: `docs/class-diagram.drawio`.
 
-File import draw.io: `docs/class-diagram.drawio`. File draw.io được tách thành 4 trang để dễ đọc:
+Bản draw.io được tách thành 4 trang để dễ đọc:
 
 - `01 Tài khoản & hồ sơ`
 - `02 Campaign & decal`
-- `03 Thu nhập Driver`
-- `04 Garage & payout`
+- `03 Thu nhập & payout`
+- `04 Quản trị & tích hợp`
 
-## 2. Quy Ước Thiết Kế
+## 2. Quy Ước
 
-- `Profile` là lớp cha nghiệp vụ cho tài khoản trong hệ thống. Trong CSDL, các bảng `drivers`, `partners`, `garages` dùng khóa chính trùng `profiles.id`; vì vậy biểu đồ trình bày như quan hệ kế thừa để dễ hiểu trong đồ án.
-- `PlatformAdmin` không có bảng riêng; lớp này biểu diễn `profiles.role = admin` và các server action/RPC dành cho Admin.
-- `PhotoVerification` ánh xạ từ bảng `photos`. Ảnh sau dán decal và ảnh xác minh decal hằng tháng được phân biệt bằng `photo_kind`.
-- `Campaign hết gói` không phải class/use case riêng; chỉ là rule/trạng thái của `Campaign`.
-- `Vehicle` vẫn xuất hiện vì `contracts.vehicle_id` tồn tại trong CSDL, nhưng không xem “cập nhật thông tin xe” là use case riêng của Driver.
-- Bản draw.io tách trang theo cụm quan hệ để tránh canvas quá dày và đường nối chồng chéo.
+- `Profile` là lớp cha nghiệp vụ cho tài khoản. `Driver`, `Partner`, `Garage` dùng khóa chính trùng `profiles.id`; biểu đồ trình bày như kế thừa để dễ hiểu trong đồ án.
+- `PlatformAdmin` không có bảng riêng; đây là `profiles.role = admin` và các server action/RPC dành cho Admin.
+- `PhotoVerification` ánh xạ từ bảng `photos`; `photo_kind` phân biệt KYC, install proof và ảnh periodic.
+- `SepayWebhookEvent` là bảng log tích hợp nạp tiền, không phải actor trong UML use case/sequence.
+- `Vehicle` hiện chỉ giữ `plate` và `approved`; không còn `fuel`, `brand`, `model`.
+- `Contract.kmTotal` còn trong CSDL/admin query, nhưng GPS tracking và GPS-based earning đã bị loại khỏi scope demo.
+- Thuộc tính dưới đây ưu tiên cột nghiệp vụ và FK quan trọng; một số timestamp kỹ thuật như `created_at` được lược để diagram dễ đọc.
 
 ## 3. Nhóm Lớp Chính
 
@@ -27,7 +28,7 @@ File import draw.io: `docs/class-diagram.drawio`. File draw.io được tách th
 | Tài khoản và hồ sơ     | `Profile`, `Driver`, `Partner`, `Garage`, `PlatformAdmin`, `Vehicle`                                 |
 | Campaign và decal      | `Campaign`, `Contract`, `PhotoVerification`                                                          |
 | Thu nhập và thanh toán | `DriverEarningPeriod`, `DriverInvoice`, `Payout`, `GarageEarning`, `GarageWithdrawal`, `LedgerEntry` |
-| Cấu hình               | `PricingRule`                                                                                        |
+| Cấu hình và tích hợp   | `PricingRule`, `SepayWebhookEvent`                                                                   |
 
 ## 4. Biểu Đồ Lớp
 
@@ -42,8 +43,9 @@ classDiagram
         +phoneE164: text
         +email: text
         +kycStatus: kyc_status
+        +kycReviewedBy: uuid
+        +kycReviewedAt: timestamptz
         +blocked: boolean
-        +createdAt: timestamptz
         +handleNewUser()
         +chooseRole(role)
         +setUserBlocked(blocked)
@@ -52,14 +54,15 @@ classDiagram
     class Driver {
         +id: uuid
         +cccdNumber: text
+        +bodyType: text
         +primaryCity: text
-        +bankAccountNumber: text
         +bankAccountName: text
-        +bankBin: text
-        +rating: numeric
-        +submitDriverProfile()
-        +updatePayoutAccount()
-        +requestWithdrawal()
+        +bankAccountNumber: text
+        +bankName: text
+        +submitKyc()
+        +updateDriverProfile()
+        +selectInstallGarage()
+        +createWithdrawalInvoice()
     }
 
     class Partner {
@@ -70,10 +73,11 @@ classDiagram
         +balanceVnd: bigint
         +status: partner_status
         +approvedAt: timestamptz
+        +rejectReason: text
         +submitPartnerProfile()
-        +topupBalance()
-        +createCampaign()
-        +editCampaignBeforeApproval()
+        +uploadCampaignCreative()
+        +createCampaignWithReserve()
+        +viewCampaignInvoices()
     }
 
     class Garage {
@@ -81,35 +85,42 @@ classDiagram
         +shopName: text
         +address: text
         +googleMapsUrl: text
+        +contactName: text
+        +phone: text
+        +serviceArea: text
+        +workingHours: text
+        +bankAccountName: text
         +bankAccountNumber: text
+        +bankName: text
         +balanceVnd: bigint
         +approved: boolean
         +updateGarageProfile()
         +submitInstallProof()
-        +requestWithdrawal()
+        +requestGarageWithdrawal()
     }
 
     class PlatformAdmin {
         +id: uuid
         +role: admin
         +blocked: boolean
-        +approveProfile()
-        +approveCampaign()
-        +assignDriverToCampaign()
+        +reviewDriverKyc()
+        +approvePartner()
+        +reviewCampaign()
+        +createContract()
+        +updateContractAssignment()
         +reviewInstallProof()
-        +reviewMonthlyDecalPhoto()
-        +managePayout()
+        +reviewPhotoVerif()
+        +managePayouts()
         +updatePricingSettings()
+        +manageUsers()
     }
 
     class Vehicle {
         +id: uuid
         +driverId: uuid
         +plate: text
-        +fuel: vehicle_fuel
-        +brand: text
-        +model: text
         +approved: boolean
+        +updatePlate()
         +linkToDriver()
     }
 
@@ -117,32 +128,43 @@ classDiagram
         +id: uuid
         +partnerId: uuid
         +name: text
-        +creativeUrl: text
+        +brief: text
+        +creativeUrls: text[]
+        +qrTargetUrl: text
         +budgetVnd: bigint
+        +spentVnd: bigint
         +monthlyBudgetVnd: bigint
+        +driverNetMonthlyVnd: bigint
+        +platformFeePct: numeric
+        +activeDriverLimit: int
+        +requestedDriverCount: int
         +startDate: date
         +endDate: date
         +status: campaign_status
-        +requestedDriverCount: int
+        +rejectReason: text
         +createWithReserve()
-        +editBeforeApproval()
-        +approveCampaign()
+        +reviewCampaign()
+        +updateCampaignFunding()
         +transitionCampaign()
     }
 
     class Contract {
         +id: uuid
         +campaignId: uuid
-        +vehicleId: uuid
         +driverId: uuid
+        +vehicleId: uuid
         +installGarageId: uuid
         +status: contract_status
+        +garageSelectedAt: timestamptz
+        +installedAt: timestamptz
         +earningStartDate: date
-        +earnedVnd: bigint
+        +kmTotal: numeric
+        +installNote: text
         +createContract()
-        +selectGarage()
-        +markInstallProofApproved()
-        +startEarning()
+        +updateAssignment()
+        +selectInstallGarage()
+        +advanceStatus()
+        +terminateContract()
     }
 
     class PhotoVerification {
@@ -154,15 +176,18 @@ classDiagram
         +status: photo_status
         +reviewedBy: uuid
         +reviewedAt: timestamptz
+        +rejectReason: text
+        +submitKycPhotos()
         +submitInstallProof()
-        +submitMonthlyDecalVerification()
         +reviewInstallProof()
-        +reviewMonthlyDecalVerification()
+        +reviewPhotoVerif()
     }
 
     class DriverEarningPeriod {
         +id: uuid
+        +campaignId: uuid
         +contractId: uuid
+        +driverId: uuid
         +periodStart: date
         +periodEnd: date
         +grossChargeVnd: bigint
@@ -177,13 +202,20 @@ classDiagram
         +id: uuid
         +invoiceNumber: text
         +driverId: uuid
+        +campaignId: uuid
+        +contractId: uuid
+        +earningPeriodId: uuid
+        +periodStart: date
+        +periodEnd: date
         +amountVnd: bigint
         +status: driver_invoice_status
         +bankSnapshot: jsonb
+        +invoiceHtml: text
         +payoutId: uuid
+        +paidAt: timestamptz
         +createWithdrawalInvoice()
-        +approveWithdrawal()
-        +markPayoutPaid()
+        +approveDriverWithdrawal()
+        +markDriverPayoutPaid()
     }
 
     class Payout {
@@ -194,8 +226,8 @@ classDiagram
         +amountVnd: bigint
         +status: payout_status
         +paidAt: timestamptz
-        +markPaid()
-        +markFailed()
+        +failureReason: text
+        +markDriverPayoutPaid()
     }
 
     class GarageEarning {
@@ -205,6 +237,7 @@ classDiagram
         +photoId: uuid
         +amountVnd: bigint
         +source: text
+        +approvedBy: uuid
         +approvedAt: timestamptz
         +creditInstallEarning()
     }
@@ -216,10 +249,11 @@ classDiagram
         +amountVnd: bigint
         +status: payout_status
         +bankSnapshot: jsonb
+        +invoiceHtml: text
         +paidAt: timestamptz
-        +requestWithdrawal()
-        +reviewWithdrawal()
-        +markPaid()
+        +failureReason: text
+        +requestGarageWithdrawal()
+        +reviewGarageWithdrawal()
     }
 
     class LedgerEntry {
@@ -232,58 +266,69 @@ classDiagram
         +amountVnd: bigint
         +refType: text
         +refId: text
+        +note: text
         +recordPartnerTopup()
-        +recordPartnerCharge()
+        +reserveCampaignBudget()
         +recordDriverAccrual()
+        +recordDriverPayout()
+        +recordGarageInstallPayout()
         +recordPlatformFee()
     }
 
     class PricingRule {
         +id: uuid
-        +driverBaseMonthlyVnd: bigint
+        +effectiveFrom: date
         +installFeeVnd: bigint
-        +minWithdrawalVnd: bigint
-        +minTopupVnd: bigint
+        +garageMinimumWithdrawalVnd: bigint
+        +partnerMinimumCapVnd: bigint
         +platformFeePct: numeric
-        +active: boolean
-        +getActiveRule()
-        +updatePricingSettings()
+        +insertPricingSettings()
+        +getCurrentPricing()
+    }
+
+    class SepayWebhookEvent {
+        +id: bigserial
+        +txnId: text
+        +payload: jsonb
+        +receivedAt: timestamptz
+        +processedAt: timestamptz
+        +error: text
+        +processTopupWebhook()
+        +dedupeTransaction()
     }
 
     Profile <|-- Driver
     Profile <|-- Partner
     Profile <|-- Garage
     Profile <|-- PlatformAdmin
-
     Driver "1" --> "0..*" Vehicle : owns
     Partner "1" --> "0..*" Campaign : creates
     Campaign "1" --> "0..*" Contract : has
     Driver "1" --> "0..*" Contract : assigned
     Vehicle "1" --> "0..*" Contract : used_for
     Garage "0..1" --> "0..*" Contract : installs
-
     Contract "1" --> "0..*" PhotoVerification : install_proof
-    Driver "1" --> "0..*" PhotoVerification : monthly_decal_photo
-    PlatformAdmin "1" --> "0..*" PhotoVerification : reviews
-
+    Driver "1" --> "0..*" PhotoVerification : kyc_or_periodic
+    Profile "1" --> "0..*" PhotoVerification : reviews
     Contract "1" --> "0..*" DriverEarningPeriod : accrues
     DriverEarningPeriod "1" --> "0..1" DriverInvoice : invoiced
     DriverInvoice "0..1" --> "0..1" Payout : paid_by
-
+    Contract "1" --> "0..1" GarageEarning : install_fee
     Garage "1" --> "0..*" GarageEarning : earns
     Garage "1" --> "0..*" GarageWithdrawal : withdraws
-
     Partner "1" --> "0..*" LedgerEntry : wallet_entries
-    Driver "1" --> "0..*" LedgerEntry : balance_entries
+    Driver "1" --> "0..*" LedgerEntry : payout_entries
     Contract "1" --> "0..*" LedgerEntry : money_refs
-
     PricingRule ..> Campaign : pricing_inputs
     PricingRule ..> DriverEarningPeriod : earning_formula
     PricingRule ..> GarageWithdrawal : withdrawal_limits
+    SepayWebhookEvent ..> LedgerEntry : partner_topup
 ```
 
 ## 5. Ghi Chú
 
-- Phương thức trong biểu đồ là RPC/server action chính, không phải method OOP thật trong code.
-- Thuộc tính ưu tiên cột nghiệp vụ cần trình bày trong đồ án; CSDL còn một số cột kỹ thuật như timestamp, reviewer, reject reason.
-- Các bảng GPS, QR scan, audit log và manual ledger adjustment đã bị loại khỏi scope demo nên không đưa vào biểu đồ lớp tổng quát.
+- Phương thức trong biểu đồ là operation nghiệp vụ/server action/RPC tiêu biểu, không phải method OOP thật trong code.
+- Không đưa GPS tracking, QR scan, audit log hoặc hệ thống lịch vào class diagram tổng quát vì bảng/luồng đó đã bị drop hoặc không còn scope demo.
+- Không đưa `fuel`, `brand`, `model`, `vehicle_fuel`, `driver.rating`, `pricing_rules.active` vì không tồn tại trong schema cuối.
+- Partner chỉnh sửa campaign trước duyệt chưa đưa vào method vì scout chưa thấy route/action update campaign từ phía Partner.
+- Driver submit ảnh xác minh decal hằng tháng chưa có route/action submit riêng; class vẫn giữ `PhotoVerification.kind = periodic_vehicle/periodic_selfie` vì Admin queue/review đã có.

@@ -4,7 +4,6 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
 import { getCurrentUserRole } from '@/lib/auth/role-gate'
-import { sendPartnerDepositSuccess } from '@/lib/email/send-notifications'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
@@ -41,19 +40,6 @@ export async function topUpPartnerBalance(raw: unknown): Promise<{ error: string
     p_ref_type: 'manual_topup',
   })
   if (topUpErr) return { error: topUpErr.message }
-
-  const [{ data: partnerProfile }, { data: partnerBalance }] = await Promise.all([
-    supabase.from('profiles').select('email, full_name').eq('id', partnerId).maybeSingle(),
-    supabase.from('partners').select('balance_vnd').eq('id', partnerId).maybeSingle(),
-  ])
-  if (partnerProfile?.email) {
-    sendPartnerDepositSuccess({
-      email: partnerProfile.email,
-      name: partnerProfile.full_name,
-      amountVnd,
-      currentBalanceVnd: partnerBalance?.balance_vnd ?? amountVnd,
-    }).catch(() => {})
-  }
 
   revalidatePath('/admin/partner-balances')
   revalidatePath('/admin/dashboard')

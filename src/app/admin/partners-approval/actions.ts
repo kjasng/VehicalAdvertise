@@ -3,7 +3,6 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
-import { sendPartnerApproved, sendPartnerRejected } from '@/lib/email/send-notifications'
 import { getCurrentUserRole } from '@/lib/auth/role-gate'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
@@ -30,17 +29,6 @@ export async function approvePartner(raw: unknown): Promise<{ error: string | nu
 
   if (error) return { error: error.message }
 
-  // Fire-and-forget email
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('email, full_name')
-    .eq('id', partnerId)
-    .single()
-
-  if (profile?.email) {
-    sendPartnerApproved({ email: profile.email, name: profile.full_name }).catch(() => {})
-  }
-
   revalidatePath('/admin/partners-approval')
   return { error: null }
 }
@@ -62,16 +50,6 @@ export async function rejectPartner(raw: unknown): Promise<{ error: string | nul
     .eq('status', 'pending')
 
   if (error) return { error: error.message }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('email, full_name')
-    .eq('id', partnerId)
-    .single()
-
-  if (profile?.email) {
-    sendPartnerRejected({ email: profile.email, name: profile.full_name, reason }).catch(() => {})
-  }
 
   revalidatePath('/admin/partners-approval')
   return { error: null }
