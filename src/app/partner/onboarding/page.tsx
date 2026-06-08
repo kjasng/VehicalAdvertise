@@ -31,11 +31,11 @@ export default async function PartnerOnboardingPage() {
   // Approved partners should not see this page
   if (partner?.status === 'approved') redirect('/partner/dashboard')
 
-  // choose_role RPC auto-creates partners row with company_name = user's full_name.
-  // billing_address is ONLY set when user submits the onboarding form — use it as
-  // the real "has submitted" indicator instead of company_name.
+  // Onboarding auto-approves on submit, so there is no "pending" waiting state.
+  // The only non-default state is a rejected resubmission. billing_address is the
+  // real "has submitted" indicator (choose_role seeds company_name, not address).
   const hasSubmitted = !!partner?.billing_address
-  const status = !partner || !hasSubmitted ? 'none' : (partner.status as 'pending' | 'rejected')
+  const status = hasSubmitted && partner?.status === 'rejected' ? 'rejected' : 'none'
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f7f8fa]">

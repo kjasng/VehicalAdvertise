@@ -6,13 +6,15 @@
  */
 import { useState, useTransition } from 'react'
 
+import { useRouter } from 'next/navigation'
+
 import { AlertTriangle, CheckCircle } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { submitPartnerProfile } from './actions'
 
 interface Props {
-  status: 'none' | 'pending' | 'rejected'
+  status: 'none' | 'rejected'
   rejectReason: string | null
   existingData: {
     companyName: string
@@ -24,8 +26,8 @@ interface Props {
 }
 
 export function PartnerOnboardingForm({ status, rejectReason, existingData }: Props) {
+  const router = useRouter()
   const [pending, startTransition] = useTransition()
-  const [submitted, setSubmitted] = useState(false)
   const [companyName, setCompanyName] = useState(existingData?.companyName ?? '')
   const [taxCode, setTaxCode] = useState(existingData?.taxCode ?? '')
   const [billingAddress, setBillingAddress] = useState(existingData?.billingAddress ?? '')
@@ -42,41 +44,15 @@ export function PartnerOnboardingForm({ status, rejectReason, existingData }: Pr
         contactName,
         contactPhone,
       })
-      if (result.error) toast.error(result.error)
-      else setSubmitted(true)
+      if (result.error) {
+        toast.error(result.error)
+        return
+      }
+      // Onboarding auto-approves — go straight to the dashboard, no waiting screen.
+      toast.success('Hồ sơ đã được duyệt. Chào mừng bạn!')
+      router.replace('/partner/dashboard')
+      router.refresh()
     })
-  }
-
-  // Waiting screen — right after submit (submitted=true) OR on reload (status='pending' from DB)
-  if (status === 'pending' || submitted) {
-    return (
-      <div className="flex flex-col items-center gap-4 py-16 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-          <svg
-            className="size-8 text-green-600"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-        </div>
-        <div className="space-y-2">
-          <h2 className="font-heading text-[24px] text-[#1a1a1a] uppercase">Đã gửi hồ sơ</h2>
-          <p className="max-w-[400px] text-[14px] leading-[1.6] text-[#666666]">
-            Hồ sơ công ty của bạn đang được xem xét. Chúng tôi sẽ gửi email thông báo trong vòng{' '}
-            <strong>24 giờ</strong>.
-          </p>
-        </div>
-        <p className="text-[12px] text-[#999]">Bạn có thể đóng trang này.</p>
-      </div>
-    )
   }
 
   return (
