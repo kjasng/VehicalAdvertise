@@ -22,6 +22,42 @@ const RoleSchema = z.object({
   role: z.enum(MANAGED_USER_ROLES),
 })
 
+type SupabaseAdminClient = ReturnType<typeof createSupabaseAdminClient>
+
+function garageShopName(fullName: string | null | undefined): string {
+  const trimmed = fullName?.trim()
+  return trimmed && trimmed.length > 0 ? trimmed : 'New garage'
+}
+
+async function ensureGarageRow(
+  supabase: SupabaseAdminClient,
+  userId: string,
+  fullName: string | null | undefined,
+): Promise<string | null> {
+  const { data: existing, error: existingError } = await supabase
+    .from('garages')
+    .select('id')
+    .eq('id', userId)
+    .maybeSingle()
+
+  if (existingError) return existingError.message
+  if (existing) return null
+
+  const { error } = await supabase.from('garages').insert({
+    id: userId,
+    shop_name: garageShopName(fullName),
+    address: 'Chưa cập nhật',
+  })
+  return error?.message ?? null
+}
+
+function revalidateGarageRoutes() {
+  revalidatePath('/garage/dashboard')
+  revalidatePath('/garage/profile')
+  revalidatePath('/garage/installs')
+  revalidatePath('/garage/payout')
+}
+
 export async function setUserBlocked(raw: unknown): Promise<{ error: string | null }> {
   const parsed = BlockSchema.safeParse(raw)
   if (!parsed.success) return { error: 'Invalid input' }
@@ -103,6 +139,12 @@ export async function changeUserRole(raw: unknown): Promise<{ error: string | nu
   if (callerRole !== 'admin') return { error: 'Forbidden' }
 
   const supabase = createSupabaseAdminClient()
+  const { data: targetProfile, error: targetError } = await supabase
+    .from('profiles')
+    .select('full_name')
+    .eq('id', targetId)
+    .maybeSingle()
+  if (targetError) return { error: targetError.message }
 
   // profiles.role is revoked from authenticated; service-role client bypasses the revoke
   const { error: updateError } = await supabase
@@ -111,7 +153,12 @@ export async function changeUserRole(raw: unknown): Promise<{ error: string | nu
     .eq('id', targetId)
 
   if (updateError) return { error: updateError.message }
+  if (newRole === 'garage') {
+    const garageError = await ensureGarageRow(supabase, targetId, targetProfile?.full_name)
+    if (garageError) return { error: garageError }
+  }
 
+  if (newRole === 'garage') revalidateGarageRoutes()
   revalidatePath('/admin/users')
   return { error: null }
 }
@@ -160,7 +207,12 @@ export async function createUser(raw: unknown): Promise<{ error: string | null }
       .upsert({ id: authData.user.id, body_type: bodyType ?? null }, { onConflict: 'id' })
     if (driverErr) return { error: driverErr.message }
   }
+  if (role === 'garage') {
+    const garageErr = await ensureGarageRow(supabase, authData.user.id, fullName)
+    if (garageErr) return { error: garageErr }
+  }
 
+  if (role === 'garage') revalidateGarageRoutes()
   revalidatePath('/admin/users')
   return { error: null }
 }
@@ -265,7 +317,12 @@ export async function updateUser(raw: unknown): Promise<{ error: string | null }
       .upsert({ id: targetId, body_type: bodyType }, { onConflict: 'id' })
     if (driverErr) return { error: driverErr.message }
   }
+  if (role === 'garage') {
+    const garageErr = await ensureGarageRow(supabase, targetId, fullName)
+    if (garageErr) return { error: garageErr }
+  }
 
+  if (role === 'garage') revalidateGarageRoutes()
   revalidatePath('/admin/users')
   return { error: null }
 }
@@ -361,9 +418,16 @@ export async function bulkChangeRole(
     .update({ role: parsed.data.role })
     .in('id', parsed.data.ids)
     .not('role', 'eq', 'admin')
-    .select('id')
+    .select('id, full_name')
 
   if (error) return { error: error.message, count: 0 }
+  if (parsed.data.role === 'garage') {
+    for (const row of data ?? []) {
+      const garageError = await ensureGarageRow(supabase, row.id, row.full_name)
+      if (garageError) return { error: garageError, count: data?.length ?? 0 }
+    }
+    revalidateGarageRoutes()
+  }
   revalidatePath('/admin/users')
   return { error: null, count: data?.length ?? parsed.data.ids.length }
 }
