@@ -5,6 +5,7 @@ import { z } from 'zod'
 
 import { getCurrentUserRole } from '@/lib/auth/role-gate'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import type { Database } from '@/types/db'
 
 type ContractStatus = Database['public']['Enums']['contract_status']
@@ -78,21 +79,20 @@ async function revalidateContractWorkspace(campaignId: string, partnerId?: strin
   if (partnerId) revalidatePath(`/admin/${partnerId}/contracts`)
 }
 
-async function validateApprovedDriverVehicle(
+async function validateDriverVehicle(
   supabase: ReturnType<typeof createSupabaseAdminClient>,
   driverId: string,
   vehicleId: string,
 ): Promise<string | null> {
   const { data: vehicle, error } = await supabase
     .from('vehicles')
-    .select('id, approved')
+    .select('id')
     .eq('id', vehicleId)
     .eq('driver_id', driverId)
     .maybeSingle()
 
   if (error) return error.message
   if (!vehicle) return 'Selected vehicle does not belong to this driver'
-  if (!vehicle.approved) return 'Selected vehicle is not approved'
   return null
 }
 
@@ -114,7 +114,7 @@ export async function createContract(raw: unknown): Promise<{ error: string | nu
   if (role !== 'admin') return { error: 'Forbidden' }
 
   const supabase = createSupabaseAdminClient()
-  const vehicleError = await validateApprovedDriverVehicle(supabase, driverId, vehicleId)
+  const vehicleError = await validateDriverVehicle(supabase, driverId, vehicleId)
   if (vehicleError) return { error: vehicleError }
 
   const { error } = await supabase.from('contracts').insert({
@@ -171,7 +171,7 @@ export async function updateContractAssignment(raw: unknown): Promise<{ error: s
     return { error: 'Cannot edit assignment after financial records exist' }
   }
 
-  const vehicleError = await validateApprovedDriverVehicle(
+  const vehicleError = await validateDriverVehicle(
     supabase,
     parsed.data.driverId,
     parsed.data.vehicleId,
@@ -273,14 +273,33 @@ export async function advanceContractStatus(raw: unknown): Promise<{ error: stri
   const next = STATUS_TRANSITIONS[contract.status]
   if (!next) return { error: `Cannot advance from ${contract.status}` }
 
+  const serverClient = await createSupabaseServerClient()
+  const {
+    data: { user },
+  } = await serverClient.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const now = new Date().toISOString()
+  const today = now.slice(0, 10)
+
   // Use separate updates to keep TypeScript happy with the strict schema types
   const { error } =
     next === 'installed'
       ? await supabase
           .from('contracts')
-          .update({ status: next, installed_at: new Date().toISOString() })
+          .update({ status: next, installed_at: now })
           .eq('id', contract.id)
-      : await supabase.from('contracts').update({ status: next }).eq('id', contract.id)
+      : next === 'running'
+        ? await supabase
+            .from('contracts')
+            .update({
+              status: next,
+              earning_start_date: today,
+              earning_approved_at: now,
+              earning_approved_by: user.id,
+            })
+            .eq('id', contract.id)
+        : await supabase.from('contracts').update({ status: next }).eq('id', contract.id)
   if (error) return { error: error.message }
 
   // When first contract goes running, mark campaign as active

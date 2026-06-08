@@ -84,8 +84,7 @@ function DriverAssignmentModal({
   const [vehicleId, setVehicleId] = useState(contract?.vehicleId ?? '')
 
   const selected = drivers.find((d) => d.id === driverId)
-  const approvedVehicles =
-    selected?.vehicles.filter((v) => v.approved || v.id === contract?.vehicleId) ?? []
+  const driverVehicles = selected?.vehicles ?? []
   const modalTitle = contract ? 'Edit Driver' : 'Match Driver'
   const modalSubtitle = contract?.campaignName || campaign?.name || ''
 
@@ -170,14 +169,14 @@ function DriverAssignmentModal({
               <label className="block text-[11px] font-bold tracking-[2px] text-[#666666] uppercase">
                 Xe *
               </label>
-              {approvedVehicles.length > 0 ? (
+              {driverVehicles.length > 0 ? (
                 <select
                   value={vehicleId}
                   onChange={(e) => setVehicleId(e.target.value)}
                   className="focus:ring-primary h-[40px] w-full rounded border border-[#cbccc9] bg-white px-3 text-[13px] focus:ring-2 focus:outline-none"
                 >
                   <option value="">-- Chọn xe --</option>
-                  {approvedVehicles.map((v) => (
+                  {driverVehicles.map((v) => (
                     <option key={v.id} value={v.id}>
                       {v.plate}
                     </option>
@@ -185,7 +184,7 @@ function DriverAssignmentModal({
                 </select>
               ) : (
                 <p className="rounded border border-yellow-200 bg-yellow-50 px-3 py-2 text-[12px] text-yellow-800">
-                  Driver chưa có xe approved. Driver cần cập nhật xe trong hồ sơ cá nhân trước khi
+                  Driver chưa có xe. Driver cần cập nhật biển số xe trong hồ sơ cá nhân trước khi
                   assign vào campaign.
                 </p>
               )}

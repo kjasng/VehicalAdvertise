@@ -35,7 +35,7 @@ export type AvailableDriverRow = {
   fullName: string
   phone: string | null
   kycStatus: string
-  vehicles: { id: string; plate: string; approved: boolean }[]
+  vehicles: { id: string; plate: string }[]
 }
 
 /** Campaigns shown in the admin Campaigns workspace. */
@@ -150,16 +150,15 @@ export async function getAvailableDrivers(): Promise<AvailableDriverRow[]> {
   const driverIds = profiles.map((p) => p.id)
   const { data: vehicles } = await supabase
     .from('vehicles')
-    .select('id, driver_id, plate, approved')
+    .select('id, driver_id, plate')
     .in('driver_id', driverIds)
 
-  const vehiclesByDriver: Record<string, { id: string; plate: string; approved: boolean }[]> = {}
+  const vehiclesByDriver: Record<string, { id: string; plate: string }[]> = {}
   for (const v of vehicles ?? []) {
     if (!vehiclesByDriver[v.driver_id]) vehiclesByDriver[v.driver_id] = []
     vehiclesByDriver[v.driver_id].push({
       id: v.id,
       plate: v.plate,
-      approved: v.approved,
     })
   }
 
