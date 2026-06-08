@@ -110,15 +110,12 @@ export function CampaignFormWizard({ onSuccess }: Props) {
 
   const goBack = () => setStep((s) => Math.max(0, s - 1) as StepIndex)
 
-  // Only the final Review step may submit. Block any implicit submission
-  // (Enter key in an input, accidental submit events) on earlier steps so
-  // advancing with "Next" never triggers a campaign create.
-  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    if (step < 3) {
-      e.preventDefault()
-      return
-    }
-    void form.handleSubmit(onSubmit)(e)
+  // Campaign creation is driven only by an explicit click on "Create" at the
+  // Review step (see button below). Validate the whole form, then submit.
+  const submitCampaign = async () => {
+    if (step !== 3 || submitting) return
+    const valid = await form.trigger()
+    if (valid) await onSubmit(form.getValues())
   }
 
   return (
@@ -166,7 +163,9 @@ export function CampaignFormWizard({ onSuccess }: Props) {
       </nav>
 
       <Form {...form}>
-        <form onSubmit={handleFormSubmit} className="space-y-4">
+        {/* No native submit — Enter never creates a campaign; only the Create
+            button on the Review step does (prevents step-3 auto-submit). */}
+        <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
           <WizardStepFields step={step} control={form.control} getValues={form.getValues} />
 
           {step === 2 && (
@@ -196,7 +195,8 @@ export function CampaignFormWizard({ onSuccess }: Props) {
               </Button>
             ) : (
               <Button
-                type="submit"
+                type="button"
+                onClick={submitCampaign}
                 disabled={submitting}
                 className="bg-[#ff5c00] text-white hover:bg-[#e05200]"
               >
