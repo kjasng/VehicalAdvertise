@@ -38,8 +38,8 @@ values (
 )
 on conflict (id) do nothing;
 
--- Default pricing rule — car-only, 1500 VND/km, EV multiplier 1.30, daily cap 150 km,
--- 10% platform fee, 3.2m VND fixed garage install payout.
+-- Default pricing rule — car-only.
+-- 10% platform fee, 200k VND fixed garage install payout.
 insert into pricing_rules (
   effective_from, base_rate_per_km_vnd, ev_multiplier,
   daily_cap_km, platform_fee_pct, install_fee_vnd, created_by
@@ -50,7 +50,7 @@ values (
   1.30,
   150,
   10.00,
-  3200000,
+  200000,
   '00000000-0000-0000-0000-000000000001'
 )
 on conflict do nothing;

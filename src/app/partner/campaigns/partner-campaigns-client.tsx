@@ -36,7 +36,7 @@ export function PartnerCampaignsClient({ campaigns }: { campaigns: PartnerCampai
         <EmptyState
           kicker="No campaigns"
           title="Create your first campaign"
-          helper="Publish a campaign after adding creative, driver count, and a valid monthly cap."
+          helper="Publish a campaign after adding creative and QR target. Budget follows the locked plan."
           cta={
             <Button
               onClick={() => setOpen(true)}

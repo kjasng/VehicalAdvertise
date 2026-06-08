@@ -9,11 +9,15 @@
  */
 import type { Control } from 'react-hook-form'
 
+import { CampaignBudgetHint } from '@/components/partner/campaign-budget-hint'
 import { CampaignCreativeUpload } from '@/components/partner/campaign-creative-upload'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { CAMPAIGN_PACKAGE_OPTIONS } from '@/lib/partner/constants'
-import type { CampaignPackageValue } from '@/lib/partner/constants'
+import {
+  DEFAULT_CAMPAIGN_PLAN,
+  calculateDriverMonthlyBudgetVnd,
+  formatVnd,
+} from '@/lib/partner/constants'
 import { cn } from '@/lib/utils'
 
 export interface WizardFormValues {
@@ -22,9 +26,8 @@ export interface WizardFormValues {
   startDate: string
   endDate: string
   creativeUrls: string
-  planPackage: CampaignPackageValue
+  planPackage: string
   driverCount: string
-  monthlyCapVnd: string
   qrTargetUrl: string
 }
 
@@ -115,75 +118,61 @@ export function WizardStepFields({ step, control, getValues }: StepFieldsProps) 
             </FormItem>
           )}
         />
-      </fieldset>
-
-      {/* Step 2: Budget */}
-      <fieldset className={cn('space-y-4', step !== 2 && 'hidden')}>
-        <legend className="sr-only">Campaign budget</legend>
-        <FormField
-          control={control}
-          name="planPackage"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Campaign package</FormLabel>
-              <FormControl>
-                <select
-                  {...field}
-                  className="focus:ring-primary border-input bg-background h-10 w-full rounded-md border px-3 text-sm text-[#1a1a1a] focus:ring-2 focus:outline-none"
-                >
-                  {CAMPAIGN_PACKAGE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </FormControl>
-              <FormMessage />
-              <p className="text-[11px] text-[#666666]">
-                3/6/12 month packages auto-calculate dates and required cap. Business keeps dates
-                and budget flexible.
-              </p>
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={control}
-          name="driverCount"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Number of Drivers</FormLabel>
-              <FormControl>
-                <Input type="number" min={1} step={1} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={control}
-          name="monthlyCapVnd"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Monthly Cap (₫)</FormLabel>
-              <FormControl>
-                <Input type="number" min={1_100_000} step={100_000} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
         <FormField
           control={control}
           name="qrTargetUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>QR Target URL</FormLabel>
+              <FormLabel>QR target URL</FormLabel>
               <FormControl>
                 <Input type="url" placeholder="https://your-brand.vn/campaign" {...field} />
               </FormControl>
               <FormMessage />
+              <p className="text-[11px] text-[#666666]">
+                Put the landing page that the decal QR should open. This belongs with the creative
+                step.
+              </p>
             </FormItem>
           )}
+        />
+      </fieldset>
+
+      {/* Step 2: Budget */}
+      <fieldset className={cn('space-y-4', step !== 2 && 'hidden')}>
+        <legend className="sr-only">Campaign budget</legend>
+        <div className="rounded-md border border-[#cbccc9] bg-[#f7f8fa] p-4">
+          <p className="text-[11px] font-bold tracking-[2px] text-[#ff5c00] uppercase">
+            Locked plan
+          </p>
+          <p className="font-heading mt-1 text-[22px] text-[#1a1a1a] uppercase">
+            {DEFAULT_CAMPAIGN_PLAN.label}
+          </p>
+          <div className="mt-3 grid grid-cols-3 gap-3 text-[12px]">
+            <Stat label="Duration" value={`${DEFAULT_CAMPAIGN_PLAN.durationMonths} months`} />
+            <Stat label="Drivers" value={`${DEFAULT_CAMPAIGN_PLAN.driverCount}`} />
+            <Stat
+              label="Plan budget"
+              value={formatVnd(
+                calculateDriverMonthlyBudgetVnd(DEFAULT_CAMPAIGN_PLAN.driverCount) *
+                  DEFAULT_CAMPAIGN_PLAN.durationMonths,
+              )}
+            />
+          </div>
+          <p className="mt-3 text-[11px] text-[#666666]">
+            Budget follows the pilot plan automatically. No manual monthly cap selection.
+          </p>
+        </div>
+        <CampaignBudgetHint
+          values={{
+            name: getValues('name'),
+            description: getValues('description'),
+            startDate: getValues('startDate'),
+            endDate: getValues('endDate'),
+            creativeUrls: getValues('creativeUrls'),
+            planPackage: getValues('planPackage'),
+            driverCount: getValues('driverCount'),
+            qrTargetUrl: getValues('qrTargetUrl'),
+          }}
         />
       </fieldset>
 
@@ -199,9 +188,14 @@ function ReviewSummary({ getValues }: { getValues: (key: keyof WizardFormValues)
     ['Description', getValues('description')],
     ['Dates', `${getValues('startDate')} → ${getValues('endDate')}`],
     ['Creatives', `${getValues('creativeUrls').split(/\n|,/).filter(Boolean).length}`],
-    ['Package', packageLabel(getValues('planPackage'))],
-    ['Drivers', Number(getValues('driverCount')).toLocaleString('vi-VN')],
-    ['Monthly Cap', `₫${Number(getValues('monthlyCapVnd')).toLocaleString('vi-VN')}`],
+    [
+      'Plan',
+      `${DEFAULT_CAMPAIGN_PLAN.label} · ${DEFAULT_CAMPAIGN_PLAN.durationMonths} months · ${DEFAULT_CAMPAIGN_PLAN.driverCount} drivers`,
+    ],
+    [
+      'Plan monthly budget',
+      formatVnd(calculateDriverMonthlyBudgetVnd(DEFAULT_CAMPAIGN_PLAN.driverCount)),
+    ],
     ['QR URL', getValues('qrTargetUrl')],
   ]
 
@@ -220,6 +214,11 @@ function ReviewSummary({ getValues }: { getValues: (key: keyof WizardFormValues)
   )
 }
 
-function packageLabel(value: string) {
-  return CAMPAIGN_PACKAGE_OPTIONS.find((option) => option.value === value)?.label ?? value
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded border border-[#e5e5e2] bg-white p-2">
+      <p className="text-[10px] font-bold tracking-[1px] text-[#666666] uppercase">{label}</p>
+      <p className="mt-0.5 font-mono text-[12px] font-bold text-[#1a1a1a]">{value}</p>
+    </div>
+  )
 }

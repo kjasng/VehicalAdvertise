@@ -4,11 +4,8 @@ import { useState } from 'react'
 
 import { PlanCheckoutModal } from '@/components/partner/plan-checkout-modal'
 import {
-  DRIVER_NET_MONTHLY_VND,
-  GARAGE_INSTALL_FEE_VND,
-  PARTNER_PLATFORM_FEE_PCT,
   buildSePayQrImageUrl,
-  calculateGrossMonthlyCharge,
+  calculateCampaignBudgetReserveVnd,
   formatVnd,
 } from '@/lib/partner/constants'
 import { cn } from '@/lib/utils'
@@ -23,7 +20,6 @@ type Plan = {
   dark?: boolean
 }
 
-const DRIVER_BLOCK_SIZE = 10
 const PLANS: Plan[] = [
   ['pilot-3m', 'Pilot', '3 months', 3, 10, 'Minimum package for testing one route or district.'],
   ['growth-6m', 'Growth', '6 months', 6, 20, 'Two 10-driver blocks for a longer campaign window.'],
@@ -156,7 +152,8 @@ function PlanRow({ label, value, dark = false }: { label: string; value: string;
 }
 
 function estimatePlanAmount(plan: Plan) {
-  const monthly = calculateGrossMonthlyCharge(DRIVER_NET_MONTHLY_VND, PARTNER_PLATFORM_FEE_PCT)
-  const blocks = Math.ceil(plan.drivers / DRIVER_BLOCK_SIZE)
-  return blocks * GARAGE_INSTALL_FEE_VND + plan.drivers * monthly * plan.months
+  return calculateCampaignBudgetReserveVnd({
+    driverCount: plan.drivers,
+    durationMonths: plan.months,
+  })
 }

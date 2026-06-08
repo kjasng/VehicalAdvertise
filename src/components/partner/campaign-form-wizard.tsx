@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * CampaignFormWizard — 4-step wizard: Brief → Creative → Budget → Review.
+ * CampaignFormWizard — 4-step wizard: Brief → Creative/QR → Budget → Review.
  * Uses react-hook-form + zod. Submit writes real campaign rows.
  * Step field panels extracted to campaign-wizard-steps.tsx.
  */
@@ -13,10 +13,9 @@ import { toast } from 'sonner'
 import { z } from 'zod'
 
 import { createPartnerCampaign } from '@/app/partner/campaigns/actions'
-import { CampaignBudgetHint } from '@/components/partner/campaign-budget-hint'
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
-import { MIN_CAMPAIGN_MONTHS } from '@/lib/partner/constants'
+import { DEFAULT_CAMPAIGN_PLAN } from '@/lib/partner/constants'
 import { cn } from '@/lib/utils'
 
 import type { WizardFormValues } from './campaign-wizard-steps'
@@ -32,14 +31,18 @@ const campaignSchema = z
     startDate: z.string().min(1, 'Start date is required'),
     endDate: z.string().min(1, 'End date is required'),
     creativeUrls: z.string().min(1, 'Upload at least one creative image'),
-    planPackage: z.enum(['3', '6', '12', 'business']),
+    qrTargetUrl: z.string().url('QR target URL must be valid'),
+    planPackage: z
+      .string()
+      .refine((value) => value === DEFAULT_CAMPAIGN_PLAN.package, 'Plan is locked to Pilot'),
     driverCount: z
       .string()
-      .min(1, 'Number of drivers is required')
-      .refine((v) => Number.isInteger(Number(v)) && Number(v) > 0, 'Driver count must be positive'),
-    qrTargetUrl: z.string().url('QR target URL must be valid'),
+      .refine(
+        (value) => value === String(DEFAULT_CAMPAIGN_PLAN.driverCount),
+        'Driver count is locked to Pilot',
+      ),
   })
-  .refine((v) => v.endDate >= addMonths(v.startDate, MIN_CAMPAIGN_MONTHS), {
+  .refine((v) => v.endDate >= addMonths(v.startDate, DEFAULT_CAMPAIGN_PLAN.durationMonths), {
     message: 'Chiến dịch phải kéo dài tối thiểu 3 tháng.',
     path: ['endDate'],
   })
@@ -49,8 +52,8 @@ type StepIndex = 0 | 1 | 2 | 3
 
 const STEP_FIELDS: Record<StepIndex, (keyof WizardFormValues)[]> = {
   0: ['name', 'description', 'startDate', 'endDate'],
-  1: ['creativeUrls'],
-  2: ['planPackage', 'driverCount', 'qrTargetUrl'],
+  1: ['creativeUrls', 'qrTargetUrl'],
+  2: [],
   3: [],
 }
 
@@ -70,23 +73,20 @@ export function CampaignFormWizard({ onSuccess }: Props) {
       startDate: '',
       endDate: '',
       creativeUrls: '',
-      planPackage: '3',
-      driverCount: '10',
+      planPackage: DEFAULT_CAMPAIGN_PLAN.package,
+      driverCount: String(DEFAULT_CAMPAIGN_PLAN.driverCount),
       qrTargetUrl: 'https://vehicaladvertise.com',
     },
   })
-  const planPackage = useWatch({ control: form.control, name: 'planPackage' })
   const startDate = useWatch({ control: form.control, name: 'startDate' })
-  const driverCount = useWatch({ control: form.control, name: 'driverCount' })
-  const endDate = useWatch({ control: form.control, name: 'endDate' })
 
   useEffect(() => {
-    if (planPackage !== 'business' && startDate) {
-      form.setValue('endDate', addMonths(startDate, Number(planPackage)), {
+    if (startDate) {
+      form.setValue('endDate', addMonths(startDate, DEFAULT_CAMPAIGN_PLAN.durationMonths), {
         shouldValidate: false,
       })
     }
-  }, [driverCount, form, planPackage, startDate])
+  }, [form, startDate])
 
   async function onSubmit(values: WizardFormValues) {
     setSubmitting(true)
@@ -104,7 +104,8 @@ export function CampaignFormWizard({ onSuccess }: Props) {
   }
 
   const goNext = async () => {
-    const valid = await form.trigger(STEP_FIELDS[step])
+    const fields = STEP_FIELDS[step]
+    const valid = fields.length === 0 ? true : await form.trigger(fields)
     if (valid) setStep((s) => Math.min(3, s + 1) as StepIndex)
   }
 
@@ -167,18 +168,6 @@ export function CampaignFormWizard({ onSuccess }: Props) {
             button on the Review step does (prevents step-3 auto-submit). */}
         <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
           <WizardStepFields step={step} control={form.control} getValues={form.getValues} />
-
-          {step === 2 && (
-            <CampaignBudgetHint
-              values={{
-                ...form.getValues(),
-                driverCount: driverCount ?? '',
-                endDate: endDate ?? '',
-                planPackage: planPackage ?? '3',
-                startDate: startDate ?? '',
-              }}
-            />
-          )}
 
           {/* Navigation */}
           <div className="flex justify-between pt-2">

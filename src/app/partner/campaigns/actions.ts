@@ -5,10 +5,11 @@ import { z } from 'zod'
 
 import { getCurrentUserRole } from '@/lib/auth/role-gate'
 import {
-  DRIVER_GROSS_MONTHLY_VND,
+  DEFAULT_CAMPAIGN_PLAN,
   DRIVER_NET_MONTHLY_VND,
-  GARAGE_INSTALL_FEE_VND,
   MIN_CAMPAIGN_MONTHS,
+  calculateCampaignBudgetReserveVnd,
+  calculateDriverMonthlyBudgetVnd,
   formatVnd,
 } from '@/lib/partner/constants'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
@@ -20,9 +21,8 @@ const CampaignSchema = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Start date is required'),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'End date is required'),
   creativeUrls: z.string().trim().min(1, 'Upload or enter at least one creative URL'),
-  planPackage: z.enum(['3', '6', '12', 'business']).default('3'),
-  driverCount: z.number().int().positive('Number of drivers must be positive').max(10_000),
-  monthlyCapVnd: z.number().int().positive('Monthly cap must be positive').max(999_999_999_999),
+  planPackage: z.literal(DEFAULT_CAMPAIGN_PLAN.package),
+  driverCount: z.literal(DEFAULT_CAMPAIGN_PLAN.driverCount),
   qrTargetUrl: z.string().url('QR target URL must be a valid URL'),
 })
 
@@ -43,23 +43,14 @@ export async function createPartnerCampaign(raw: unknown): Promise<{ error: stri
   const creativeUrls = parseCreativeUrls(data.creativeUrls)
   if (!creativeUrls.length) return { error: 'Upload or enter at least one creative URL' }
 
-  const durationMonths =
-    data.planPackage === 'business'
-      ? countBillingMonths(data.startDate, data.endDate)
-      : Number(data.planPackage)
-  const effectiveEndDate =
-    data.planPackage === 'business' ? data.endDate : addMonths(data.startDate, durationMonths)
+  const durationMonths = DEFAULT_CAMPAIGN_PLAN.durationMonths
+  const effectiveEndDate = addMonths(data.startDate, durationMonths)
 
   if (!hasMinimumDuration(data.startDate, effectiveEndDate)) {
     return { error: 'Chiến dịch phải kéo dài tối thiểu 3 tháng.' }
   }
 
-  const requiredMonthlyBudget = data.driverCount * DRIVER_GROSS_MONTHLY_VND
-  if (data.monthlyCapVnd < requiredMonthlyBudget) {
-    return {
-      error: `Monthly Cap không đủ để chi trả cho ${data.driverCount} Driver. Yêu cầu tối thiểu: ${formatVnd(requiredMonthlyBudget)}/tháng`,
-    }
-  }
+  const requiredMonthlyBudget = calculateDriverMonthlyBudgetVnd(DEFAULT_CAMPAIGN_PLAN.driverCount)
 
   const supabase = createSupabaseAdminClient()
   const { data: partner } = await supabase
@@ -70,8 +61,10 @@ export async function createPartnerCampaign(raw: unknown): Promise<{ error: stri
 
   if (partner?.status !== 'approved') return { error: 'Partner account is not active yet.' }
 
-  const installReserveVnd = data.driverCount * GARAGE_INSTALL_FEE_VND
-  const campaignBudgetVnd = data.monthlyCapVnd * durationMonths + installReserveVnd
+  const campaignBudgetVnd = calculateCampaignBudgetReserveVnd({
+    driverCount: DEFAULT_CAMPAIGN_PLAN.driverCount,
+    durationMonths,
+  })
 
   if ((partner.balance_vnd ?? 0) < campaignBudgetVnd) {
     return {
@@ -89,10 +82,10 @@ export async function createPartnerCampaign(raw: unknown): Promise<{ error: stri
     p_budget_vnd: campaignBudgetVnd,
     p_start_date: data.startDate,
     p_end_date: effectiveEndDate,
-    p_monthly_budget_vnd: data.monthlyCapVnd,
+    p_monthly_budget_vnd: requiredMonthlyBudget,
     p_driver_net_monthly_vnd: DRIVER_NET_MONTHLY_VND,
-    p_active_driver_limit: data.driverCount,
-    p_requested_driver_count: data.driverCount,
+    p_active_driver_limit: DEFAULT_CAMPAIGN_PLAN.driverCount,
+    p_requested_driver_count: DEFAULT_CAMPAIGN_PLAN.driverCount,
   })
 
   if (error) {
@@ -127,16 +120,6 @@ function splitList(value: string) {
 
 function hasMinimumDuration(startDate: string, endDate: string) {
   return endDate >= addMonths(startDate, MIN_CAMPAIGN_MONTHS)
-}
-
-function countBillingMonths(startDate: string, endDate: string) {
-  let cursor = startDate
-  let months = 0
-  while (cursor < endDate && months < 120) {
-    months += 1
-    cursor = addMonths(cursor, 1)
-  }
-  return Math.max(MIN_CAMPAIGN_MONTHS, months)
 }
 
 function addMonths(date: string, months: number) {

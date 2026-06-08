@@ -29,6 +29,7 @@ export type PartnerCampaignInvoiceRow = {
   remainingVnd: number
   estimatedDriverVnd: number
   estimatedGarageVnd: number
+  estimatedOperationsVnd: number
   estimatedPlatformFeeVnd: number
   lines: PartnerCampaignInvoiceLine[]
 }
@@ -41,6 +42,7 @@ export type PartnerCampaignInvoiceTotals = {
   remainingVnd: number
   estimatedDriverVnd: number
   estimatedGarageVnd: number
+  estimatedOperationsVnd: number
   estimatedPlatformFeeVnd: number
 }
 

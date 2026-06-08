@@ -4,14 +4,14 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import type { CampaignStatus } from '@/types/db-aliases'
 
-import { DRIVER_GROSS_MONTHLY_VND, formatVnd } from './constants'
+import { calculateDriverMonthlyBudgetVnd, formatVnd } from './constants'
 
 export type PartnerCampaignRow = {
   id: string
   name: string
   status: CampaignStatus
   requestedDriverCount: number
-  monthlyCapVnd: number
+  planMonthlyBudgetVnd: number
   requiredMonthlyBudgetVnd: number
   budgetVnd: number
   spentVnd: number
@@ -86,8 +86,8 @@ export async function getPartnerData(): Promise<PartnerData | null> {
       name: campaign.name,
       status: campaign.status,
       requestedDriverCount,
-      monthlyCapVnd: campaign.monthly_budget_vnd ?? 0,
-      requiredMonthlyBudgetVnd: requestedDriverCount * DRIVER_GROSS_MONTHLY_VND,
+      planMonthlyBudgetVnd: campaign.monthly_budget_vnd ?? 0,
+      requiredMonthlyBudgetVnd: calculateDriverMonthlyBudgetVnd(requestedDriverCount),
       budgetVnd: campaign.budget_vnd,
       spentVnd: campaign.spent_vnd,
       startDate: campaign.start_date,

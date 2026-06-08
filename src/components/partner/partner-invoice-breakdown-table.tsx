@@ -14,6 +14,7 @@ const MAIN_HEADINGS = [
   'Driver',
   'Garage',
   'Platform',
+  'Ops reserve',
   'Remaining',
   'Invoice',
 ]
@@ -82,6 +83,11 @@ function RowGroup({ row, striped }: { row: PartnerCampaignInvoiceRow; striped: b
           muted={row.platformFeeVnd === 0}
           hint={`est. ${formatVnd(row.estimatedPlatformFeeVnd)}`}
         />
+        <MoneyCell
+          value={row.estimatedOperationsVnd}
+          muted={row.estimatedOperationsVnd === 0}
+          hint="est. 60% setup"
+        />
         <MoneyCell value={row.remainingVnd} danger={row.remainingVnd < 0} />
         <td className="px-4 py-3">
           <Link
@@ -94,7 +100,7 @@ function RowGroup({ row, striped }: { row: PartnerCampaignInvoiceRow; striped: b
         </td>
       </tr>
       <tr className={`border-b border-[#cbccc9] last:border-0 ${striped ? 'bg-[#f7f8fa]' : ''}`}>
-        <td colSpan={8} className="px-4 pb-4">
+        <td colSpan={9} className="px-4 pb-4">
           <PaymentDetail lines={row.lines} />
         </td>
       </tr>

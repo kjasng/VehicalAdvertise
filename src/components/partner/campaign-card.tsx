@@ -71,7 +71,7 @@ export function CampaignCard({ campaign }: CampaignCardProps) {
         </div>
         <div className="grid grid-cols-2 gap-2 text-[12px]">
           <Metric label="Required / month" value={`${fmt(campaign.requiredMonthlyBudgetVnd)} ₫`} />
-          <Metric label="Monthly cap" value={`${fmt(campaign.monthlyCapVnd)} ₫`} />
+          <Metric label="Plan / month" value={`${fmt(campaign.planMonthlyBudgetVnd)} ₫`} />
         </div>
       </div>
 

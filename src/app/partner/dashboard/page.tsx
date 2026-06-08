@@ -17,7 +17,10 @@ export default async function PartnerDashboardPage() {
   if (!data) redirect('/login')
 
   const activeCampaigns = data.campaigns.filter((campaign) => campaign.status === 'active')
-  const monthlyCapTotal = data.campaigns.reduce((sum, campaign) => sum + campaign.monthlyCapVnd, 0)
+  const monthlyBudgetTotal = data.campaigns.reduce(
+    (sum, campaign) => sum + campaign.planMonthlyBudgetVnd,
+    0,
+  )
   const monthlySpent = data.campaigns.reduce((sum, campaign) => sum + campaign.spentVnd, 0)
   const totalDrivers = data.campaigns.reduce(
     (sum, campaign) => sum + campaign.requestedDriverCount,
@@ -41,17 +44,17 @@ export default async function PartnerDashboardPage() {
         </div>
       </section>
 
-      <SectionShell title="Monthly Budget Usage">
+      <SectionShell title="Plan Monthly Budget Usage">
         <div className="space-y-2">
           <div className="flex justify-between text-[12px] font-bold tracking-[1px] text-[#666666] uppercase">
             <span>{formatVnd(monthlySpent)}</span>
-            <span>{formatVnd(monthlyCapTotal)}</span>
+            <span>{formatVnd(monthlyBudgetTotal)}</span>
           </div>
           <div className="h-2 rounded-full bg-[#f0f0ee]">
             <div
               className="h-2 rounded-full bg-[#ff5c00]"
               style={{
-                width: `${monthlyCapTotal > 0 ? Math.min(100, Math.round((monthlySpent / monthlyCapTotal) * 100)) : 0}%`,
+                width: `${monthlyBudgetTotal > 0 ? Math.min(100, Math.round((monthlySpent / monthlyBudgetTotal) * 100)) : 0}%`,
               }}
             />
           </div>

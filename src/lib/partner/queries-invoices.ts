@@ -7,6 +7,7 @@ import {
   DRIVER_NET_MONTHLY_VND,
   GARAGE_INSTALL_FEE_VND,
   PARTNER_PLATFORM_FEE_PCT,
+  calculateCampaignOperationsReserveVnd,
   calculateGrossMonthlyCharge,
 } from './constants'
 import type { PartnerCampaignInvoiceData } from './invoice-breakdown-types'
@@ -128,6 +129,7 @@ export async function getPartnerCampaignInvoices(): Promise<PartnerCampaignInvoi
     const estimatedDriverVnd = driverCount * driverNet * months
     const estimatedPlatformFeeVnd = driverCount * (grossMonthly - driverNet) * months
     const estimatedGarageVnd = driverCount * GARAGE_INSTALL_FEE_VND
+    const estimatedOperationsVnd = calculateCampaignOperationsReserveVnd(driverCount)
     const remainingVnd = campaign.budget_vnd - actual.driver - actual.garage - actual.platform
 
     return {
@@ -146,6 +148,7 @@ export async function getPartnerCampaignInvoices(): Promise<PartnerCampaignInvoi
       remainingVnd,
       estimatedDriverVnd,
       estimatedGarageVnd,
+      estimatedOperationsVnd,
       estimatedPlatformFeeVnd,
       lines: linesByCampaign[campaign.id] ?? [],
     }
@@ -163,6 +166,7 @@ export async function getPartnerCampaignInvoices(): Promise<PartnerCampaignInvoi
         remainingVnd: acc.remainingVnd + row.remainingVnd,
         estimatedDriverVnd: acc.estimatedDriverVnd + row.estimatedDriverVnd,
         estimatedGarageVnd: acc.estimatedGarageVnd + row.estimatedGarageVnd,
+        estimatedOperationsVnd: acc.estimatedOperationsVnd + row.estimatedOperationsVnd,
         estimatedPlatformFeeVnd: acc.estimatedPlatformFeeVnd + row.estimatedPlatformFeeVnd,
       }),
       emptyPartnerInvoiceTotals(),

@@ -39,6 +39,10 @@ export default async function PartnerInvoicePrintPage({ params }: PageProps) {
       { label: 'Chi trả tài xế đã ghi nhận', amountVnd: row.driverPaidVnd },
       { label: 'Chi trả garage đã ghi nhận', amountVnd: row.garagePaidVnd },
       { label: 'Phí nền tảng đã ghi nhận', amountVnd: row.platformFeeVnd },
+      {
+        label: 'Dự phòng vận hành/bảo dưỡng ước tính',
+        amountVnd: row.estimatedOperationsVnd,
+      },
       { label: 'Ngân sách còn lại sau chi phí', amountVnd: row.remainingVnd },
     ],
     detailLines: row.lines.map((line) => ({

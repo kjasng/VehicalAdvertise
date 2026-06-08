@@ -46,6 +46,7 @@ export function emptyPartnerInvoiceTotals(): PartnerCampaignInvoiceTotals {
     remainingVnd: 0,
     estimatedDriverVnd: 0,
     estimatedGarageVnd: 0,
+    estimatedOperationsVnd: 0,
     estimatedPlatformFeeVnd: 0,
   }
 }
