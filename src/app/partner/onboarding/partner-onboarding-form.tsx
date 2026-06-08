@@ -6,8 +6,6 @@
  */
 import { useState, useTransition } from 'react'
 
-import { useRouter } from 'next/navigation'
-
 import { AlertTriangle, CheckCircle } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -26,7 +24,6 @@ interface Props {
 }
 
 export function PartnerOnboardingForm({ status, rejectReason, existingData }: Props) {
-  const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [companyName, setCompanyName] = useState(existingData?.companyName ?? '')
   const [taxCode, setTaxCode] = useState(existingData?.taxCode ?? '')
@@ -46,12 +43,7 @@ export function PartnerOnboardingForm({ status, rejectReason, existingData }: Pr
       })
       if (result.error) {
         toast.error(result.error)
-        return
       }
-      // Onboarding auto-approves — go straight to the dashboard, no waiting screen.
-      toast.success('Hồ sơ đã được duyệt. Chào mừng bạn!')
-      router.replace('/partner/dashboard')
-      router.refresh()
     })
   }
 
