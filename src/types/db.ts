@@ -948,14 +948,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      approve_driver_kyc: {
-        Args: {
-          p_decision: Database['public']['Enums']['kyc_status']
-          p_driver_id: string
-          p_reason?: string
-        }
-        Returns: undefined
-      }
       assert_transition: {
         Args: { entity_type: string; from_state: string; to_state: string }
         Returns: undefined
