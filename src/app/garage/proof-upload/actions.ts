@@ -42,13 +42,6 @@ export async function submitGarageInstallProof(
   if (invalid) return { error: 'Ảnh phải là file image và nhỏ hơn 6MB.' }
 
   const supabase = createSupabaseAdminClient()
-  const { data: garage } = await supabase
-    .from('garages')
-    .select('approved')
-    .eq('id', user.id)
-    .maybeSingle()
-  if (!garage?.approved) return { error: 'Garage chưa được admin approve.' }
-
   const { data: contract } = await supabase
     .from('contracts')
     .select('id, install_garage_id, status')

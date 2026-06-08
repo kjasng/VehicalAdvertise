@@ -100,8 +100,8 @@ export function KycWizard({ rejected = false }: KycWizardProps) {
         if (result.error.includes('điện thoại')) setStep(1)
         toast.error(result.error)
       } else {
-        toast.success('Hồ sơ đã được gửi. Chúng tôi sẽ phản hồi trong 24 giờ.')
-        router.refresh()
+        toast.success('Hồ sơ đã được duyệt. Chào mừng bạn!')
+        router.replace('/driver/profile')
       }
     })
   }

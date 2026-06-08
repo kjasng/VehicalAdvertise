@@ -32,7 +32,7 @@ export async function selectDriverInstallGarage(raw: unknown): Promise<{ error: 
       .select('id, driver_id, status, install_garage_id')
       .eq('id', parsed.data.contractId)
       .maybeSingle(),
-    supabase.from('garages').select('id, approved').eq('id', parsed.data.garageId).maybeSingle(),
+    supabase.from('garages').select('id').eq('id', parsed.data.garageId).maybeSingle(),
   ])
 
   const contract = contractRes.data
@@ -41,7 +41,7 @@ export async function selectDriverInstallGarage(raw: unknown): Promise<{ error: 
   if (!['matched', 'awaiting_install'].includes(contract.status)) {
     return { error: 'Contract không còn ở trạng thái chọn garage.' }
   }
-  if (!garageRes.data?.approved) return { error: 'Garage không khả dụng.' }
+  if (!garageRes.data) return { error: 'Garage không khả dụng.' }
 
   const { error } = await supabase
     .from('contracts')

@@ -20,17 +20,15 @@ export function GarageWithdrawalForm({
   const [amount, setAmount] = useState(profile.balanceVnd.toLocaleString('vi-VN'))
   const amountVnd = moneyValue(amount)
   const hasBank = Boolean(profile.bankAccountName && profile.bankAccountNumber && profile.bankName)
-  const blockedReason = !profile.approved
-    ? 'Garage chưa được admin approve.'
-    : !hasBank
-      ? 'Hoàn tất payout settings trước khi rút.'
-      : profile.balanceVnd < minimumWithdrawalVnd
-        ? `Số tiền tối thiểu để rút là ${formatVnd(minimumWithdrawalVnd)}.`
-        : amountVnd < minimumWithdrawalVnd
-          ? `Số tiền rút tối thiểu là ${formatVnd(minimumWithdrawalVnd)}.`
-          : amountVnd > profile.balanceVnd
-            ? `Số tiền rút lớn hơn số tiền hiện có là ${formatVnd(profile.balanceVnd)}.`
-            : null
+  const blockedReason = !hasBank
+    ? 'Hoàn tất payout settings trước khi rút.'
+    : profile.balanceVnd < minimumWithdrawalVnd
+      ? `Số tiền tối thiểu để rút là ${formatVnd(minimumWithdrawalVnd)}.`
+      : amountVnd < minimumWithdrawalVnd
+        ? `Số tiền rút tối thiểu là ${formatVnd(minimumWithdrawalVnd)}.`
+        : amountVnd > profile.balanceVnd
+          ? `Số tiền rút lớn hơn số tiền hiện có là ${formatVnd(profile.balanceVnd)}.`
+          : null
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

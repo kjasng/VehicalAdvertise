@@ -29,13 +29,7 @@ export default async function GarageProofUploadPage({ searchParams }: PageProps)
     <div className="flex flex-col gap-8">
       <PageHeader kicker="PROOF" title="UPLOAD INSTALL PHOTOS" />
 
-      {!profile.approved ? (
-        <EmptyState
-          kicker="pending"
-          title="Waiting Approval"
-          helper="Garage cần admin duyệt trước khi upload install proof."
-        />
-      ) : eligibleJobs.length === 0 ? (
+      {eligibleJobs.length === 0 ? (
         <EmptyState
           kicker="empty"
           title="No Upload Jobs"

@@ -82,7 +82,7 @@ export async function getDriverInvoicePageData(): Promise<DriverInvoicePageData 
     .reduce((sum, invoice) => sum + invoice.amountVnd, 0)
 
   const contract = (contractsRes.data ?? []).find(
-    (row) => row.status === 'running' && row.earning_start_date,
+    (row) => ['running', 'completed'].includes(row.status) && row.earning_start_date,
   )
   if (!contract?.earning_start_date) {
     return {

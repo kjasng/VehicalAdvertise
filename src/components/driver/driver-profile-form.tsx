@@ -72,10 +72,10 @@ export function DriverProfileForm({ profile }: { profile: DriverProfileData }) {
             label="License plate"
             value={form.vehiclePlate}
             onChange={(value) => setField('vehiclePlate', value.toUpperCase())}
-            required={Boolean(profile.vehicleId)}
+            required
           />
           <p className="text-[12px] text-[#666666]">
-            Đổi biển số sẽ đưa xe về trạng thái cần admin kiểm tra lại.
+            Cập nhật biển số xe để có thể được assign vào campaign.
           </p>
         </Panel>
 

@@ -32,7 +32,7 @@ export async function createDriverWithdrawalInvoice(): Promise<{ error: string |
       .from('contracts')
       .select('id, campaign_id, status, earning_start_date, campaigns(name), vehicles(plate)')
       .eq('driver_id', user.id)
-      .eq('status', 'running')
+      .in('status', ['running', 'completed'])
       .not('earning_start_date', 'is', null)
       .order('created_at', { ascending: false })
       .limit(1)

@@ -16,7 +16,7 @@ const UpdateDriverProfileSchema = z.object({
   bankAccountNumber: z.string().trim().min(5).max(40),
   bankName: z.string().trim().min(2).max(120),
   vehicleId: z.string().uuid().nullable(),
-  vehiclePlate: z.string().trim().max(20).optional(),
+  vehiclePlate: z.string().trim().min(5, 'Biển số không hợp lệ').max(20),
 })
 
 export async function updateDriverProfile(raw: unknown): Promise<{ error: string | null }> {
@@ -57,13 +57,23 @@ export async function updateDriverProfile(raw: unknown): Promise<{ error: string
     .eq('id', user.id)
   if (driverError) return { error: driverError.message }
 
-  if (parsed.data.vehicleId && parsed.data.vehiclePlate) {
+  const plate = parsed.data.vehiclePlate.toUpperCase()
+  if (parsed.data.vehicleId) {
     const { error: vehicleError } = await supabase
       .from('vehicles')
-      .update({ plate: parsed.data.vehiclePlate.toUpperCase(), approved: false })
+      .update({ plate })
       .eq('id', parsed.data.vehicleId)
       .eq('driver_id', user.id)
     if (vehicleError) return { error: vehicleError.message }
+  } else {
+    // First-time driver: no vehicle row yet, create one so they become assignable.
+    const { error: vehicleError } = await supabase
+      .from('vehicles')
+      .insert({ driver_id: user.id, plate })
+    if (vehicleError) {
+      if (vehicleError.code === '23505') return { error: 'Biển số đã tồn tại' }
+      return { error: vehicleError.message }
+    }
   }
 
   revalidatePath('/driver/profile')

@@ -78,7 +78,7 @@ export default async function DriverGaragePage() {
         <EmptyState
           kicker="empty"
           title="No Garages"
-          helper="Chưa có garage active để chọn. Vui lòng quay lại sau."
+          helper="Chưa có garage để chọn. Vui lòng quay lại sau."
         />
       ) : (
         <SectionShell title={`${contract.campaignName} · ${contract.vehiclePlate}`}>

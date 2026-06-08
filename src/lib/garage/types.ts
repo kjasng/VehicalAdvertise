@@ -9,7 +9,6 @@ export type GarageProfile = {
   serviceArea: string
   googleMapsUrl: string
   workingHours: string
-  approved: boolean
   balanceVnd: number
   bankAccountName: string
   bankAccountNumber: string

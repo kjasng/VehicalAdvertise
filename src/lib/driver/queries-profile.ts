@@ -39,7 +39,6 @@ export async function getDriverProfileData(): Promise<DriverProfileData | null> 
       .from('vehicles')
       .select('id, plate')
       .eq('driver_id', user.id)
-      .order('approved', { ascending: false })
       .order('id', { ascending: true })
       .limit(1)
       .maybeSingle(),

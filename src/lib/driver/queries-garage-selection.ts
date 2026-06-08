@@ -45,10 +45,7 @@ export async function getDriverGarageSelectionData(): Promise<DriverGarageSelect
       .maybeSingle(),
     supabase
       .from('garages')
-      .select(
-        'id, shop_name, address, phone, service_area, google_maps_url, working_hours, approved',
-      )
-      .eq('approved', true)
+      .select('id, shop_name, address, phone, service_area, google_maps_url, working_hours')
       .order('shop_name', { ascending: true }),
   ])
 

@@ -869,19 +869,16 @@ export type Database = {
       }
       vehicles: {
         Row: {
-          approved: boolean
           driver_id: string
           id: string
           plate: string
         }
         Insert: {
-          approved?: boolean
           driver_id: string
           id?: string
           plate: string
         }
         Update: {
-          approved?: boolean
           driver_id?: string
           id?: string
           plate?: string

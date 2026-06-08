@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import { InstallCard } from '@/components/garage/install-card'
-import { EmptyState } from '@/components/shared/empty-state'
 import { KpiCard } from '@/components/shared/kpi-card'
 import { PageHeader } from '@/components/shared/page-header'
 import { formatVnd } from '@/lib/garage/format'
@@ -14,19 +13,6 @@ export const metadata = { title: 'Garage · Dashboard' }
 export default async function GarageDashboardPage() {
   const [profile, jobs] = await Promise.all([getGarageProfile(), getGarageInstallJobs()])
   if (!profile) redirect('/login')
-
-  if (!profile.approved) {
-    return (
-      <div className="space-y-6">
-        <PageHeader kicker="OVERVIEW" title="DASHBOARD" />
-        <EmptyState
-          kicker="pending"
-          title="Waiting Approval"
-          helper="Admin cần duyệt garage trước khi bạn nhận job lắp decal và setup payout."
-        />
-      </div>
-    )
-  }
 
   const waitingInstall = jobs.filter((job) => job.status === 'waiting_install').length
   const waitingReview = jobs.filter((job) => job.status === 'waiting_review').length

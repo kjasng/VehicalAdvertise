@@ -71,7 +71,6 @@ export async function requestGarageWithdrawal(raw: unknown): Promise<{ error: st
 
   const profile = await getGarageProfile()
   if (!profile) return { error: 'Garage profile not found.' }
-  if (!profile.approved) return { error: 'Garage chưa được admin approve.' }
   if (!hasGaragePayoutSettings(profile)) return { error: 'Hoàn tất payout settings trước khi rút.' }
 
   const now = new Date().toISOString()
