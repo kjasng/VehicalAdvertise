@@ -55,3 +55,6 @@ supabase/.branches
 /docs/do-an-tot-nghiep-*.md
 # Local test recordings (videos, screenshots, fixtures)
 /recordings/
+
+# Local-only scratch files (e.g. e2e bridge), keep out of VCS
+*.local.mjs
