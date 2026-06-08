@@ -1,9 +1,6 @@
 export type { DashboardStats, RecentRequestRow } from './queries-dashboard'
 export { getDashboardStats } from './queries-dashboard'
 
-export type { CreativeQueueRow } from './queries-creatives'
-export { getCreativesQueue } from './queries-creatives'
-
 export type { InstallProofRow, PhotoVerifRow } from './queries-photos'
 export { getInstallProofs, getPhotoVerifications } from './queries-photos'
 

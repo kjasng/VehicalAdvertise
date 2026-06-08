@@ -940,14 +940,6 @@ export type Database = {
         }
         Returns: number
       }
-      approve_campaign: {
-        Args: {
-          p_campaign_id: string
-          p_decision: Database['public']['Enums']['campaign_status']
-          p_reason?: string
-        }
-        Returns: undefined
-      }
       assert_transition: {
         Args: { entity_type: string; from_state: string; to_state: string }
         Returns: undefined

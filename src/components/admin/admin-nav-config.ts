@@ -4,7 +4,6 @@
  */
 import {
   LayoutDashboard,
-  Image,
   Wrench,
   Camera,
   ShieldCheck,
@@ -28,7 +27,6 @@ export const ADMIN_NAV: NavItem[] = [
     label: 'Verification',
     icon: ShieldCheck,
     children: [
-      { href: '/admin/creatives-review', label: 'Creatives', icon: Image },
       { href: '/admin/install-proofs', label: 'Install Proofs', icon: Wrench },
       { href: '/admin/photo-verifications', label: 'Photo Checks', icon: Camera },
     ],

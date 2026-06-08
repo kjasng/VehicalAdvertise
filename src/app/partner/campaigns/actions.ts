@@ -108,7 +108,6 @@ export async function createPartnerCampaign(raw: unknown): Promise<{ error: stri
   revalidatePath('/partner/dashboard')
   revalidatePath('/partner/billing')
   revalidatePath('/partner/invoices')
-  revalidatePath('/admin/creatives-review')
   revalidatePath('/admin/campaigns')
   revalidatePath('/admin/contracts')
   revalidatePath('/admin/partner-balances')
