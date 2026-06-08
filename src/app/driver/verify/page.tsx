@@ -36,7 +36,7 @@ export default async function DriverVerifyPage() {
   const hasSubmitted = (photosRes.data?.length ?? 0) > 0
 
   // Approved → proxy handles redirect, but guard here too
-  if (kycStatus === 'approved') redirect('/driver/dashboard')
+  if (kycStatus === 'approved') redirect('/driver/profile')
 
   // Pending + photos already submitted → waiting screen (no wizard)
   const showWaiting = kycStatus === 'pending' && hasSubmitted

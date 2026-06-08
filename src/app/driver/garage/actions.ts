@@ -54,7 +54,7 @@ export async function selectDriverInstallGarage(raw: unknown): Promise<{ error: 
   if (error) return { error: error.message }
 
   revalidatePath('/driver/garage')
-  revalidatePath('/driver/dashboard')
+  revalidatePath('/driver/profile')
   revalidatePath('/garage/dashboard')
   revalidatePath('/garage/installs')
   revalidatePath('/admin/contracts')

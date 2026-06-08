@@ -127,5 +127,7 @@ export function pathAllowedForPending(pathname: string): boolean {
 export function homeForRole(role: UserRole | null): string {
   if (!role) return '/login'
   if (role === 'pending') return '/onboarding'
+  // Driver has no dashboard — profile is the landing page.
+  if (role === 'driver') return '/driver/profile'
   return GATED_PREFIXES[role] + '/dashboard'
 }
