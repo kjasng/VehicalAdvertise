@@ -1,6 +1,6 @@
 # Vehical Advertise
 
-Vehicle advertising marketplace for the Hanoi pilot. Drivers wrap cars in partner campaigns, choose an install garage, then create monthly withdrawal invoices after admin-approved decal installation.
+Vehicle advertising marketplace for the Hanoi pilot. Partners self-onboard, top up their wallet, and create reserved-budget campaigns; admins match campaigns with drivers, vehicles, and garages; garages install decals and upload proof; drivers earn monthly income after admin-checked install proof and create withdrawal invoices.
 
 **Stack:** Next.js 16 (App Router) · Supabase (Postgres + Auth + Storage + Realtime) · shadcn/ui · Tailwind v4 · TanStack Query · pnpm
 
@@ -17,8 +17,8 @@ pnpm dev                          # http://localhost:3000
 ```
 src/
 ├── app/
-│   ├── (admin)/   sidebar shell, approvals/payouts/pricing/invoices
-│   ├── (public)/  landing, login (phone OTP), QR redirect
+│   ├── (admin)/   sidebar shell, matching/proofs/payouts/pricing/invoices
+│   ├── (public)/  landing, email login/signup, QR redirect
 │   └── api/v1/    photo finalize, webhooks, cron, transitions
 ├── lib/
 │   ├── supabase/  browser, server (RLS-scoped), admin (service-role, server-only)
