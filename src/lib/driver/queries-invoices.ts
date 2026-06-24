@@ -19,6 +19,12 @@ export type DriverInvoiceRow = {
   requestedAt: string
 }
 
+export type DriverBankInfo = {
+  bankAccountName: string
+  bankAccountNumber: string
+  bankName: string
+}
+
 export type DriverInvoicePageData = {
   activeContract: {
     id: string
@@ -34,6 +40,7 @@ export type DriverInvoicePageData = {
     platformFeeVnd: number
   } | null
   invoices: DriverInvoiceRow[]
+  bankInfo: DriverBankInfo | null
   payoutSettingsComplete: boolean
   canCreateInvoice: boolean
   blockedReason: string | null
@@ -91,6 +98,7 @@ export async function getDriverInvoicePageData(): Promise<DriverInvoicePageData 
       completedPeriod: null,
       earningPeriod: null,
       invoices,
+      bankInfo: toBankInfo(driver),
       payoutSettingsComplete: hasPayoutSettings(driver),
       canCreateInvoice: false,
       blockedReason: 'Driver is not active for earning yet.',
@@ -133,6 +141,7 @@ export async function getDriverInvoicePageData(): Promise<DriverInvoicePageData 
     completedPeriod,
     earningPeriod,
     invoices,
+    bankInfo: toBankInfo(driver),
     payoutSettingsComplete,
     canCreateInvoice: Boolean(
       completedPeriod && payoutSettingsComplete && earningPeriod && !duplicate,
@@ -150,6 +159,21 @@ function hasPayoutSettings(
   } | null,
 ) {
   return Boolean(driver?.bank_account_name && driver.bank_account_number && driver.bank_name)
+}
+
+function toBankInfo(
+  driver: {
+    bank_account_name: string | null
+    bank_account_number: string | null
+    bank_name?: string | null
+  } | null,
+): DriverBankInfo | null {
+  if (!driver?.bank_account_name || !driver.bank_account_number || !driver.bank_name) return null
+  return {
+    bankAccountName: driver.bank_account_name,
+    bankAccountNumber: driver.bank_account_number,
+    bankName: driver.bank_name,
+  }
 }
 
 async function ensureAndFetchEarningPeriod(

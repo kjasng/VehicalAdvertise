@@ -20,7 +20,15 @@ export default async function DriverInvoicePage() {
       <PageHeader
         kicker="EARNINGS"
         title="Invoices"
-        cta={<CreateInvoiceButton disabled={!data.canCreateInvoice} />}
+        cta={
+          <CreateInvoiceButton
+            disabled={!data.canCreateInvoice}
+            amountVnd={data.earningPeriod?.driverNetVnd}
+            periodStart={data.completedPeriod?.start}
+            periodEnd={data.completedPeriod?.end}
+            bankInfo={data.bankInfo}
+          />
+        }
       />
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -32,7 +40,7 @@ export default async function DriverInvoicePage() {
           }
         />
         <Metric
-          label="Latest completed"
+          label={data.canCreateInvoice ? 'Available for withdrawal' : 'Latest period'}
           value={
             data.earningPeriod ? formatVnd(data.earningPeriod.driverNetVnd) : 'Not available yet'
           }
